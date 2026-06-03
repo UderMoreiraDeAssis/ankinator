@@ -98,11 +98,20 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
   const fonteBase = opts.fonte ? opts.fonte.replace(/\.[^./]+$/, '') : undefined;
 
   // criar um deck para cada q.deck distinto (fallback a opts.deck) — Assumption A1
+  // WR-03: per-deck error isolation — one bad name must not abort the whole push.
   const subDecks = new Set(questoes.map((q) => q.deck ?? opts.deck));
-  for (const d of subDecks) await invoke('createDeck', { deck: d }, url);
+  const failedDecks = new Set<string>();
+  for (const d of subDecks) {
+    try {
+      await invoke('createDeck', { deck: d }, url);
+    } catch (err) {
+      console.warn(`[ankiconnect] createDeck "${d}" falhou — notas usarão "${opts.deck}":`, err instanceof Error ? err.message : String(err));
+      failedDecks.add(d);
+    }
+  }
 
   const notes = questoes.map((q) => ({
-    deckName: q.deck ?? opts.deck,
+    deckName: (!failedDecks.has(q.deck ?? '') ? q.deck : undefined) ?? opts.deck,
     modelName: 'Basic',
     fields: {
       Front: escapeHtml(q.pergunta).replace(/\n/g, '<br>'),
