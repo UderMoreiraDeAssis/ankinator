@@ -22,6 +22,15 @@ type ProviderKind = 'cli' | 'api';
 
 const providerEnv = (process.env.ANKINATOR_PROVIDER?.trim().toLowerCase() as ProviderKind) || 'cli';
 
+/**
+ * Loader de PDF: 'node' (padrão — @opendataloader/pdf via Java) ou 'langchain'
+ * (opt-in — sidecar Python via langchain-opendataloader-pdf).
+ * ANKINATOR_PDF_LOADER=node|langchain (default: 'node' — D-03, D-15)
+ */
+type PdfLoaderKind = 'node' | 'langchain';
+
+const pdfLoaderEnv = (process.env.ANKINATOR_PDF_LOADER?.trim().toLowerCase() as PdfLoaderKind) || 'node';
+
 export const config = {
   port: Number(process.env.PORT) || 8787,
   anthropicKey: process.env.ANTHROPIC_API_KEY?.trim() || '',
@@ -32,6 +41,19 @@ export const config = {
   /** Modelo para o CLI (alias 'sonnet'/'opus' ou id completo). */
   cliModel: process.env.ANKINATOR_CLI_MODEL?.trim() || 'sonnet',
   ankiconnectUrl: process.env.ANKICONNECT_URL?.trim() || 'http://127.0.0.1:8765',
+  /**
+   * Loader de PDF selecionado: 'node' (padrão, D-03) ou 'langchain' (opt-in).
+   * Controlado por ANKINATOR_PDF_LOADER=node|langchain.
+   * Default 'node' é CRÍTICO para D-15: env unset → modo Node, sem Python/Java LangChain.
+   */
+  pdfLoader: pdfLoaderEnv === 'langchain' ? 'langchain' : ('node' as PdfLoaderKind),
+  /**
+   * Interpretador Python para o sidecar LangChain (D-02).
+   * ANKINATOR_LANGCHAIN_PYTHON — interpretador do venv langchain dedicado (requer Java 11+ no PATH).
+   * Fallback: ODL_PYTHON (compatibilidade com sidecar OCR da Phase 1).
+   * Vazio ('') quando nenhuma var está definida — isLangchainAvailable() retornará false.
+   */
+  langchainPython: process.env.ANKINATOR_LANGCHAIN_PYTHON?.trim() || process.env.ODL_PYTHON?.trim() || '',
   hasApiKey(): boolean {
     return this.anthropicKey.length > 0;
   },
