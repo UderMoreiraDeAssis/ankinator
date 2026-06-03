@@ -13,6 +13,7 @@ import { config } from './config.js';
 import { loadDocument } from './core/document-loader.js';
 import { chunkDocument } from './core/chunker.js';
 import { generateAll } from './core/generation.js';
+import { enrichAll, deveRodarEnrich } from './core/specialists/enrich.js';
 import { createProvider } from './core/providers/index.js';
 import { toAnkiCsv } from './core/exporters/csv.js';
 import { pushToAnki, ankiConnectStatus, listDecks } from './core/exporters/ankiconnect.js';
@@ -132,6 +133,8 @@ api.post('/generate', async (req: Request, res: Response) => {
     incluirCriadas: options?.incluirCriadas,
     tags: options?.tags,
     model: options?.model, // undefined → modelo padrão do provedor
+    classificar: options?.classificar,
+    cardBuilder: options?.cardBuilder,
   };
 
   const provider = createProvider({
@@ -148,11 +151,18 @@ api.post('/generate', async (req: Request, res: Response) => {
   generateAll(provider, chunks, genOptions, (p) => {
     jobStore.emit(job, { type: 'progress', data: p });
   })
-    .then((result) => {
+    .then(async (result) => {
+      let questoes = result.questoes;
+      const enrichOpts = { classificar: options?.classificar, cardBuilder: options?.cardBuilder };
+      if (deveRodarEnrich(enrichOpts)) {
+        questoes = await enrichAll(questoes, enrichOpts, (e) => {
+          jobStore.emit(job, { type: 'enrich-progress', data: e });
+        });
+      }
       job.result = result;
-      job.questoes = result.questoes;
+      job.questoes = questoes;
       job.status = 'done';
-      jobStore.emit(job, { type: 'done', data: { total: result.questoes.length, erros: result.erros } });
+      jobStore.emit(job, { type: 'done', data: { total: questoes.length, erros: result.erros } });
     })
     .catch((err) => {
       job.status = 'error';
