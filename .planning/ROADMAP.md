@@ -60,7 +60,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-03-PLAN.md — Wave 2: langchain-loader.ts (spawn sem temp-dir + isLangchainAvailable + runLangchainLoader→normalize) + config.ts env vars (PDF-02; D-01/D-02/D-04)
+- [x] 02-03-PLAN.md — Wave 2: langchain-loader.ts (spawn sem temp-dir + isLangchainAvailable + runLangchainLoader→normalize) + config.ts env vars (PDF-02; D-01/D-02/D-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 2/4 | In Progress|  |
+| 2. Loader PDF LangChain | 3/4 | In Progress|  |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
