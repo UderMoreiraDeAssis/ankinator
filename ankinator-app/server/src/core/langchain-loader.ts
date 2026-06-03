@@ -116,8 +116,19 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
 
   // D-04: runtime error PROPAGA — sem fallback para o loader Node.
   // T-02-05: spawn usa argv-array (sem shell) → sem injeção de comando.
+  //
+  // WR-03 (Phase 02): preferir as PRIMEIRAS linhas do stderr sobre o tail. O sidecar
+  // agora emite uma linha de diagnóstico estruturada ("odl_langchain_loader: <Tipo>: <msg>"),
+  // e mesmo num traceback Python cru a causa real fica no TOPO. `.slice(-400)` cortava
+  // justamente essa parte. Mantemos um teto de tamanho via slice(0, 400) por linha.
   if (code !== 0) {
-    throw new Error(`Falha no loader langchain: ${stderr.slice(-400)}`);
+    const head = stderr
+      .split('\n')
+      .filter((l) => l.trim().length > 0)
+      .slice(0, 5)
+      .map((l) => l.slice(0, 400))
+      .join(' | ');
+    throw new Error(`Falha no loader langchain: ${head || `(stderr vazio, code=${code})`}`);
   }
 
   // D-01: stdout = JSON [{page_content, metadata}] impresso pelo sidecar.

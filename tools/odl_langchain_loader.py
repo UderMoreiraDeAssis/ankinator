@@ -74,7 +74,16 @@ def main() -> int:
         password=args.password,
     )
 
-    docs = loader.load()
+    # WR-03 (Phase 02): a falha de runtime documentada (Java 11+ ausente — Pitfall 2)
+    # ou um PDF corrompido/locked faria loader.load() despejar um traceback multi-linha
+    # no stderr. O Node então pegava só os ÚLTIMOS 400 chars (a parte menos informativa),
+    # truncando a causa real (ex.: FileNotFoundError: java) que fica no TOPO. Capturamos
+    # aqui e emitimos UMA linha de diagnóstico limpa, retornando 1 (Node propaga — D-04).
+    try:
+        docs = loader.load()
+    except Exception as e:  # noqa: BLE001 — boundary: converte para linha de stderr limpa
+        print(f"odl_langchain_loader: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
 
     # D-01: montar array JSON e emitir no stdout (sem arquivo, sem temp dir).
     # O Node consome via JSON.parse(stdout) em langchain-loader.ts (Plano 03).
