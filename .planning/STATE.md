@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T15:52:56.410Z"
+last_updated: "2026-06-03T16:01:28.364Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   percent: 67
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 ## Current Position
 
 Phase: 03 (classificador-de-deck-card-educativo) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Next: Phase 02 (Loader PDF LangChain) — `/gsd-plan-phase 2` (sem planos ainda).
 Last activity: 2026-06-03
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [████████░░] 83%
 | Phase 01 P03 | 5 min | 2 tasks | 7 files |
 | Phase 01 P04 (a/b/c) | ~6 min | 3 auto tasks (+1 checkpoint pendente) | 2 files |
 | Phase 03 P01 | 10min | 3 tasks | 6 files |
+| Phase 03 P02 | 8min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Decisões completas em PROJECT.md (Key Decisions). Recentes:
 - [Phase 01 P04]: SPEC-04 — ImageProvider (interface) + SvgClaudeImageProvider (svg-claude; loadPrompt('mnemonic-image') + runClaudeCli, usa mnemonic E context) + createImageProvider() default svg-claude (D-08/09/10). 100% no server; sem raster; TODO(IMG-02) sanitização e TODO(v2) raster por env; NÃO plugado no pipeline. Build server verde.
 - [Phase 01 P04]: Guard SPEC-01 AUTOMATIZADO e CLI-free — smoke-runner --assert-args (flag adicionada, Rule 3) sai 0 sem spawnar o claude; args/cwd/env byte-idênticos ao CliProvider.invoke() pré-refator (Pitfall 2). loadPrompt validado cross-mode tsx(src)+node(dist) — Pitfall 1 fechado (lengths idênticos 2360/1955/2036/1653/1727).
 - [Phase 01 P04]: Task 4 é HARD-BLOCK humano e ficou CHECKPOINT-PENDING — baseline foi simbólico (sem PDF). A regressão E2E (SPEC-01 geração real + PIPE-03) exige um PDF fornecido pelo usuário; o executor não-interativo não fabrica sign-off.
+- [Phase ?]: Phase 03 P02: enrichAll wired behind deveRodarEnrich gate in /generate .then() — await before done (PIPE-01/PIPE-03 closed)
+- [Phase ?]: Phase 03 P02: CSV temDeck gate — byte-identity when no q.deck; #deck column:5 only when some card has q.deck (DECK-01)
+- [Phase ?]: Phase 03 P02: ankiconnect subdeck routing — createDeck per distinct q.deck; deckName q.deck ?? opts.deck per-nota (DECK-01/DECK-02)
 
 ### Pending Todos
 
@@ -98,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T15:52:56.393Z
-Stopped at: Phase 3 context gathered (18/18, --power)
+Last session: 2026-06-03T16:01:28.352Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
