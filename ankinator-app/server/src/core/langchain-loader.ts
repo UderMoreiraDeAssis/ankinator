@@ -37,19 +37,28 @@ function pythonBin(): string | null {
  * PT-BR) partido entre dois chunks vira mojibake e corrompe todo flashcard gerado.
  * Bufferizamos os chunks em Buffer[] e decodificamos UMA vez com
  * Buffer.concat(...).toString('utf8'), que respeita as fronteiras de caractere.
+ *
+ * WR-05 (Phase 02): o evento 'error' (falha de SPAWN — ex.: ENOENT quando o path do
+ * Python está errado) agora carrega `spawnError`. Antes, tanto a falha de spawn quanto
+ * um processo que sai com code null/-1 resolviam `{ code: -1 }`, impedindo os callers
+ * de distinguir "interpretador não encontrado" de "sidecar rodou e falhou".
  */
-function run(cmd: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+function run(
+  cmd: string,
+  args: string[]
+): Promise<{ code: number; stdout: string; stderr: string; spawnError?: string }> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     const out: Buffer[] = [];
     const err: Buffer[] = [];
     child.stdout.on('data', (d: Buffer) => out.push(d));
     child.stderr.on('data', (d: Buffer) => err.push(d));
-    child.on('error', () =>
+    child.on('error', (e: Error) =>
       resolve({
         code: -1,
         stdout: Buffer.concat(out).toString('utf8'),
         stderr: Buffer.concat(err).toString('utf8'),
+        spawnError: e.message,
       })
     );
     child.on('close', (code) =>
@@ -112,7 +121,14 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
   if (opts.pages) args.push('--pages', opts.pages);
   if (opts.password) args.push('--password', opts.password);
 
-  const { code, stdout, stderr } = await run(py, args);
+  const { code, stdout, stderr, spawnError } = await run(py, args);
+
+  // WR-05 (Phase 02): distingue "não foi possível spawnar o Python" (ENOENT em path
+  // inválido) de "sidecar rodou e falhou" (code real). Sem isto, um path de Python
+  // mal-configurado em ANKINATOR_LANGCHAIN_PYTHON resolvia code:-1 indistinguível.
+  if (spawnError) {
+    throw new Error(`Loader langchain: não foi possível spawnar Python (${py}): ${spawnError}`);
+  }
 
   // WR-04 (Phase 02): scrub o valor de `password` de QUALQUER texto antes de
   // interpolá-lo num Error que vai para logs. Se a biblioteca/Java ecoar o argumento
