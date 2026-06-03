@@ -73,7 +73,8 @@ function flatten(nodes: RawNode[], acc: DocElement[]): void {
  * - remove linhas de tabela vazias (`| | |`, `|---|`, etc. sem texto);
  * - colapsa 3+ linhas em branco em 2.
  */
-function cleanMarkdown(md: string): string {
+// D-09: exportado para reuso no módulo langchain-normalize
+export function cleanMarkdown(md: string): string {
   const lines = md.split('\n');
   const kept: string[] = [];
   for (const line of lines) {
