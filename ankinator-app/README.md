@@ -19,12 +19,21 @@ PDF ─▶ OpenDataLoader (estrutura) ─▶ chunking semântico ─▶ Claude (
 |---|---|---|
 | **Node.js ≥ 20** | servidor + UI | testado em Node 24 |
 | **Java ≥ 11** | OpenDataLoader (CLI Java) | `java -version` |
-| **ANTHROPIC_API_KEY** | geração de questões | [console.anthropic.com](https://console.anthropic.com) |
+| **Claude Code (`claude`) logado** | geração via assinatura (padrão) | já instalado/autenticado |
+| **ANTHROPIC_API_KEY** *(alternativa)* | geração via API (por token) | só se `ANKINATOR_PROVIDER=api` |
 | **Anki + add-on AnkiConnect** *(opcional)* | envio direto pro Anki | add-on código `2055492159` |
 | **Python + `opendataloader-pdf[hybrid]`** *(opcional)* | OCR de PDFs escaneados | defina `ODL_PYTHON` |
 
-> Sem API key o app ainda **extrai e mostra a estrutura** do PDF; só a geração de questões fica desabilitada.
-> Sem Anki aberto, a exportação **CSV** continua funcionando normalmente.
+> A extração e a estrutura do PDF funcionam sempre; geração e export são independentes.
+
+### Provedor de geração: assinatura × API
+
+| `ANKINATOR_PROVIDER` | Como gera | Custo |
+|---|---|---|
+| **`cli`** (padrão) | usa o **Claude Code** (`claude -p`) com sua **assinatura Pro/Max** | **sem custo de API** (consome a cota do plano) |
+| `api` | usa a **API Anthropic** com `ANTHROPIC_API_KEY` | por token (~US$ 1–3 por apostila) |
+
+O modo `cli` chama o `claude` em headless, então **não precisa de API key**. Trade-offs: usa a cota do plano, é mais lento (um processo por bloco) e a saída é JSON parseado de texto. Troque para `api` quando quiser velocidade/escala sem tocar na cota do plano.
 
 ---
 

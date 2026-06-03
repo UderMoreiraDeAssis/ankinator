@@ -11,12 +11,13 @@ interface Props {
   tagsInput: string;
   setTagsInput: (s: string) => void;
   onGenerate: () => void;
-  hasApiKey: boolean;
+  canGenerate: boolean;
+  provider: 'cli' | 'api';
   busy: boolean;
 }
 
 export function StructurePanel(props: Props) {
-  const { extract, selected, onToggle, onSelectAll, options, setOptions, tagsInput, setTagsInput, onGenerate, hasApiKey, busy } = props;
+  const { extract, selected, onToggle, onSelectAll, options, setOptions, tagsInput, setTagsInput, onGenerate, canGenerate, provider, busy } = props;
   const [showPreview, setShowPreview] = useState(false);
   const allSelected = selected.size === extract.sections.length;
   const selectedChars = extract.sections.filter((s) => selected.has(s.id)).reduce((a, s) => a + s.charCount, 0);
@@ -126,15 +127,24 @@ export function StructurePanel(props: Props) {
           {selected.size} seção(ões) · ~{(selectedChars / 1000).toFixed(1)}k caracteres selecionados
         </div>
 
-        {!hasApiKey && (
+        <div className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">
+          Geração via{' '}
+          {provider === 'cli' ? (
+            <span className="font-medium text-emerald-700">assinatura (Claude Code) · sem custo de API</span>
+          ) : (
+            <span className="font-medium text-brand-700">API Anthropic · por token</span>
+          )}
+        </div>
+
+        {!canGenerate && (
           <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
-            ⚠️ ANTHROPIC_API_KEY não configurada no servidor. Configure o <code>.env</code> para gerar questões.
+            ⚠️ Geração indisponível: provedor <code>api</code> sem <code>ANTHROPIC_API_KEY</code>. Configure o <code>.env</code> ou use <code>ANKINATOR_PROVIDER=cli</code>.
           </div>
         )}
 
         <button
           onClick={onGenerate}
-          disabled={!hasApiKey || selected.size === 0 || busy}
+          disabled={!canGenerate || selected.size === 0 || busy}
           className="mt-1 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {busy ? 'Gerando…' : `Gerar questões (${selected.size} seção${selected.size === 1 ? '' : 'ões'})`}

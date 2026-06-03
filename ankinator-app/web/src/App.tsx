@@ -10,7 +10,8 @@ import { ExportBar } from './components/ExportBar';
 
 export function App() {
   const [step, setStep] = useState<Step>('upload');
-  const [hasApiKey, setHasApiKey] = useState(true);
+  const [canGenerate, setCanGenerate] = useState(true);
+  const [provider, setProvider] = useState<'cli' | 'api'>('cli');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +29,13 @@ export function App() {
   const tags = useMemo(() => tagsInput.split(/\s+/).map((t) => t.trim()).filter(Boolean), [tagsInput]);
 
   useEffect(() => {
-    api.health().then((h) => setHasApiKey(h.hasApiKey)).catch(() => setHasApiKey(false));
+    api
+      .health()
+      .then((h) => {
+        setCanGenerate(h.canGenerate);
+        setProvider(h.provider);
+      })
+      .catch(() => setCanGenerate(false));
     return () => esRef.current?.close();
   }, []);
 
@@ -144,7 +151,8 @@ export function App() {
             tagsInput={tagsInput}
             setTagsInput={setTagsInput}
             onGenerate={handleGenerate}
-            hasApiKey={hasApiKey}
+            canGenerate={canGenerate}
+            provider={provider}
             busy={busy}
           />
         )}

@@ -31,9 +31,15 @@ Você recebe um TRECHO do material por vez. Para cada trecho você produz dois t
 [CRIADA] — questões NOVAS de estudo, baseadas nos conceitos-chave do trecho.
   • Foque no que tipicamente cai em concurso.
   • Varie a dificuldade (básico, intermediário, avançado).
-  • A resposta precisa estar contida/verificável no trecho.
+  • A resposta precisa estar contida/verificável no trecho.`;
 
-Responda SEMPRE chamando a ferramenta registrar_questoes. Não escreva texto fora da ferramenta.`;
+/**
+ * Instrução de saída em JSON, anexada à mensagem do usuário no provedor CLI
+ * (o `claude` CLI não suporta tool-use forçado como a API).
+ */
+export const JSON_OUTPUT_INSTRUCTION = `Responda APENAS com um objeto JSON válido, sem nenhum texto antes ou depois, sem cercas de código (\`\`\`). Formato exato:
+{"questoes":[{"tipo":"extraida|criada","pergunta":"...","resposta":"...","metadata":{"banca":"...","ano":2020,"alternativas":["..."],"gabarito":"..."}}]}
+O campo "metadata" é opcional. Se não houver questões válidas no trecho, responda {"questoes":[]}.`;
 
 /** Definição da ferramenta que força a saída estruturada. */
 export const REGISTRAR_QUESTOES_TOOL: Anthropic.Tool = {

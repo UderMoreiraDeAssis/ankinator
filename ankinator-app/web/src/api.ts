@@ -14,7 +14,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  async health(): Promise<{ ok: boolean; hasApiKey: boolean; model: string }> {
+  async health(): Promise<{ ok: boolean; provider: 'cli' | 'api'; canGenerate: boolean; hasApiKey: boolean; model: string }> {
     return jsonOrThrow(await fetch('/api/health'));
   },
 

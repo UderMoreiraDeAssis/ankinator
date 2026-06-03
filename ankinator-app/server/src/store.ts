@@ -5,7 +5,7 @@
  */
 import crypto from 'node:crypto';
 import type { LoadedDocument, Questao, SemanticChunk } from './core/types.js';
-import type { ChunkProgress, GenerateResult } from './core/question-generator.js';
+import type { ChunkProgress, GenerateResult } from './core/generation.js';
 
 export interface DocEntry {
   id: string;

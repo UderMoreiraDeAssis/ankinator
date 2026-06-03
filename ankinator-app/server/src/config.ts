@@ -18,12 +18,25 @@ for (const envPath of [
   }
 }
 
+type ProviderKind = 'cli' | 'api';
+
+const providerEnv = (process.env.ANKINATOR_PROVIDER?.trim().toLowerCase() as ProviderKind) || 'cli';
+
 export const config = {
   port: Number(process.env.PORT) || 8787,
   anthropicKey: process.env.ANTHROPIC_API_KEY?.trim() || '',
+  /** Provedor de geração: 'cli' (assinatura, padrão) ou 'api' (key, por token). */
+  provider: providerEnv === 'api' ? 'api' : ('cli' as ProviderKind),
+  /** Modelo para a API (id completo). */
   model: process.env.ANKINATOR_MODEL?.trim() || 'claude-sonnet-4-6',
+  /** Modelo para o CLI (alias 'sonnet'/'opus' ou id completo). */
+  cliModel: process.env.ANKINATOR_CLI_MODEL?.trim() || 'sonnet',
   ankiconnectUrl: process.env.ANKICONNECT_URL?.trim() || 'http://127.0.0.1:8765',
   hasApiKey(): boolean {
     return this.anthropicKey.length > 0;
+  },
+  /** A geração está disponível? (cli sempre; api só com key) */
+  canGenerate(): boolean {
+    return this.provider === 'cli' || this.hasApiKey();
   },
 };

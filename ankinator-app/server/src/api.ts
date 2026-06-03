@@ -12,7 +12,8 @@ import { promises as fs } from 'node:fs';
 import { config } from './config.js';
 import { loadDocument } from './core/document-loader.js';
 import { chunkDocument } from './core/chunker.js';
-import { QuestionGenerator } from './core/question-generator.js';
+import { generateAll } from './core/generation.js';
+import { createProvider } from './core/providers/index.js';
 import { toAnkiCsv } from './core/exporters/csv.js';
 import { pushToAnki, ankiConnectStatus, listDecks } from './core/exporters/ankiconnect.js';
 import { documentStore, jobStore } from './store.js';
@@ -40,7 +41,13 @@ export const api = Router();
 
 /** Saúde do servidor + capacidades. */
 api.get('/health', (_req: Request, res: Response) => {
-  res.json({ ok: true, hasApiKey: config.hasApiKey(), model: config.model });
+  res.json({
+    ok: true,
+    provider: config.provider,
+    canGenerate: config.canGenerate(),
+    hasApiKey: config.hasApiKey(),
+    model: config.provider === 'api' ? config.model : config.cliModel,
+  });
 });
 
 /** Status do AnkiConnect. */
@@ -99,8 +106,8 @@ api.post('/extract', async (req: Request, res: Response) => {
 
 /** Inicia a geração de questões (job assíncrono). */
 api.post('/generate', async (req: Request, res: Response) => {
-  if (!config.hasApiKey()) {
-    res.status(400).json({ error: 'ANTHROPIC_API_KEY não configurada no servidor (ver .env).' });
+  if (!config.canGenerate()) {
+    res.status(400).json({ error: 'Geração indisponível: provedor "api" selecionado sem ANTHROPIC_API_KEY (ver .env).' });
     return;
   }
   const { docId, selectedSectionIds, maxCharsPerChunk, options } = req.body ?? {};
@@ -124,18 +131,23 @@ api.post('/generate', async (req: Request, res: Response) => {
     incluirExtraidas: options?.incluirExtraidas,
     incluirCriadas: options?.incluirCriadas,
     tags: options?.tags,
-    model: options?.model || config.model,
+    model: options?.model, // undefined → modelo padrão do provedor
   };
+
+  const provider = createProvider({
+    kind: config.provider,
+    apiKey: config.anthropicKey,
+    apiModel: config.model,
+    cliModel: config.cliModel,
+  });
 
   const job = jobStore.create(docId, chunks.length);
   res.json({ jobId: job.id, totalChunks: chunks.length });
 
   // executa em background
-  const generator = new QuestionGenerator(config.anthropicKey, genOptions.model);
-  generator
-    .generate(chunks, genOptions, (p) => {
-      jobStore.emit(job, { type: 'progress', data: p });
-    })
+  generateAll(provider, chunks, genOptions, (p) => {
+    jobStore.emit(job, { type: 'progress', data: p });
+  })
     .then((result) => {
       job.result = result;
       job.questoes = result.questoes;
