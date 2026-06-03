@@ -114,6 +114,15 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
 
   const { code, stdout, stderr } = await run(py, args);
 
+  // WR-04 (Phase 02): scrub o valor de `password` de QUALQUER texto antes de
+  // interpolá-lo num Error que vai para logs. Se a biblioteca/Java ecoar o argumento
+  // num erro, o segredo cairia em Error.message e em qualquer sink de log.
+  // CAVEAT (WR-04): a senha ainda é visível em `ps` / /proc/<pid>/cmdline enquanto o
+  // sidecar roda, pois é passada via argv. Eliminar isso exigiria passar por env/stdin
+  // (mudança de contrato D-11 do sidecar) — fora do escopo desta correção pontual.
+  const redact = (s: string): string =>
+    opts.password ? s.split(opts.password).join('***') : s;
+
   // D-04: runtime error PROPAGA — sem fallback para o loader Node.
   // T-02-05: spawn usa argv-array (sem shell) → sem injeção de comando.
   //
@@ -128,7 +137,7 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
       .slice(0, 5)
       .map((l) => l.slice(0, 400))
       .join(' | ');
-    throw new Error(`Falha no loader langchain: ${head || `(stderr vazio, code=${code})`}`);
+    throw new Error(`Falha no loader langchain: ${redact(head) || `(stderr vazio, code=${code})`}`);
   }
 
   // D-01: stdout = JSON [{page_content, metadata}] impresso pelo sidecar.
@@ -145,7 +154,8 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
   } catch {
     throw new Error(
       `Loader langchain: stdout não é JSON válido (len=${stdout.length}). ` +
-        `stderr: ${stderr.slice(-400)}`
+        // WR-04 (Phase 02): redige a senha do stderr antes de logar.
+        `stderr: ${redact(stderr.slice(-400))}`
     );
   }
   if (!Array.isArray(parsed)) {
