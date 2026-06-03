@@ -119,22 +119,27 @@ function buildClassificadorMessage(questoes: Questao[]): string {
   ].join('\n');
 }
 
-/** Monta o payload por-card para o card-builder (D-12). */
+/** Monta o payload por-card para o card-builder (D-12).
+ * Serializa via JSON.stringify — nunca interpolar q.pergunta/q.resposta cru (T-03-02). */
 function buildCardBuilderMessage(q: Questao): string {
-  const tipo = q.tipo === 'extraida' ? '[EXTRAÍDA]' : '[CRIADA]';
-  const partes = [
-    tipo,
-    `Pergunta: ${q.pergunta}`,
-    `Resposta: ${q.resposta}`,
-  ];
-  if (q.pageStart) {
-    const paginaRef =
-      q.pageEnd !== undefined && q.pageEnd !== q.pageStart
-        ? `p.${q.pageStart}-${q.pageEnd}`
-        : `p.${q.pageStart}`;
-    partes.push(`Fonte: ${paginaRef}`);
-  }
-  return partes.join('\n');
+  const payload = JSON.stringify(
+    {
+      tipo: q.tipo === 'extraida' ? '[EXTRAÍDA]' : '[CRIADA]',
+      pergunta: q.pergunta,
+      resposta: q.resposta,
+      ...(q.pageStart
+        ? {
+            fonte:
+              q.pageEnd !== undefined && q.pageEnd !== q.pageStart
+                ? `p.${q.pageStart}-${q.pageEnd}`
+                : `p.${q.pageStart}`,
+          }
+        : {}),
+    },
+    null,
+    2
+  );
+  return `Reescreva o card a seguir.\nCard:\n${payload}`;
 }
 
 // ── enrichAll ─────────────────────────────────────────────────────────────────
