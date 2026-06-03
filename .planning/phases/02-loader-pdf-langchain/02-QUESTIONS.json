@@ -1,0 +1,427 @@
+{
+  "phase": "02-loader-pdf-langchain",
+  "generated_at": "2026-06-03T10:22:23Z",
+  "stats": {
+    "total": 15,
+    "answered": 15,
+    "chat_more": 15,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "sidecar-contract",
+      "title": "Contrato do Sidecar (Python ↔ Node)",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Formato do canal Python→Node",
+          "context": "Hoje `ocr-loader.ts` faz o Python ESCREVER json+markdown num temp dir (`mkdtemp ankinator-ocr-`) e o Node relê com `parseOdlOutput(outDir, pdfPath)`. O pacote LangChain devolve `Document[]` por página (page_content + metadata) — mais natural serializar como JSON. Define como o sidecar entrega os dados.",
+          "options": [
+            {
+              "id": "a",
+              "label": "JSON em stdout (Node lê o stdout)",
+              "description": "Python imprime um array `[{page_content, metadata}]` no stdout; Node faz JSON.parse. Sem arquivos temporários, contrato simples e testável. Risco: PDFs enormes geram stdout grande (buffer em memória) — aceitável p/ apostilas de concurso."
+            },
+            {
+              "id": "b",
+              "label": "Arquivos em temp dir (espelhar ocr-loader.ts)",
+              "description": "Python escreve `<base>.json`/`<base>.md` num mkdtemp; Node relê. Máxima consistência com o padrão já existente (ocr-loader), aguenta saídas grandes. Custo: mais I/O e limpeza de temp, e a saída LangChain (per-page) não casa 1:1 com o formato que `parseOdlOutput` espera (árvore ODL)."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a). Verifiquei no código: `parseOdlOutput` espera a árvore ODL (`json.kids`), e o LangChain devolve Document[] per-page — que NÃO é essa árvore. Logo a opção (b) reaproveitaria só o I/O do temp dir, nunca o parser, perdendo o suposto ganho de consistência. stdout elimina mkdtemp + cleanup, entrega um contrato determinístico testável por fixture (casa com Q-14a) e apostilas de concurso não geram stdout proibitivo. Simplicidade (Karpathy): menos I/O, menos estado em disco.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Variável do interpretador Python",
+          "context": "`ocr-loader.ts` usa `ODL_PYTHON` (pip `opendataloader-pdf[hybrid]`). O loader LangChain precisa de OUTRO pacote (`langchain-opendataloader-pdf`). Mesmo interpretador ou separado?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Reusar ODL_PYTHON",
+              "description": "Um único interpretador/venv com os dois pacotes. Menos configuração para o usuário. Exige que o mesmo Python tenha `opendataloader_pdf` E `langchain-opendataloader-pdf` instalados."
+            },
+            {
+              "id": "b",
+              "label": "Nova var ANKINATOR_LANGCHAIN_PYTHON",
+              "description": "Interpretador dedicado ao loader LangChain, com fallback p/ ODL_PYTHON se não setado. Permite venvs separados; mais flexível, porém mais uma var para documentar."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "Escolhido (b): ANKINATOR_LANGCHAIN_PYTHON com fallback p/ ODL_PYTHON. Única resposta que diverge da opção 'padrão' — justificada: o wrapper LangChain arrasta o stack `langchain-*`, que pode conflitar com o venv enxuto do OCR (`opendataloader-pdf[hybrid]`). A var dedicada habilita venv isolado SEM penalizar o caso comum: com o fallback, quem só setar ODL_PYTHON tem exatamente o comportamento da opção (a). Custo marginal = 1 var documentada; ganho = isolamento de dependências e zero risco de quebrar o OCR já funcional.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "activation-fallback",
+      "title": "Ativação opt-in & Fallback (PDF-02)",
+      "questions": [
+        {
+          "id": "Q-03",
+          "title": "Como ligar o loader LangChain",
+          "context": "Convenção do projeto: `ANKINATOR_PROVIDER=cli|api` (env global em config.ts). O OCR, em contraste, é por-request (`req.body.ocr` em api.ts:79). PDF-02 pede ativação por env/flag (opt-in). Qual gatilho?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Env seletor ANKINATOR_PDF_LOADER=node|langchain",
+              "description": "Espelha o padrão ANKINATOR_PROVIDER em config.ts. Default `node`. Decisão global, previsível, fácil de testar. Não permite escolher por upload sem reiniciar."
+            },
+            {
+              "id": "b",
+              "label": "Flag por-request em req.body",
+              "description": "Igual ao `ocr`: `loadDocument(path, { loader: 'langchain' })`. Permite escolher por PDF na UI. Custo: muda a assinatura de LoadOptions e exige UI/typing; mais superfície nesta fase."
+            },
+            {
+              "id": "c",
+              "label": "Env seletor + override por-request (ambos)",
+              "description": "Env define o default; req.body pode sobrepor. Mais poderoso, mais código. Provavelmente exagero p/ um loader opt-in inicial."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): ANKINATOR_PDF_LOADER=node|langchain, default node. Espelha a convenção JÁ existente em config.ts (ANKINATOR_PROVIDER=cli|api → seleção global por env, com default seguro). É previsível e testável pelo guard de Q-15a. A flag por-request (b) mudaria LoadOptions + UI + o tipo LoadedDocument que é DUPLICADO server/web — superfície demais p/ um loader opt-in inicial (contra a regra cirúrgica do Karpathy). (c) é exagero declarado no próprio enunciado. Custo de (a): exige reiniciar p/ trocar — aceitável nesta fase.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "Quando cair para o loader Node",
+          "context": "`isOcrAvailable()` testa `python -c 'import opendataloader_pdf'` e o loader Node lança erro se OCR indisponível (NÃO faz fallback — OCR é estrito). PDF-02 pede fallback AUTOMÁTICO p/ Node. Qual o gatilho do fallback?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Indisponível → fallback; erro em runtime → propaga",
+              "description": "Checa disponibilidade (import do pacote) como `isOcrAvailable`; se ausente, usa Node silenciosamente. Mas se o Python RODA e falha no meio (PDF corrompido), propaga o erro (não mascara bug do PDF). Previsível."
+            },
+            {
+              "id": "b",
+              "label": "Fallback em qualquer falha (indisponível OU erro)",
+              "description": "Qualquer problema no sidecar → tenta Node automaticamente. Mais robusto p/ o usuário, mas pode esconder bugs reais do sidecar e gastar tempo extraindo 2×."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): indisponibilidade → fallback; erro em runtime → propaga. Reaproveita o padrão de `isOcrAvailable()` (testa `import` do pacote): ausente → cai p/ Node em silêncio, atendendo o 'fallback automático' do PDF-02. Mas se o sidecar RODA e falha no meio (PDF corrompido, bug do pacote), propaga o erro em vez de mascará-lo e re-extrair 2× como (b) — preserva a depurabilidade e não esconde bugs reais. Coerente com a postura 'OCR estrito' já adotada no código (loadDocument lança quando OCR é pedido e indisponível).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Visibilidade de qual loader rodou",
+          "context": "`LoadedDocument` tem `usedOcr: boolean`. O tipo é DUPLICADO em server (core/types.ts) e web (src/types.ts) — anti-pattern conhecido; mudar exige editar os dois (lição da Phase 1, Pitfall 4). Como sinalizar o loader usado?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Só log no servidor (sem mudar o tipo)",
+              "description": "`console` indica `[ankinator] loader: langchain (fallback→node)`. Zero mudança de tipo, zero risco de divergência server/web. UI não mostra qual loader rodou."
+            },
+            {
+              "id": "b",
+              "label": "Campo `loader: 'node'|'langchain'` em LoadedDocument",
+              "description": "Transparência na UI (ex.: badge). Custo: estender o tipo nos DOIS arquivos no mesmo commit (server+web) + exporters/UI ignoram quando ausente, como SPEC-05. Mais superfície."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): só log no servidor. A lição da Phase 1 (Pitfall 4) é concreta: LoadedDocument está DUPLICADO em server/core/types.ts e web/src/types.ts, então estender o tipo (b) força editar os dois no mesmo commit, com risco real de divergência. Para um loader opt-in inicial, um log `[ankinator] loader: langchain (fallback→node)` dá observabilidade suficiente p/ debug com ZERO mudança de tipo e zero risco de drift. Gatilho de revisão p/ (b): quando a UI realmente precisar exibir o badge ao usuário final.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-06",
+          "title": "Interação com o OCR existente",
+          "context": "Já existe um caminho `ocr=true` (Python `--force-ocr`). O `langchain-opendataloader-pdf` envolve o MESMO OpenDataLoader e pode ter seu próprio modo OCR. Se o usuário pedir `ocr=true` E loader=langchain, o que acontece?",
+          "options": [
+            {
+              "id": "a",
+              "label": "OCR continua no caminho Python atual; LangChain ignora ocr nesta fase",
+              "description": "Mantém os dois sidecars independentes: `ocr=true` usa runOcrLoader como hoje; loader=langchain é o caminho text-layer. Se ambos pedidos, OCR (mais específico) vence. Menos acoplamento agora."
+            },
+            {
+              "id": "b",
+              "label": "LangChain assume o OCR também (unificar no novo sidecar)",
+              "description": "O script LangChain passa `--force-ocr`/opção equivalente quando `ocr=true`, aposentando runOcrLoader. Menos caminhos a longo prazo, mas reescreve um caminho que já funciona — risco de regressão fora do escopo desta fase."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): OCR fica no caminho Python atual; LangChain ignora `ocr` nesta fase. runOcrLoader (--force-ocr) já funciona e é independente; se o usuário pedir os dois, OCR (mais específico) vence. Unificar o OCR no novo sidecar (b) reescreveria um caminho que JÁ funciona = risco de regressão FORA do escopo da Phase 2. Mudança cirúrgica (Karpathy): não tocar o que não foi pedido. Unificação fica como decisão de uma fase futura, quando o sidecar LangChain estiver maduro.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "normalization",
+      "title": "Normalização → LoadedDocument (PDF-03, núcleo)",
+      "questions": [
+        {
+          "id": "Q-07",
+          "title": "Como derivar sections[] (o que o chunker consome)",
+          "context": "FATO CRÍTICO: `chunkDocument` (chunker.ts:54) usa SÓ `doc.sections[]` (id/title/markdown/charCount/pageStart-End). O loader Node monta sections por TÍTULO (buildSections em odl-parse.ts, fino). O LangChain devolve Documents por PÁGINA (PDF-01) — granularidade mais grossa. Como reconstruir sections boas?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Reparsear headings do markdown de cada página",
+              "description": "Concatena o page_content e roda uma passada estilo `buildSections` sobre o markdown (quebra em linhas `#`). Recupera fronteiras semânticas por título, mantendo a qualidade do chunking. Requer adaptar buildSections p/ entrada markdown (hoje lê a árvore JSON). MELHOR equilíbrio."
+            },
+            {
+              "id": "b",
+              "label": "Uma seção por página (page-as-section)",
+              "description": "Cada Document LangChain vira uma Section (title=`Página N`, markdown=page_content). Simples e fiel ao 'por página' do PDF-01. Custo: chunking mais grosso (empacota páginas inteiras por orçamento de chars, perde limites de assunto que o loader Node captura)."
+            },
+            {
+              "id": "c",
+              "label": "Pedir ao Python a árvore ODL e reusar parseOdlOutput",
+              "description": "O sidecar emite TAMBÉM o JSON cru do OpenDataLoader; Node reusa `parseOdlOutput` → estrutura IDÊNTICA ao loader Node. Máxima fidelidade, mas acopla aos internos do ODL e quase anula o motivo de usar LangChain (que entrega per-page)."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): reparsear headings do markdown por página. É a questão mais crítica e confirmei o fato no código: chunkDocument (chunker.ts) consome SÓ doc.sections[] (charCount/markdown/páginas) e quebra/empacota por fronteira de seção. (b) page-as-section deixa o chunking grosso e perde os limites de assunto — degrada diretamente a qualidade do card, que é o objetivo do produto (transformar texto em questões). (c) pedir a árvore ODL crua acopla aos internos do ODL e quase anula a razão de usar LangChain (que entrega per-page). (a) concatena os page_content e roda uma passada estilo buildSections sobre o markdown (quebra nas linhas `#`), reaproveitando a lógica que já existe em odl-parse, só adaptada p/ entrada markdown. Pré-requisito: Q-12a (markdown preserva headings).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Popular elements[] (inspeção/debug)",
+          "context": "`LoadedDocument.elements: DocElement[]` é usado p/ inspeção/depuração (comentário em types.ts) e como fallback do markdown em parseOdlOutput. O chunker NÃO usa elements. Quanto esforço investir?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mínimo: um DocElement por página (type 'text block')",
+              "description": "Cada página → 1 elemento {type:'text block', page, content}. Satisfaz o tipo sem trabalho extra; suficiente porque o chunker ignora elements. Pragmático."
+            },
+            {
+              "id": "b",
+              "label": "Reconstruir elements por heading/parágrafo do markdown",
+              "description": "Deriva headings/paragraphs do markdown p/ elements ricos (paridade com loader Node). Útil se a UI inspecionar elements; mais código sem ganho no pipeline atual."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): 1 DocElement 'text block' por página. types.ts confirma que `elements` existe só p/ inspeção/depuração e o chunker NÃO o usa. Reconstruir elements ricos (b) é código sem retorno no pipeline atual (YAGNI / simplicidade). O type 'text block' já está declarado em ElementType, então (a) satisfaz o contrato com esforço mínimo. Promover p/ (b) só se a UI passar a inspecionar elements no detalhe.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-09",
+          "title": "Montagem do markdown completo do documento",
+          "context": "`LoadedDocument.markdown` é 'markdown completo, em ordem de leitura, pronto p/ o LLM'. A partir de Documents por página, como juntar?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Concatenar páginas com linha em branco dupla",
+              "description": "`pages.map(p=>p.page_content).join('\\n\\n')` + `cleanMarkdown` (reusar de odl-parse) p/ colapsar linhas vazias. Simples, consistente com a limpeza atual. Sem marcadores de página no texto."
+            },
+            {
+              "id": "b",
+              "label": "Concatenar com marcador de página (ex.: `<!-- p.N -->`)",
+              "description": "Insere um comentário/âncora por página. Ajuda atribuição de fonte/depuração, mas injeta ruído no markdown enviado ao LLM (a fonte já vem de pageStart/End das seções)."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): join('\\n\\n') + reuso de cleanMarkdown. types.ts diz que `markdown` é o texto em ordem de leitura pronto p/ o LLM. O marcador de página (b) injeta ruído no que vai ao modelo, e a atribuição de fonte já é resolvida por pageStart/pageEnd das seções — o marcador seria redundante. cleanMarkdown JÁ existe em odl-parse (colapsa linhas vazias e linhas de tabela sem texto), então (a) reaproveita a limpeza atual e mantém consistência entre os dois loaders.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "numPages / title / fileName a partir da metadata",
+          "context": "parseOdlOutput lê `number of pages`, `title`, `file name` do JSON ODL. Os Documents LangChain trazem metadata por página (geralmente `source`, `page`). De onde tirar os campos do topo?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Derivar: numPages=max(page)+1, fileName=basename(pdf), title=primeiro heading|null",
+              "description": "Calcula numPages pela maior metadata.page; fileName do caminho; title do 1º heading do markdown (ou null). Não depende de campos que o LangChain pode não expor. Robusto."
+            },
+            {
+              "id": "b",
+              "label": "Confiar na metadata do pacote (page count/title se vierem)",
+              "description": "Usa campos da metadata quando presentes, com os mesmos defaults como fallback. Menos código se o pacote fornecer; arriscado se a metadata variar entre versões."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): derivar numPages=max(metadata.page)+1, fileName=basename(pdf), title=1º heading|null. parseOdlOutput lê 'number of pages'/'title'/'file name' do JSON ODL — campos que o LangChain pode NÃO expor (a metadata per-page costuma trazer só `source` e `page`). Derivar dos dados que sempre existem é robusto à variação de versão do pacote; confiar na metadata (b) é frágil exatamente onde o contrato é menos estável. Coerente com Q-13a (pin de versão) p/ reduzir surpresas.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "python-script",
+      "title": "Script Python & opções do loader (PDF-01)",
+      "questions": [
+        {
+          "id": "Q-11",
+          "title": "Interface CLI do script (tools/odl_langchain_loader.py)",
+          "context": "REQUIREMENTS fixa o caminho `tools/odl_langchain_loader.py`. LoadOptions hoje tem `pages` e `password` (document-loader.ts:20). Quais flags o script aceita?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Espelhar LoadOptions: <pdf> [--pages] [--password]",
+              "description": "Argumentos 1:1 com o que o Node já passa ao OCR (runOcrLoader passa --pages/--password). Consistente, sem inventar superfície nova."
+            },
+            {
+              "id": "b",
+              "label": "Mínimo: só <pdf> nesta fase",
+              "description": "Ignora pages/password por ora (apostilas raramente protegidas). Mais simples; mas diverge do contrato do loader Node e exige TODO p/ paridade depois."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): espelhar LoadOptions — <pdf> [--pages] [--password]. NÃO é superfície especulativa: LoadOptions (document-loader.ts:20) já define pages/password e loadDocument os repassa; runOcrLoader já os passa ao sidecar. Se o script LangChain ignorasse essas flags (b), teríamos um bug SILENCIOSO — o usuário pede `pages: '1,3'` e recebe o documento inteiro. Espelhar fecha esse gap de correção e mantém o contrato consistente entre os caminhos, sem deixar um TODO de paridade. Custo de aceitar 2 flags opcionais é trivial.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-12",
+          "title": "Granularidade/modo do langchain-opendataloader-pdf",
+          "context": "O pacote pode expor modo de saída (texto plano vs markdown; por página vs por elemento). PDF-01 pede 'texto/markdown + metadata por página'. Qual configurar?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Markdown por página (mode markdown se disponível)",
+              "description": "Pede markdown (preserva headings/tabelas → essencial p/ reconstruir sections em Q-07a). Alinha com o pipeline que já espera markdown. Preferido."
+            },
+            {
+              "id": "b",
+              "label": "Texto plano por página",
+              "description": "Mais simples e portável entre versões, mas perde estrutura de heading/tabela — degrada chunking e tabelas de provas. Não recomendado p/ apostilas."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): markdown por página. PDF-01 pede 'texto/markdown + metadata por página' e a decisão de Q-07a DEPENDE de headings `#` presentes no texto p/ reconstruir sections. Texto plano (b) descartaria headings e tabelas — degradaria tanto o chunking semântico quanto a captura de tabelas de provas, que são críticas em apostila de concurso. Markdown alinha com o pipeline, que já espera markdown em todo o fluxo (LoadedDocument.markdown, Section.markdown, SemanticChunk.markdown).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Dependências Python: instalação & versão",
+          "context": "O pacote NÃO é dependência npm (igual ao OCR: `pip install` manual, documentado em INTEGRATIONS.md). Como registrar a dependência do sidecar?",
+          "options": [
+            {
+              "id": "a",
+              "label": "tools/requirements.txt (pin) + nota no README/INTEGRATIONS",
+              "description": "`langchain-opendataloader-pdf==<x.y>` num requirements.txt versionado + instrução `pip install -r tools/requirements.txt`. Reprodutível e explícito."
+            },
+            {
+              "id": "b",
+              "label": "Só instrução de prosa (pip install ...), sem requirements.txt",
+              "description": "Espelha o estilo atual do OCR (só uma linha de pip na doc). Menos arquivos; menos reprodutível (sem pin de versão)."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): tools/requirements.txt com pin + nota no README/INTEGRATIONS. O sidecar LangChain tem maior risco de drift de API que o OCR (em Q-10 e Q-12 decidimos justamente NÃO confiar em metadata/modo que podem variar entre versões); o pin de versão reforça essa estabilidade do contrato e torna a instalação reprodutível. É um leve desvio do estilo 'só prosa pip' do OCR, mas justificado: o custo é um arquivo versionado, o ganho é não quebrar silenciosamente quando o pacote publicar uma versão nova com saída diferente.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "verification",
+      "title": "Verificação & não-regressão",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Estratégia de teste sem forçar Python",
+          "context": "Não há testes automatizados (TESTING.md). A Phase 1 estabeleceu a disciplina de 'asserção CLI-free' (smoke-runner --assert-args) p/ não depender de processos externos no CI. Como verificar o loader LangChain?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Unit puro da normalização (fixture Document[] → LoadedDocument) + smoke opt-in",
+              "description": "Captura um JSON de exemplo (Document[]) como fixture e testa a função de normalização SEM Python — determinístico, roda sempre. Um `smoke-langchain-loader.ts` real fica gated em disponibilidade (como smoke-loader). Espelha o padrão da Phase 1."
+            },
+            {
+              "id": "b",
+              "label": "Só smoke E2E quando ODL_PYTHON + pacote presentes",
+              "description": "Confia no smoke real com PDF. Cobre o caminho ponta-a-ponta, mas não roda sem Python → sem rede de segurança no CI e p/ a normalização."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): unit puro da normalização (fixture Document[] → LoadedDocument) + smoke opt-in gated em disponibilidade. As decisões de normalização (Q-07a/Q-08a/Q-09a/Q-10a) formam uma função PURA, testável sem Python — uma rede de segurança determinística que roda sempre no CI, exatamente a 'asserção CLI-free' que a Phase 1 estabeleceu (smoke-runner --assert-args). O smoke real fica gated em disponibilidade, espelhando smoke-loader.ts. (b) só E2E não roda no CI → deixa a parte mais sujeita a regressão (a normalização) sem cobertura.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Garantia de não-regressão do caminho Node (default)",
+          "context": "Constraint do projeto: 'o fluxo atual upload→extract→gerar→exportar deve continuar funcionando SEM Python'. Com env não setada, nada pode mudar. Como travar isso?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Asserção: env unset → loadDocument usa caminho Node byte-idêntico",
+              "description": "Um guard determinístico confirma que, sem ANKINATOR_PDF_LOADER/ODL_PYTHON, `loadDocument` chama exatamente o caminho `@opendataloader/pdf` de hoje (sem desvio). Espelha o guard SPEC-01 da Phase 1."
+            },
+            {
+              "id": "b",
+              "label": "Confiar na revisão + smoke do loader Node existente",
+              "description": "Reusa smoke-loader.ts no PDF e revisão de código. Mais leve; menos garantia automatizada de que o default não foi tocado."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Escolhido (a): guard determinístico de que env unset → loadDocument usa o caminho @opendataloader/pdf de hoje, sem desvio. É a constraint dura do projeto (o fluxo upload→extract→gerar→exportar deve rodar SEM Python, e nada muda com a env não setada). Como Q-03a introduz um branch NOVO dentro de loadDocument, provar automaticamente que o default ficou intocado é o seguro contra a regressão mais perigosa desta fase. Espelha o guard SPEC-01 da Phase 1. (b) revisão+smoke é mais leve, mas não garante automaticamente que o caminho default não foi alterado.",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}
