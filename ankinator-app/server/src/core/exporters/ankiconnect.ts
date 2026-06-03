@@ -67,8 +67,8 @@ export interface PushResult {
   ids: (number | null)[];
 }
 
-function tagsDaQuestao(q: Questao, padrao: string[]): string[] {
-  const tags = new Set<string>([`ankinator`, q.tipo, ...padrao]);
+export function tagsDaQuestao(q: Questao, padrao: string[]): string[] {
+  const tags = new Set<string>([`ankinator`, q.tipo, ...padrao, ...(q.tags ?? [])]);
   if (q.metadata?.banca) tags.add(q.metadata.banca.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
   if (q.metadata?.ano) tags.add(String(q.metadata.ano));
   return [...tags].filter(Boolean);
@@ -97,10 +97,12 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
   const padrao = opts.tagsPadrao ?? [];
   const fonteBase = opts.fonte ? opts.fonte.replace(/\.[^./]+$/, '') : undefined;
 
-  await invoke('createDeck', { deck: opts.deck }, url);
+  // criar um deck para cada q.deck distinto (fallback a opts.deck) — Assumption A1
+  const subDecks = new Set(questoes.map((q) => q.deck ?? opts.deck));
+  for (const d of subDecks) await invoke('createDeck', { deck: d }, url);
 
   const notes = questoes.map((q) => ({
-    deckName: opts.deck,
+    deckName: q.deck ?? opts.deck,
     modelName: 'Basic',
     fields: {
       Front: escapeHtml(q.pergunta).replace(/\n/g, '<br>'),

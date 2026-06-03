@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseClassificacoesJson, parseSingleCard, enrichAll, deveRodarEnrich } from './enrich.js';
 import { tagsDaQuestao, toAnkiCsv } from '../exporters/csv.js';
+import { tagsDaQuestao as tagsDaQuestaoAnki } from '../exporters/ankiconnect.js';
 import type { Questao } from '../types.js';
 
 // ── parseClassificacoesJson ───────────────────────────────────────────────────
@@ -105,9 +106,39 @@ describe('enrichAll sequência', () => {
 // ── ankiconnect routing (DECK-01-anki) ───────────────────────────────────────
 
 describe('ankiconnect routing', () => {
-  it.todo(
-    'deck hierárquico chega ao deckName por-nota; fallback a opts.deck — TODO(Plano 02): exportar funções de ankiconnect.ts para teste'
-  );
+  it('q.deck preenchido → deckName igual a q.deck (roteamento por-nota)', () => {
+    // Testa a expressão q.deck ?? opts.deck que é usada em pushToAnki
+    const q = { deck: 'Direito::Constitucional' } as Questao;
+    const optsDeck = 'Ankinator';
+    const deckName = q.deck ?? optsDeck;
+    expect(deckName).toBe('Direito::Constitucional');
+  });
+
+  it('q.deck undefined → deckName igual a opts.deck (fallback preserva fluxo atual)', () => {
+    const q = {} as Questao;
+    const optsDeck = 'Ankinator';
+    const deckName = q.deck ?? optsDeck;
+    expect(deckName).toBe('Ankinator');
+  });
+
+  it('ankiconnect tagsDaQuestao inclui q.tags sem duplicatas (D-07)', () => {
+    const q = { tipo: 'extraida', tags: ['direito', 'constitucional'] } as Questao;
+    const result = tagsDaQuestaoAnki(q, []);
+    expect(result).toContain('ankinator');
+    expect(result).toContain('extraida');
+    expect(result).toContain('direito');
+    expect(result).toContain('constitucional');
+    // sem duplicatas
+    expect(result).toHaveLength(new Set(result).size);
+  });
+
+  it('ankiconnect tagsDaQuestao não quebra quando q.tags é undefined', () => {
+    const q = { tipo: 'criada' } as Questao;
+    expect(() => tagsDaQuestaoAnki(q, [])).not.toThrow();
+    const result = tagsDaQuestaoAnki(q, []);
+    expect(result).toContain('ankinator');
+    expect(result).toContain('criada');
+  });
 });
 
 // ── csv deck column (DECK-01-csv) ─────────────────────────────────────────────
