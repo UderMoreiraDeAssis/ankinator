@@ -1,0 +1,477 @@
+{
+  "phase": "03-classificador-de-deck-card-educativo",
+  "generated_at": "2026-06-03T14:12:45Z",
+  "stats": {
+    "total": 18,
+    "answered": 18,
+    "chat_more": 18,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "pipeline-enrichall",
+      "title": "A. Pipeline & enrichAll() (PIPE-01)",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Gatilho do enrich",
+          "context": "App.tsx tem stepper fixo upload→structure→generating→review. /generate cria um job assíncrono + SSE (api.ts:108-162). PIPE-01 pede a fase enrichAll() APÓS generateAll(), reusando job/SSE. Questão: o enrich roda automaticamente colado na geração ou é um passo separado acionado pelo usuário?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Encadeado no mesmo job de /generate",
+              "description": "Quando há toggles ligados, o job de generate roda generateAll()→enrichAll() em sequência e só emite 'done' no fim. UI muda pouco; um job só. Risco: review demora mais p/ aparecer."
+            },
+            {
+              "id": "b",
+              "label": "Endpoint /enrich separado + novo job/SSE",
+              "description": "generate termina e mostra os cards crus; um botão/novo step dispara /enrich (novo job, novo SSE) sobre as questões. Mais controle e re-rodável; mais superfície (novo endpoint, novo job)."
+            },
+            {
+              "id": "c",
+              "label": "/generate estendido, job único, mas enrich opcional inline",
+              "description": "Mesmo endpoint /generate ganha as flags de enrich; internamente sequencial. Sem novo endpoint, mas mistura responsabilidades."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "PIPE-01 pede explicitamente 'reusando o job/SSE' — encadear generateAll()→enrichAll() no mesmo job é a leitura literal e a menor superfície (sem novo endpoint/job, que é território de Phase 5). Com os toggles desligados o enrichAll() não roda e /generate fica byte-idêntico ao atual (PIPE-03/não-regressão). O risco 'review demora mais' é mitigado pelo progresso via SSE (Q-02a/Q-16b). Rejeito (b) por adicionar endpoint+job sem ganho exigido pela fase, e (c) por misturar responsabilidades no /generate.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Tipo de progresso do enrich",
+          "context": "store.ts define JobEvent = {progress: ChunkProgress} | {done} | {error}, e ChunkProgress é por-chunk (index/total/sectionTitles/questoesNoBloco). O enrich é por-card e por-estágio (classificar, card-builder), não por-chunk. Como reportar progresso via SSE?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Novo evento 'enrich-progress' no JobEvent",
+              "description": "Estende a union com {type:'enrich-progress', data:{estagio, index, total}}. generate fica intacto (não-regressão); UI distingue fases. Recomendado p/ clareza."
+            },
+            {
+              "id": "b",
+              "label": "Reusar ChunkProgress genérico",
+              "description": "Re-rotula index/total p/ cards e usa sectionTitles p/ nome do estágio. Zero mudança de tipo, mas semântica torta."
+            },
+            {
+              "id": "c",
+              "label": "Job separado com EnrichProgress próprio",
+              "description": "Casado com Q-01b (endpoint separado): tipo de progresso independente, isolado de generate."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Estender a union com {type:'enrich-progress'} mantém ChunkProgress de generate intacto (verificado em store.ts: progress|done|error) — zero risco de regressão no progresso da geração e semântica clara (estágio/index/total). (b) re-rotular ChunkProgress gera 'semântica torta' e acopla os dois fluxos; (c) só faz sentido com endpoint separado (Q-01b, rejeitado). Coerente com Q-01a e Q-16b.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Onde vive enrichAll()",
+          "context": "generation.ts tem generateAll(provider, chunks, opts, onProgress) — loop sequencial com isolamento de erro por-chunk. O orquestrador 'inteligente' por-card é Phase 5 (ORCH-*). Aqui é só a fase enrichAll() básica (rodar estágios ligados em ordem).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Novo módulo core/specialists/enrich.ts",
+              "description": "enrichAll(questoes, opts, onProgress) num módulo próprio dos especialistas; Phase 5 evolui ali p/ o orquestrador. Separa generation (chunk→questão) de enrich (questão→questão enriquecida)."
+            },
+            {
+              "id": "b",
+              "label": "Adicionar enrichAll() em generation.ts",
+              "description": "Ao lado de generateAll(), reusando ChunkProgress/padrões locais. Menos arquivos; mistura duas responsabilidades no mesmo módulo."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Criar core/specialists/enrich.ts separa generation (chunk→questão) de enrich (questão→questão enriquecida), alinhado ao diretório specialists/ já criado na Phase 1 (SPEC-01) e ao ponto onde o orquestrador da Phase 5 (ORCH-*) vai evoluir. Diluir enrichAll() dentro de generation.ts misturaria duas responsabilidades no módulo mais crítico do fluxo legado, aumentando risco de regressão. Single Responsibility favorece (a).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "Modelo do CLI nos especialistas",
+          "context": "runner.ts (runClaudeCli) usa default model 'sonnet'; CliProvider passa opts.model||this.model. Classificar/reescrever cards é tarefa de raciocínio. Qual modelo p/ os especialistas desta fase?",
+          "options": [
+            {
+              "id": "a",
+              "label": "sonnet (default do runner)",
+              "description": "Mesma cota/velocidade da geração atual; equilíbrio custo×qualidade. Recomendado salvo necessidade comprovada."
+            },
+            {
+              "id": "b",
+              "label": "Configurável por env (default sonnet)",
+              "description": "Ex.: ANKINATOR_SPECIALIST_MODEL; permite testar opus em card-builder sem mudar código. Mais superfície de config."
+            },
+            {
+              "id": "c",
+              "label": "opus p/ card-builder, sonnet p/ classificador",
+              "description": "card-builder (reescrita fiel) ganha modelo mais forte; classificar (mais mecânico) fica em sonnet. Mais quota/lento."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "sonnet é o default do runner (confirmado runner.ts) — mesma cota/velocidade da geração atual e equilíbrio custo×qualidade. (b) env-config é flexibilidade especulativa não pedida (princípio: mínimo código, sem configurabilidade não solicitada) e (c) opus multiplica consumo da quota — o gargalo do projeto — sem necessidade comprovada nesta fase. Decisão reversível: se a qualidade do card-builder se mostrar fraca em smoke real, sobe-se o modelo pontualmente.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "deck-classifier",
+      "title": "B. Classificador de Deck + Tags (DECK-01, DECK-02)",
+      "questions": [
+        {
+          "id": "Q-05",
+          "title": "Granularidade da chamada do classificador",
+          "context": "deck-classifier.md classifica 'cada card' numa hierarquia Matéria::Assunto::Subtópico. DECK-01 fala 'para o conjunto de cards' (coerência). ORCH-02 (Phase 5) já antecipa 'classificar o deck inteiro numa chamada' p/ poupar quota. runner = 1 spawn por chamada.",
+          "options": [
+            {
+              "id": "a",
+              "label": "UMA chamada com todos os cards",
+              "description": "Envia [{id, pergunta, resposta}] de todos os cards numa só chamada; retorna a taxonomia coerente + deck/tags por id. Coerência máxima + poupa quota (antecipa ORCH-02). Recomendado."
+            },
+            {
+              "id": "b",
+              "label": "Por-chunk/seção",
+              "description": "Agrupa cards por bloco de origem; 1 chamada por chunk. Coerência média; mais spawns que (a)."
+            },
+            {
+              "id": "c",
+              "label": "Por-card (1 spawn/card)",
+              "description": "Isolamento máximo mas coerência fraca (decks divergentes p/ mesmo tema) e estoura quota. Não recomendado."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "UMA chamada com todos os cards atende a coerência exigida por DECK-01 ('para o conjunto de cards' → taxonomia única e consistente) e poupa a quota da assinatura, que é o gargalo declarado do projeto — além de antecipar barato o ORCH-02. (c) por-card estoura quota e gera decks divergentes p/ o mesmo tema; (b) por-chunk é meio-termo sem a coerência global. Mapeia deck/tags de volta por id (ver Q-06a).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-06",
+          "title": "Saída estruturada do classificador",
+          "context": "generation.ts já tem parseQuestoesJson() que tolera cercas ```json e recorta {questoes:[...]}. Precisamos mapear deck/tags de volta a cada card por id (sem confiar em ordem).",
+          "options": [
+            {
+              "id": "a",
+              "label": "JSON {classificacoes:[{id, deck, tags}]} por id",
+              "description": "Parser dedicado (estilo parseQuestoesJson) casa por id; robusto a reordenação/omissão. Recomendado."
+            },
+            {
+              "id": "b",
+              "label": "Array posicional alinhado à entrada",
+              "description": "Confia na ordem; mais simples mas frágil se o LLM reordenar/pular."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "JSON {classificacoes:[{id,deck,tags}]} casado por id é robusto a reordenação/omissão do LLM e reusa o padrão tolerante já existente (parseQuestoesJson recorta {questoes:[...]} e remove cercas ```json). Como a classificação é uma única chamada com muitos cards (Q-05a), confiar na ordem posicional (b) é frágil e quebraria silenciosamente se o LLM pular/reordenar um item.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Merge das tags do classificador",
+          "context": "csv.ts e ankiconnect.ts já têm tagsDaQuestao(q, padrao) que junta q.tipo + metadata.banca/ano + tagsPadrao. DECK-02 adiciona banca/ano/nivel/tema em q.tags. Risco de duplicação/conflito.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Exporters UNEM q.tags ao set existente",
+              "description": "tagsDaQuestao passa a incluir ...(q.tags??[]) no Set (dedup automático). Classificador grava em q.tags; lógica de export atual preservada. Recomendado."
+            },
+            {
+              "id": "b",
+              "label": "q.tags substitui a lógica do exporter",
+              "description": "Classificador vira fonte única de tags; remove derivação de metadata no export. Mais limpo, mas perde tags p/ cards não-enriquecidos."
+            },
+            {
+              "id": "c",
+              "label": "q.tags só informativo (UI), export inalterado",
+              "description": "Mostra na revisão mas não exporta. Menor risco, mas DECK-02 fica meio inerte no Anki."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Verificado: hoje tagsDaQuestao() (csv.ts e ankiconnect.ts) monta o Set a partir de q.tipo + tagsPadrao (+ banca/ano no ankiconnect) e NÃO inclui q.tags. Unir ...(q.tags??[]) ao Set existente dá dedup automático, preserva toda a lógica de export atual (não-regressão) e faz DECK-02 chegar de fato ao Anki. (b) substituir a derivação perderia tags de cards não-enriquecidos; (c) só-UI deixaria DECK-02 inerte no Anki. Mudança aditiva e cirúrgica.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Deck por-card no export",
+          "context": "Hoje ankiconnect.ts usa UM opts.deck p/ TODAS as notas (deckName: opts.deck) e cria 1 deck; csv.ts NÃO tem coluna Deck (só Frente/Verso/Tags). DECK-01 produz deck hierárquico POR-CARD em q.deck. Critério de sucesso da fase: 'cards recebem deck hierárquico'.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Export roteia por-card via q.deck",
+              "description": "AnkiConnect cria cada subdeck e usa q.deck quando presente; CSV ganha coluna Deck. Fallback p/ o deck único informado quando q.deck ausente. Faz DECK-01 ficar TRUE ponta-a-ponta."
+            },
+            {
+              "id": "b",
+              "label": "Deck único; q.deck vira tag/prefixo",
+              "description": "Mantém deckName único; q.deck exportado como tag (ex.: deck::Direito::Atos). Menos mudança no export; hierarquia some no Anki."
+            },
+            {
+              "id": "c",
+              "label": "Adiar wiring de export p/ Phase 5",
+              "description": "Classificador grava q.deck (visível na revisão) mas export só consome em Phase 5. Risco: DECK-01 não fica verificável agora."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "O critério de sucesso 1 da fase exige que 'os cards recebem deck hierárquico' ponta-a-ponta — só (a) torna DECK-01 verificável agora. AnkiConnect cria cada subdeck e usa q.deck quando presente, com fallback ao opts.deck único quando ausente; CSV ganha coluna Deck ADITIVA com o mesmo fallback, preservando o import default (não-regressão PIPE-03: com toggles off, q.deck é undefined → comportamento equivalente ao deck único atual). (c) adiar p/ Phase 5 deixaria DECK-01 não-verificável nesta fase; (b) joga a hierarquia fora no Anki.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "card-builder",
+      "title": "C. Construtor de Card Educativo (CARD-01, CARD-02)",
+      "questions": [
+        {
+          "id": "Q-09",
+          "title": "Card-builder pode dividir 1→N cards?",
+          "context": "CARD-01 = minimum information principle → cards atômicos; card-builder.md diz explicitamente 'divida em cards separados'. Mas o enrich muta a lista existente (ids via crypto.randomUUID; review UI itera por id; dropped/edit por id em App.tsx).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Permite split 1→N",
+              "description": "card-builder retorna 1..N cards por entrada; enrich substitui o original pelos derivados (novos ids; herda pageStart/pageEnd/tipo/deck/tags). Atende atomicidade de verdade; exige cuidado com ids/provenance."
+            },
+            {
+              "id": "b",
+              "label": "Sem split nesta fase (1→1)",
+              "description": "Reescreve in-place; atomicidade só via clareza/cloze, sem multiplicar cards. Mais simples e estável; split fica p/ depois."
+            },
+            {
+              "id": "c",
+              "label": "Split só p/ 'criada'",
+              "description": "Cards 'criada' podem dividir; 'extraida' (questão de prova) nunca divide (preserva o item original)."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "Split 1→N só p/ 'criada'; 'extraida' nunca divide (preserva o item de prova — constraint dura de fidelidade). Que split ESTÁ no escopo da fase é confirmado por Q-18a, que cita 'split' nos testes unitários. O risco de id-churn (review/dropped/edit por id em App.tsx) é mitigado pela ordem: o enrich roda ANTES da review (Q-01a), então os ids derivados já existem quando a CardTable renderiza. Os derivados herdam pageStart/pageEnd/tipo/deck/tags. (a) split irrestrito violaria a fidelidade de 'extraida'; (b) sem split contraria card-builder.md ('divida em cards separados') e o core value de cards atômicos. (c) é a síntese que honra a intenção dupla do usuário (aproveitar prontas intactas + criar atômicas).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "Card-builder aplica-se a 'extraida'?",
+          "context": "tipo 'extraida' = questão de prova já existente, fidelidade total (preserva enunciado/gabarito). card-builder.md manda preservar [EXTRAÍDA]. tipo 'criada' = derivada dos conceitos.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Só reescreve 'criada'",
+              "description": "'extraida' passa intacta (enunciado/gabarito de prova preservados). card-builder atua só em 'criada'. Mais seguro p/ fidelidade."
+            },
+            {
+              "id": "b",
+              "label": "Ambas, mas 'extraida' só ajusta o verso",
+              "description": "Em 'extraida' nunca muda pergunta/gabarito; só acrescenta explicação curta + fonte no verso. 'criada' reescrita livre."
+            },
+            {
+              "id": "c",
+              "label": "Reescreve ambas livremente",
+              "description": "Atomicidade aplicada a tudo. Maior risco de distorcer questão de prova."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "CARD-02 exige explicação curta + fonte no verso de TODOS os cards, então 'extraida' não pode passar 100% intacta — mas a fidelidade da prova proíbe alterar enunciado/gabarito. (b) resolve: em 'extraida' nunca muda pergunta/gabarito, só acrescenta explicação + fonte no verso; em 'criada' a reescrita é livre (e pode dividir, Q-09c). (a) deixaria 'extraida' sem o verso educativo de CARD-02; (c) reescrever 'extraida' livremente distorceria a questão de prova. Casa com Q-09c e Q-11a.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Onde guardar explicação + fonte (CARD-02)",
+          "context": "Questao NÃO tem campo 'explicacao' (SPEC-05 adicionou só deck/tags/mnemonico/mnemonicoSvg). O verso é montado no export: csv.ts/ankiconnect.ts versoHtml() usa q.resposta + fonte derivada de pageStart. Pitfall conhecido: tipo Questao é duplicado server/web.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Embutir explicação na própria q.resposta",
+              "description": "card-builder devolve resposta já com 'fato + explicação curta'; fonte continua derivada de pageStart pelo exporter. ZERO mudança de tipo (evita Pitfall do tipo duplicado). Recomendado."
+            },
+            {
+              "id": "b",
+              "label": "Adicionar campo explicacao? ao Questao",
+              "description": "Novo campo opcional espelhado server+web no mesmo commit (como SPEC-05); exporters renderizam explicação separada. Mais estruturado; toca o tipo duplicado."
+            },
+            {
+              "id": "c",
+              "label": "Explicação inline + fonte explícita do card",
+              "description": "Além de embutir explicação na resposta, card-builder também devolve a fonte textual (ex.: 'art. 37, CF') quando o material indicar — exige campo ou convenção no verso."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Embutir 'fato + explicação curta' na própria q.resposta dá ZERO mudança no tipo Questao — evitando o pitfall conhecido do tipo duplicado server+web (que exigiria espelhar campo nos dois no mesmo commit). A fonte continua derivada de pageStart pelo versoHtml() existente, cobrindo CARD-02 sem nova superfície. (b)/(c) adicionam campo/contrato e tocam o tipo duplicado sem necessidade — a explicação inline já satisfaz o critério 'explicação curta + fonte no verso'. Composição limpa com Q-10b (verso = resposta enriquecida).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-12",
+          "title": "Granularidade da chamada do card-builder",
+          "context": "card-builder reescreve cards individualmente, mas batch poupa spawns (quota). generateAll isola erro por-chunk. ORCH-02 (batching) é Phase 5, mas a granularidade aqui já afeta quota.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Por-card (1 spawn/card)",
+              "description": "Isolamento de erro natural; split 1→N direto; parsing simples. Mais spawns = mais quota/lento."
+            },
+            {
+              "id": "b",
+              "label": "Batch de N cards por chamada",
+              "description": "Poupa quota; parsing + split por id mais complexo; 1 erro afeta o lote. Antecipa ORCH-02."
+            },
+            {
+              "id": "c",
+              "label": "Por-chunk (cards do mesmo bloco juntos)",
+              "description": "Contexto compartilhado da seção ajuda a reescrita; granularidade média de quota."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Por-card dá isolamento de erro natural (casa com Q-13a, espelhando generateAll), parsing simples e split 1→N direto (Q-09c). O batching que pouparia quota é explicitamente ORCH-02 / Phase 5 — antecipá-lo aqui (b) traria parsing+split por id mais complexo e faria '1 erro derrubar o lote', contrariando Q-13a. O custo de quota do per-card fica contido porque o card-builder é default-OFF (Q-15b), opt-in consciente. Otimização de quota fica onde pertence: o orquestrador da Phase 5.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Isolamento de erro no enrich",
+          "context": "generateAll() captura erro por-chunk, registra em erros[] e segue (nunca derruba o job inteiro). O enrich deve seguir a mesma postura?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Isola por-card/estágio; mantém original",
+              "description": "Falha num estágio → o card fica sem aquele enriquecimento (mantém o conteúdo cru), erro registrado no progresso. Nunca perde card. Recomendado (espelha generateAll)."
+            },
+            {
+              "id": "b",
+              "label": "Falha aborta o job de enrich",
+              "description": "Qualquer erro de estágio derruba o enrich. Mais simples, menos resiliente."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Espelha a postura provada de generateAll() (captura erro por-chunk em erros[] e segue, nunca derruba o job). Falha num estágio → o card mantém o conteúdo cru e o erro é registrado no progresso (enrich-progress, Q-02a); nunca se perde card. (b) abortar o job inteiro é frágil e desperdiça o trabalho já feito. Consistência com o padrão existente reduz risco e custo cognitivo.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "ui-toggles",
+      "title": "D. UI, Toggles & Progresso (PIPE-02)",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Onde ficam os toggles do modo educativo",
+          "context": "StructurePanel.tsx já tem checkboxes (incluirExtraidas/incluirCriadas) + slider maxPerChunk antes de gerar. PIPE-02 pede toggles do modo 'educativo' (classificar deck, card educativo). Mnemônico/imagem são Phase 4.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bloco 'Modo educativo' no StructurePanel",
+              "description": "Junto dos controles de geração, antes do botão Gerar: ☑ Classificar deck+tags, ☑ Card educativo. Coerente com a UI atual; tudo numa tela."
+            },
+            {
+              "id": "b",
+              "label": "Novo painel de enrich pós-geração",
+              "description": "Casado com Q-01b: toggles aparecem após gerar os cards crus, antes de disparar /enrich. Permite decidir vendo os cards."
+            },
+            {
+              "id": "c",
+              "label": "Toggles na tela de revisão (sob demanda)",
+              "description": "Botões 'Classificar' / 'Tornar atômico' na própria review, re-rodáveis por card/lote."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "O bloco 'Modo educativo' (☑ Classificar deck+tags, ☑ Card educativo) no StructurePanel é coerente com os controles de geração que já vivem ali (incluirExtraidas/incluirCriadas + slider maxPerChunk), antes do botão Gerar — e casa com o job único encadeado (Q-01a), onde os toggles precisam ser decididos ANTES de gerar. (b)/(c) acoplam-se aos fluxos pós-geração/sob-demanda (Q-01b/Q-14c) que foram rejeitados. Tudo numa tela, mínima mudança.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Defaults dos toggles educativos",
+          "context": "Core value = maximizar retenção via assinatura (sem custo por token), MAS a cadeia por-card multiplica chamadas ao CLI (quota da assinatura é o gargalo, ver Blockers). 'Defaults inteligentes' é requisito de PIPE-02.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Ambos LIGADOS por default",
+              "description": "Retenção é o core value; o modo educativo é o diferencial. Aceita o custo de quota como padrão. O usuário desliga se quiser rapidez."
+            },
+            {
+              "id": "b",
+              "label": "Classificar ligado, card educativo desligado",
+              "description": "Classificar é barato (1 chamada p/ tudo, se Q-05a); card educativo multiplica chamadas. Default equilibra valor×quota."
+            },
+            {
+              "id": "c",
+              "label": "Ambos desligados (opt-in consciente)",
+              "description": "Fluxo atual continua o default absoluto; modo educativo é escolha explícita. Mais conservador com quota; menos 'wow' por padrão."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "'Defaults inteligentes' (PIPE-02) sob a restrição de quota: classificar LIGADO (1 chamada barata p/ todo o deck, Q-05a; alto valor — deck+tags saem prontos) e card educativo DESLIGADO (multiplica chamadas por-card, Q-12a — o multiplicador de quota). Entrega valor 'de fábrica' sem arriscar a quota; quem quer atomicidade liga conscientemente. (a) ambos on arrisca a quota por padrão; (c) ambos off subtrai valor desnecessariamente do classificador, que é barato. Equilíbrio valor×quota.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-16",
+          "title": "Progresso do enrich no Stepper",
+          "context": "Stepper.tsx tem 4 passos fixos: upload/structure/generating/review. ProgressPanel mostra progresso por-chunk durante 'generating'. O enrich precisa de feedback visual.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Novo step 'Enriquecer' entre gerar e revisar",
+              "description": "Stepper ganha 5º passo; painel de progresso por estágio (classificando.../reescrevendo...). Mais claro p/ o usuário; toca o Stepper."
+            },
+            {
+              "id": "b",
+              "label": "Dentro de 'generating' (continua o painel)",
+              "description": "Após gerar, o mesmo painel mostra as fases de enrich antes de ir p/ review. Sem novo step; um fluxo só (casa com Q-01a)."
+            },
+            {
+              "id": "c",
+              "label": "Sob demanda na 'review' (progresso inline)",
+              "description": "Enrich disparado por botão na revisão; progresso inline na própria tela (casa com Q-14c)."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "Mostrar as fases de enrich (classificando.../reescrevendo...) dentro do passo 'generating', continuando o ProgressPanel, evita tocar o Stepper (menos superfície) e reflete o fluxo único encadeado (Q-01a) — um job, um stream. Usa o evento enrich-progress (Q-02a) p/ rotular o estágio. (a) novo 5º step adiciona superfície no Stepper; (c) acopla-se ao fluxo sob-demanda rejeitado. Coerente com Q-01a/Q-02a/Q-14a.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "Exibir deck/tags na revisão",
+          "context": "CardTable.tsx hoje mostra tipo (extraída/criada) + pergunta + resposta editáveis; NÃO mostra deck/tags. Após classificar, o usuário deveria revisar/editar o deck e as tags antes de exportar?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mostrar deck+tags (read-only) na CardTable",
+              "description": "Adiciona colunas/badges de deck e tags p/ conferência. Sem edição nesta fase (menor superfície)."
+            },
+            {
+              "id": "b",
+              "label": "Mostrar e permitir editar deck+tags",
+              "description": "Usuário corrige a classificação antes de exportar (onEdit estendido). Mais controle; mais UI/estado."
+            },
+            {
+              "id": "c",
+              "label": "Não exibir nesta fase",
+              "description": "deck/tags ficam só no export. Mínima mudança na UI de revisão."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Mostrar deck+tags read-only (colunas/badges) na CardTable dá ao usuário a conferência da classificação antes de exportar — exatamente o valor central desta fase — com a menor superfície (sem estado de edição). (b) editar adiciona UI/estado e onEdit estendido sem necessidade comprovada agora (pode vir depois se a classificação se mostrar imprecisa); (c) não exibir tira a verificabilidade do resultado na revisão. Decisão reversível: promover p/ editável é incremento barato se houver demanda.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "regressao-verificacao",
+      "title": "E. Não-regressão & Verificação (PIPE-03)",
+      "questions": [
+        {
+          "id": "Q-18",
+          "title": "Garantia de não-regressão + verificação",
+          "context": "PIPE-03 + constraint dura do projeto: 'o fluxo atual (sem modo educativo, sem Python) continua funcionando sem regressão'. Phases 1/2 usaram guards determinísticos CLI-free + unit puro + smoke gated (sem queimar quota no CI).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Guard determinístico + unit puro + smoke gated",
+              "description": "Com toggles off, enrichAll NÃO é chamado e /generate é byte-idêntico ao atual (guard CLI-free, estilo Phase 1/2). Unit puro p/ parsers/merge/split/roteamento de deck com fixtures. Smoke opt-in chama o CLI real. Recomendado."
+            },
+            {
+              "id": "b",
+              "label": "Só unit puro dos parsers (sem guard de regressão)",
+              "description": "Cobre a lógica nova, mas não prova que o fluxo antigo ficou intocado."
+            },
+            {
+              "id": "c",
+              "label": "Verificação manual com PDF real",
+              "description": "Roda o fluxo educativo num PDF de concurso e confere o resultado. Sem rede de testes automatizados."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Replica a abordagem provada nas Phases 1/2: (1) guard determinístico CLI-free garantindo que, com toggles off, enrichAll NÃO é chamado e /generate fica byte-idêntico (PIPE-03); (2) unit puro com fixtures p/ parsers/merge de tags/split/roteamento de deck — note que este item cita 'split', confirmando que o split (Q-09c) está no escopo da fase; (3) smoke opt-in que chama o CLI real sem queimar quota no CI. (b) não prova não-regressão do fluxo antigo; (c) verificação manual não deixa rede de testes. É a única opção que cobre PIPE-03 + a lógica nova sem custo de quota recorrente.",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}
