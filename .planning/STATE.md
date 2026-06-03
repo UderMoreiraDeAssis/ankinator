@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: "Fase 1 fechada. 01-04 completo: ImageProvider/svg-claude (SPEC-04) + guard CLI-free SPEC-01 + loadPrompt cross-mode (Pitfall 1). Task 4 (HARD-BLOCK) LIBERADA — usuário forneceu PDFs reais; orquestrador rodou smoke-cli 2× (curso-8.pdf → 5 questões; curso-230990-completo.pdf → 6 questões), confirmando zero regressão (SPEC-01 geração + PIPE-03 load→chunk→generate). Evidência: 01-04-SUMMARY.md + checkpoint-04-regression-signoff.txt."
-last_updated: "2026-06-03T10:40:28.268Z"
-last_activity: 2026-06-03 -- Fase 1 completa ponta-a-ponta; checkpoint de regressão liberado com 2 PDFs reais.
+status: executing
+last_updated: "2026-06-03T11:45:31.804Z"
+last_activity: 2026-06-03 -- Phase 02 planning complete
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
+  total_plans: 8
   completed_plans: 4
   percent: 20
 ---
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase: 01 (andaime-dos-especialistas) — ✅ COMPLETE (4/4 planos)
 Plan: 4 of 4 (todos completos)
-Status: Fase 1 fechada. 01-04 completo: ImageProvider/svg-claude (SPEC-04) + guard CLI-free SPEC-01 + loadPrompt cross-mode (Pitfall 1). Task 4 (HARD-BLOCK) LIBERADA — usuário forneceu PDFs reais; orquestrador rodou smoke-cli 2× (curso-8.pdf → 5 questões; curso-230990-completo.pdf → 6 questões), confirmando zero regressão (SPEC-01 geração + PIPE-03 load→chunk→generate). Evidência: 01-04-SUMMARY.md + checkpoint-04-regression-signoff.txt.
+Status: Ready to execute
 Next: Phase 02 (Loader PDF LangChain) — `/gsd-plan-phase 2` (sem planos ainda).
-Last activity: 2026-06-03 -- Fase 1 completa ponta-a-ponta; checkpoint de regressão liberado com 2 PDFs reais.
+Last activity: 2026-06-03 -- Phase 02 planning complete
 
 Progress: [██████████] 100% (Fase 1)
 
