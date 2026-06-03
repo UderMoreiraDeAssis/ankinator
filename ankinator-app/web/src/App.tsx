@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from './api';
-import type { ChunkProgress, ExtractResult, GenerateOptions, Questao } from './types';
+import type { ChunkProgress, EnrichProgress, ExtractResult, GenerateOptions, Questao } from './types';
 import { Stepper, type Step } from './components/Stepper';
 import { FileDrop } from './components/FileDrop';
 import { StructurePanel } from './components/StructurePanel';
@@ -17,13 +17,20 @@ export function App() {
 
   const [extract, setExtract] = useState<ExtractResult | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [options, setOptions] = useState<GenerateOptions>({ maxPerChunk: 15, incluirExtraidas: true, incluirCriadas: true });
+  const [options, setOptions] = useState<GenerateOptions>({
+    maxPerChunk: 15,
+    incluirExtraidas: true,
+    incluirCriadas: true,
+    classificar: true,   // default ON (D-15)
+    cardBuilder: false,  // default OFF (D-15)
+  });
   const [tagsInput, setTagsInput] = useState('concurso');
 
   const [progress, setProgress] = useState<ChunkProgress[]>([]);
   const [totalChunks, setTotalChunks] = useState(0);
   const [cards, setCards] = useState<Questao[]>([]);
   const [dropped, setDropped] = useState<Set<string>>(new Set());
+  const [enrichProgress, setEnrichProgress] = useState<EnrichProgress | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
   const tags = useMemo(() => tagsInput.split(/\s+/).map((t) => t.trim()).filter(Boolean), [tagsInput]);
@@ -64,6 +71,7 @@ export function App() {
     setProgress([]);
     setCards([]);
     setDropped(new Set());
+    setEnrichProgress(null);
     try {
       const { jobId, totalChunks } = await api.generate(extract.docId, [...selected], { ...options, tags });
       setTotalChunks(totalChunks);
@@ -74,6 +82,10 @@ export function App() {
       es.addEventListener('progress', (ev) => {
         const data = JSON.parse((ev as MessageEvent).data) as ChunkProgress;
         setProgress((prev) => [...prev, data]);
+      });
+      es.addEventListener('enrich-progress', (ev) => {
+        const data = JSON.parse((ev as MessageEvent).data) as EnrichProgress;
+        setEnrichProgress(data);
       });
       es.addEventListener('done', async () => {
         es.close();
@@ -158,7 +170,7 @@ export function App() {
         )}
 
         {step === 'generating' && extract && (
-          <ProgressPanel total={totalChunks} progress={progress} fileName={extract.fileName} />
+          <ProgressPanel total={totalChunks} progress={progress} fileName={extract.fileName} enrichProgress={enrichProgress} />
         )}
 
         {step === 'review' && extract && (
