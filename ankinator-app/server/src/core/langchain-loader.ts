@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { LoadedDocument } from './types.js';
 import type { LoadOptions } from './document-loader.js';
-import { normalize } from './langchain-normalize.js';
+import { normalize, type RawDoc } from './langchain-normalize.js';
 
 /**
  * Interpretador Python para o sidecar LangChain.
@@ -121,7 +121,34 @@ export async function runLangchainLoader(pdfPath: string, opts: LoadOptions): Pr
   }
 
   // D-01: stdout = JSON [{page_content, metadata}] impresso pelo sidecar.
-  // T-02-06: JSON.parse (não eval) — stdout malformado → lança SyntaxError (propaga D-04).
-  const docs = JSON.parse(stdout);
-  return normalize(docs, pdfPath);
+  // T-02-06: JSON.parse (não eval).
+  //
+  // CR-02 (Phase 02): valida antes de entregar a normalize(). Sem estas guardas,
+  // um sidecar que sai 0 mas imprime nada/linha não-JSON lançaria um SyntaxError
+  // opaco ("Unexpected end of JSON input") sem contexto de loader/PDF; e um JSON
+  // que não seja array (ou itens sem `page_content`) explodiria lá dentro com
+  // `docs.map is not a function` / `Cannot read properties of undefined`.
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    throw new Error(
+      `Loader langchain: stdout não é JSON válido (len=${stdout.length}). ` +
+        `stderr: ${stderr.slice(-400)}`
+    );
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(
+      `Loader langchain: esperado array de Documents, recebido ${parsed === null ? 'null' : typeof parsed}.`
+    );
+  }
+  for (let i = 0; i < parsed.length; i++) {
+    const item = parsed[i] as Record<string, unknown> | null;
+    if (typeof item !== 'object' || item === null || typeof item.page_content !== 'string') {
+      throw new Error(
+        `Loader langchain: Document[${i}] inválido — esperado { page_content: string, metadata }.`
+      );
+    }
+  }
+  return normalize(parsed as RawDoc[], pdfPath);
 }

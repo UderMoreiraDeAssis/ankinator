@@ -66,7 +66,9 @@ function buildSectionsFromMarkdown(docs: RawDoc[], fallbackTitle: string): Secti
   };
 
   for (const doc of docs) {
-    const page = doc.metadata.page ?? 1;
+    // CR-02 (Phase 02): metadata pode vir ausente do sidecar/biblioteca — coalesce
+    // com `?.` para não lançar "Cannot read properties of undefined".
+    const page = doc.metadata?.page ?? 1;
     const lines = doc.page_content.split('\n');
 
     for (const line of lines) {
@@ -135,7 +137,8 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   // O chunker ignora `elements`; preservamos para inspeção/depuração.
   const elements: DocElement[] = docs.map((d) => ({
     type: 'text block' as const,
-    page: d.metadata.page ?? 1,
+    // CR-02 (Phase 02): coalesce metadata ausente com `?.`.
+    page: d.metadata?.page ?? 1,
     content: d.page_content,
   }));
 
@@ -150,7 +153,8 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   // D-10: campos-topo derivados.
   // Pitfall 1 — page é 1-indexed → numPages = max(page) SEM +1.
   // R1 — não assumir Documents contíguos; usar max dos valores emitidos.
-  const pages = docs.map((d) => d.metadata.page ?? 1);
+  // CR-02 (Phase 02): coalesce metadata ausente com `?.`.
+  const pages = docs.map((d) => d.metadata?.page ?? 1);
   const numPages = pages.length ? Math.max(...pages) : 1;
 
   // Pitfall 4 — title = 1º heading ATX no markdown bruto, OU null (nunca a 1ª linha de texto).
