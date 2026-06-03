@@ -1,0 +1,21 @@
+# Sidecar OPCIONAL do loader LangChain (Phase 2). NÃO é dependência do Node.
+# O fluxo padrão do Ankinator roda SEM este sidecar; ele é ativado apenas com
+# a variável de ambiente ANKINATOR_PDF_LOADER=langchain.
+#
+# Pré-requisitos:
+#   - Python >=3.10,<4.0
+#   - Java 11+ no PATH (Adoptium recomendado) — OBRIGATÓRIO.
+#     O pacote langchain-opendataloader-pdf é uma casca sobre um CLI Java
+#     (mesmo motor do @opendataloader/pdf npm, já em produção no Ankinator).
+#     A ausência de Java NÃO é detectada pelo import — falha em runtime.
+#
+# Instalação:
+#   python -m venv .venv-langchain
+#   source .venv-langchain/bin/activate
+#   pip install -r tools/requirements.txt
+#   # Aponte o interpretador: export ANKINATOR_LANGCHAIN_PYTHON=$(which python)
+#
+# Variável de ambiente: ANKINATOR_LANGCHAIN_PYTHON (fallback: ODL_PYTHON)
+#   Deve apontar para o interpretador Python do venv dedicado onde este
+#   requirements.txt foi instalado.
+langchain-opendataloader-pdf==2.0.0
