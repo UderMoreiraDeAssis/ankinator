@@ -1,9 +1,10 @@
 ---
 phase: 02-loader-pdf-langchain
-verified: 2026-06-03T13:00:00Z
-status: human_needed
+verified: 2026-06-03T13:54:10Z
+status: passed
 score: 11/11
 overrides_applied: 0
+human_verification_resolved: 2026-06-03T13:54:10Z  # both items exercised live via /gsd:verify-work 2 (venv + pkg ==2.0.0 + Java 25, real PDFs, 0 mojibake) — see 02-UAT.md / 02-HUMAN-UAT.md
 human_verification:
   - test: "Run smoke-langchain-loader.ts with a real PDF against a venv with langchain-opendataloader-pdf==2.0.0 installed and Java 11+ in PATH"
     expected: "Script exits 0, prints numPages/sections/elements/markdown preview; no truncated/mojibake chars in markdown; sections are derived from ATX headings"
@@ -16,8 +17,8 @@ human_verification:
 # Phase 02: Loader PDF LangChain — Verification Report
 
 **Phase Goal:** Adicionar `langchain-opendataloader-pdf` como loader de PDF opcional via sidecar Python (reusando o padrão `ODL_PYTHON`), com saída normalizada para `LoadedDocument` e fallback automático para o loader Node atual.
-**Verified:** 2026-06-03T13:00:00Z
-**Status:** human_needed
+**Verified:** 2026-06-03T13:54:10Z
+**Status:** passed (human items resolved live via /gsd:verify-work 2)
 **Re-verification:** No — initial verification
 
 ---
