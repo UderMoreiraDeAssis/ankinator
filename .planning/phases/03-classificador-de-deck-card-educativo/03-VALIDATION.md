@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: classificador-de-deck-card-educativo
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-03
+validated: 2026-06-03
 ---
 
 # Phase 3 — Validation Strategy
@@ -38,15 +39,15 @@ created: 2026-06-03
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| W0 | 00 | 0 | (infra) | — | N/A | install | `npm install --save-dev vitest --workspace server` | ❌ W0 | ⬜ pending |
-| PIPE-03-guard | — | final | PIPE-03 | — | toggles off → `enrichAll` NÃO chamado; `/generate` byte-idêntico; CSV byte-idêntico | guard CLI-free | `npx tsx src/scripts/guard-enrich.ts` | ❌ W0 | ⬜ pending |
-| DECK-01-parse | — | — | DECK-01 | — | `parseClassificacoesJson` casa deck por `id` (não posicional) | unit | `vitest run -t "parseClassificacoesJson"` | ❌ W0 | ⬜ pending |
-| DECK-02-tags | — | — | DECK-02 | — | `tagsDaQuestao` une `q.tags` ao Set sem duplicatas (`...(q.tags ?? [])`) | unit | `vitest run -t "tagsDaQuestao merge"` | ❌ W0 | ⬜ pending |
-| CARD-01-split | — | — | CARD-01 | T (fidelidade prova) | split 1→N só em `criada`; `extraida` NUNCA divide | unit | `vitest run -t "split extraida"` | ❌ W0 | ⬜ pending |
-| CARD-02-verso | — | — | CARD-02 | — | `extraida` só ajusta verso (explicação + fonte); pergunta/gabarito intactos | unit | `vitest run -t "card-builder extraida verso"` | ❌ W0 | ⬜ pending |
-| PIPE-01-seq | — | — | PIPE-01 | — | `enrichAll` encadeia classificar → card-builder em ordem; isolamento de erro por unidade | unit | `vitest run -t "enrichAll sequência"` | ❌ W0 | ⬜ pending |
-| DECK-01-anki | — | — | DECK-01 | T (q.deck path-like) | deck hierárquico chega ao `deckName` por-nota; fallback a `opts.deck` | unit | `vitest run -t "ankiconnect routing"` | ❌ W0 | ⬜ pending |
-| DECK-01-csv | — | — | DECK-01 | — | coluna `Deck` + header `#deck column:5` quando `temDeck`; ausente quando não | unit | `vitest run -t "csv deck column"` | ❌ W0 | ⬜ pending |
+| W0 | 00 | 0 | (infra) | — | N/A | install | `vitest ^4.1.8` em `server/package.json` (devDependency) | ✅ | ✅ done |
+| PIPE-03-guard | 00/02 | final | PIPE-03 | — | toggles off → `enrichAll` NÃO chamado; `/generate` byte-idêntico; CSV byte-idêntico | guard CLI-free | `npx tsx src/scripts/guard-enrich.ts` | ✅ | ✅ green (exit 0) |
+| DECK-01-parse | 01 | — | DECK-01 | — | `parseClassificacoesJson` casa deck por `id` (não posicional) | unit | `vitest run -t "parseClassificacoesJson"` | ✅ | ✅ green |
+| DECK-02-tags | 02 | — | DECK-02 | — | `tagsDaQuestao` une `q.tags` ao Set sem duplicatas (`...(q.tags ?? [])`) | unit | `vitest run -t "tagsDaQuestao merge"` | ✅ | ✅ green |
+| CARD-01-split | 01 | — | CARD-01 | T (fidelidade prova) | split 1→N só em `criada`; `extraida` NUNCA divide | unit | `vitest run -t "split extraida"` | ✅ | ✅ green |
+| CARD-02-verso | 01 | — | CARD-02 | — | `extraida` só ajusta verso (explicação + fonte); pergunta/gabarito intactos | unit | `vitest run -t "card-builder extraida verso"` | ✅ | ✅ green |
+| PIPE-01-seq | 01 | — | PIPE-01 | — | `enrichAll` encadeia classificar → card-builder em ordem; isolamento de erro por unidade (D-13) | unit | `vitest run -t "enrichAll sequência"` | ✅ | ✅ green |
+| DECK-01-anki | 02 | — | DECK-01 | T (q.deck path-like) | deck hierárquico chega ao `deckName` por-nota; fallback a `opts.deck` | unit | `vitest run -t "ankiconnect routing"` | ✅ | ✅ green |
+| DECK-01-csv | 02 | — | DECK-01 | — | coluna `Deck` + header `#deck column:5` quando `temDeck`; ausente quando não | unit | `vitest run -t "csv deck column"` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -56,10 +57,10 @@ created: 2026-06-03
 
 ## Wave 0 Requirements
 
-- [ ] `npm install --save-dev vitest --workspace server` — não há test runner hoje (confirmado em TESTING.md). Executor deve confirmar `vitest` no registry antes de instalar (pacote [ASSUMED OK] no research).
-- [ ] `ankinator-app/server/src/core/specialists/enrich.test.ts` — stubs/fixtures para todos os unit tests acima (DECK-01/02, CARD-01/02, PIPE-01)
-- [ ] `ankinator-app/server/src/scripts/guard-enrich.ts` — guard CLI-free de PIPE-03 (clone de `guard-default-loader.ts`)
-- [ ] `ankinator-app/server/src/scripts/smoke-enrich.ts` — smoke gated (clone de `smoke-runner.ts`, opt-in, requer claude CLI)
+- [x] `vitest ^4.1.8` instalado como devDependency em `ankinator-app/server/package.json` (script `test: vitest run`)
+- [x] `ankinator-app/server/src/core/specialists/enrich.test.ts` — 22 tests green (DECK-01/02, CARD-01/02, PIPE-01, exporters, gate); 4 `it.todo` de comportamento preenchidos com tests reais (mock de `runClaudeCli`/`loadPrompt`)
+- [x] `ankinator-app/server/src/scripts/guard-enrich.ts` — guard CLI-free de PIPE-03 (exit 0, 2 cenários)
+- [x] `ankinator-app/server/src/scripts/smoke-enrich.ts` — smoke gated opt-in (requer claude CLI; manual-only)
 
 ---
 
@@ -76,11 +77,23 @@ created: 2026-06-03
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references (vitest install + enrich.test.ts + guard-enrich.ts)
-- [ ] No watch-mode flags (use `vitest run`, não `vitest`)
-- [ ] Feedback latency < 20s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (vitest install + enrich.test.ts + guard-enrich.ts)
+- [x] No watch-mode flags (use `vitest run`, não `vitest`)
+- [x] Feedback latency < 20s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** ✅ validated 2026-06-03 — todos os 7 requisitos com verificação automatizada (unit + guard).
+
+---
+
+## Validation Audit 2026-06-03
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 4 |
+| Resolved | 4 |
+| Escalated | 0 |
+
+Gaps eram 4 `it.todo` em `enrich.test.ts` (CARD-01 split, CARD-02 verso-only, PIPE-01 ordem de estágios, PIPE-01 isolamento de erro D-13) que só checavam `typeof fn === 'function'`. Preenchidos com tests reais que mockam `runClaudeCli`/`loadPrompt` — cobertura comportamental headless sem LLM/quota. Suite: 18 → 22 green, 0 todo, 0 fail. Nenhum arquivo de implementação modificado; nenhum bug de impl encontrado.
