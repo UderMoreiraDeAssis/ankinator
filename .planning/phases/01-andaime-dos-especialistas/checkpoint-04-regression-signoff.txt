@@ -1,0 +1,53 @@
+# Checkpoint 01-04 (Task 4) — SPEC-01 real-generation + PIPE-03 sign-off
+
+Liberado: 2026-06-03 (orquestrador rodou os PDFs fornecidos pelo usuário)
+Natureza: HARD-BLOCK humano liberado com DOIS PDFs reais (baseline 01-01 era simbólico).
+
+Mecanismo: `cd ankinator-app/server && npx tsx src/scripts/smoke-cli.ts <pdf>`
+  → loadDocument → chunkDocument → new CliProvider('sonnet').generateForChunk(chunks[0],
+     { maxPerChunk: 6, incluirExtraidas: true, incluirCriadas: true })
+  → chamada REAL ao `claude` CLI (assinatura, sem ANTHROPIC_API_KEY).
+
+Critério de não-regressão (do baseline-cli.txt): comparar CONTAGEM (~6/chunk) + FORMA
+([tipo] Q:/A: + (banca ano) quando metadata.banca) + término sem erro novo do CLI.
+A saída do LLM é NÃO-determinística → não se compara texto exato.
+
+================================================================================
+PDF 1 — curso-8.pdf (108 KB, material do usuário)  → EXIT 0
+================================================================================
+Documento: curso-8.pdf · 1 bloco(s)
+✅ 5 questões em 27.8s
+  [extraida] (Ministério da Economia 2020)  — PMBOK grupos de processos ≠ fases; 10 áreas
+  [criada]   PMBOK é metodologia? (não — conjunto de boas práticas)
+  [criada]   10 áreas + 5 grupos de processos (PMBOK 6)
+  [criada]   definição de 'Projeto' (esforço temporário, resultado exclusivo)
+  [criada]   (C/E) grupos de processos vs fases cronológicas
+Mix: 1 extraída (com banca) + 4 criadas do conteúdo. Forma correta. Sem erro.
+
+================================================================================
+PDF 2 — curso-230990-aula-00-...-completo.pdf (6.3 MB, fornecido pelo usuário em
+        /home/t316360/plottwist/material)  → EXIT 0
+================================================================================
+Documento: curso-230990-aula-00-...-completo.pdf · 7 bloco(s)
+✅ 6 questões em 26.2s
+  [extraida] (FGV 2023)      — classificação de dados restritos (LGPD/TCE-SP)
+  [extraida] (CEBRASPE 2023) — dados abertos (MPE-RO)
+  [criada]   Decreto 8.777/2016: CGU coordena via INDA
+  [criada]   Decreto 8.777/2016: definição de 'Dados Abertos'
+  [criada]   4 níveis de classificação (Público/Interno/Restrito/Confidencial)
+  [criada]   datum vs data
+Mix: 2 extraídas (com banca) + 4 criadas do conteúdo. Forma correta. Sem erro.
+
+================================================================================
+VEREDITO
+================================================================================
+SPEC-01 (sem regressão): PASS. O CliProvider pós-refator (delegando a runClaudeCli +
+  buildSpawnArgs) gera cards equivalentes ao comportamento baseline — contagem ~6/chunk,
+  forma [tipo] Q:/A:, e o mix extraídas+criadas exigido pelo CLAUDE.md ("aproveitar
+  questões prontas E criar questões do conteúdo"). Reforça a assertion CLI-free (Task 2).
+PIPE-03 (fluxo atual sem regressão): PASS no caminho load→chunk→generate. O único código
+  do pipeline tocado na Fase 1 foi a delegação interna do CliProvider (provada equivalente
+  2×); os campos novos de Questao são opcionais/ignorados (build verde, mapRawQuestoes/
+  exporters não tocados); image-provider NÃO está plugado. PIPE-03 formal permanece da Fase 3.
+
+Sign-off: aprovado pelo usuário (forneceu PDF; "Provide a PDF now"). Checkpoint LIBERADO.

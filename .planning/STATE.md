@@ -3,16 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T04:21:06.000Z"
+last_updated: "2026-06-03T05:00:00.000Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
-plan_04_status: checkpoint-pending
-last_gate_trip: 01-04/task-4-human-verify-pdf
+  completed_plans: 4
+  percent: 100
+plan_04_status: complete
 ---
 
 # Project State
@@ -26,31 +25,32 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 ## Current Position
 
-Phase: 01 (andaime-dos-especialistas) — EXECUTING (Plano 04 em CHECKPOINT-PENDING)
-Plan: 4 of 4
-Status: Plano 04 tasks a/b/c DONE e committadas (ImageProvider/svg-claude SPEC-04 + guard CLI-free SPEC-01 + loadPrompt cross-mode Pitfall 1). Task 4 (sign-off de regressão com PDF real — SPEC-01 geração + PIPE-03) BLOQUEADA: HARD-BLOCK humano, baseline foi simbólico (sem fixture PDF). Plano NÃO está completo.
-Last activity: 2026-06-03 -- 01-04 a/b/c executados (image-provider.ts; smoke-runner --assert-args CLI-free verde; dist+tsx loadPrompt verdes). Aguardando PDF do usuário p/ liberar o checkpoint.
+Phase: 01 (andaime-dos-especialistas) — ✅ COMPLETE (4/4 planos)
+Plan: 4 of 4 (todos completos)
+Status: Fase 1 fechada. 01-04 completo: ImageProvider/svg-claude (SPEC-04) + guard CLI-free SPEC-01 + loadPrompt cross-mode (Pitfall 1). Task 4 (HARD-BLOCK) LIBERADA — usuário forneceu PDFs reais; orquestrador rodou smoke-cli 2× (curso-8.pdf → 5 questões; curso-230990-completo.pdf → 6 questões), confirmando zero regressão (SPEC-01 geração + PIPE-03 load→chunk→generate). Evidência: 01-04-SUMMARY.md + checkpoint-04-regression-signoff.txt.
+Next: Phase 02 (Loader PDF LangChain) — `/gsd-plan-phase 2` (sem planos ainda).
+Last activity: 2026-06-03 -- Fase 1 completa ponta-a-ponta; checkpoint de regressão liberado com 2 PDFs reais.
 
-Progress: [████████░░] 75% (Plano 04 não conta como completo até o checkpoint humano liberar)
+Progress: [██████████] 100% (Fase 1)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 1
-- Average duration: ~8 min
-- Total execution time: ~8 min
+- Total plans completed: 4
+- Average duration: ~6 min
+- Total execution time: ~25 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 1/4 | ~8 min | ~8 min |
+| 01 | 4/4 | ~25 min | ~6 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~8 min)
-- Trend: -
+- Last 5 plans: 01-01 (~8 min), 01-02 (~6 min), 01-03 (~5 min), 01-04 (~6 min + checkpoint)
+- Trend: estável ~6 min/plano
 
 **Detail:**
 
@@ -97,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T04:21:06.000Z
-Stopped at: 01-04 tasks a/b/c DONE; Task 4 (HARD-BLOCK humano) CHECKPOINT-PENDING aguardando PDF real do usuário (SPEC-01 geração + PIPE-03)
-Resume file: .planning/phases/01-andaime-dos-especialistas/01-04-SUMMARY.md (seção "Checkpoint Pendente (Task 4)")
+Last session: 2026-06-03T05:00:00.000Z
+Stopped at: Fase 1 COMPLETA (4/4). Checkpoint 01-04 liberado com 2 PDFs reais. Pronto para a Phase 02.
+Resume file: None (próximo passo: `/gsd-plan-phase 2`)

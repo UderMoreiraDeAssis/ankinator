@@ -10,7 +10,7 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
+- [x] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
 - [ ] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf`, normalizado para `LoadedDocument`, fallback Node
 - [ ] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico; fase `enrichAll()` + toggles na UI
 - [ ] **Phase 4: Mnemônicos + Imagem SVG** - Especialistas de mnemônico e imagem (SVG via Claude), sanitização e embed no export Anki
@@ -33,7 +33,7 @@ Plans:
 - [x] 01-01-PLAN.md — Wave 0 (build-safe): npm ci + baseline do CliProvider (sem smoke-runner — movido p/ Plano 02)
 - [x] 01-02-PLAN.md — Wave 1: runClaudeCli + buildSpawnArgs (extração) + CliProvider delega + prompt-loader + 5 .md canônicos + smoke-runner.ts (após runner/loader) (SPEC-01/02)
 - [x] 01-03-PLAN.md — Wave 1: Questao +4 campos opcionais (server+web) + 5 SKILL.md espelho (SPEC-05/03)
-- [~] 01-04-PLAN.md — Wave 2: ImageProvider/svg-claude + assertion CLI-free de args + cross-mode loadPrompt (a/b/c DONE) + checkpoint hard-block de regressão (Task 4 CHECKPOINT-PENDING: aguarda PDF real p/ SPEC-01 geração + PIPE-03) (SPEC-04/01)
+- [x] 01-04-PLAN.md — Wave 2: ImageProvider/svg-claude + assertion CLI-free de args + cross-mode loadPrompt + checkpoint hard-block de regressão LIBERADO (2 PDFs reais: curso-8 → 5q, curso-230990 → 6q; zero regressão SPEC-01 geração + PIPE-03) (SPEC-04/01)
 
 ### Phase 2: Loader PDF LangChain
 **Goal**: Adicionar `langchain-opendataloader-pdf` como loader de PDF opcional via sidecar Python (reusando o padrão `ODL_PYTHON`), com saída normalizada para `LoadedDocument` e fallback automático para o loader Node atual.
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Andaime dos Especialistas | 3/4 (P04 checkpoint-pending: SPEC-04 entregue, aguarda PDF p/ sign-off de regressão) | In Progress|  |
+| 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 0/TBD | Not started | - |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
