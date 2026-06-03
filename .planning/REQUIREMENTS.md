@@ -49,7 +49,7 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 - [ ] **ORCH-03**: O orquestrador aplica princípios Anki (atomicidade, evitar redundância) ao agregar o resultado.
 - [ ] **PIPE-01**: Existe a fase `enrichAll()` que roda após `generateAll()`, reusando o job/SSE para progresso.
 - [ ] **PIPE-02**: A UI expõe toggles do modo "educativo" (classificar, card educativo, mnemônico, imagem) com defaults inteligentes.
-- [ ] **PIPE-03**: O fluxo atual (sem modo educativo, sem Python) continua funcionando sem regressão.
+- [x] **PIPE-03**: O fluxo atual (sem modo educativo, sem Python) continua funcionando sem regressão.
 
 ## v2 Requirements
 
@@ -90,7 +90,7 @@ Reconhecidos, fora do roadmap atual.
 | CARD-02 | Phase 3 | Pending |
 | PIPE-01 | Phase 3 | Pending |
 | PIPE-02 | Phase 3 | Pending |
-| PIPE-03 | Phase 3 | Pending |
+| PIPE-03 | Phase 3 | Complete |
 | MNEM-01 | Phase 4 | Pending |
 | MNEM-02 | Phase 4 | Pending |
 | IMG-01 | Phase 4 | Pending |
