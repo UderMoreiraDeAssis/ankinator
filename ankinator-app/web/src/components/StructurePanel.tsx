@@ -127,6 +127,32 @@ export function StructurePanel(props: Props) {
           {selected.size} seção(ões) · ~{(selectedChars / 1000).toFixed(1)}k caracteres selecionados
         </div>
 
+        {/* Bloco "Modo educativo" (D-14) — mesma estrutura dos checkboxes acima.
+            Phase 4 adiciona aqui: mnemônico e imagem. */}
+        <div className="border-t border-slate-100 pt-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Modo educativo
+          </h3>
+          <label className="flex items-center justify-between text-sm text-slate-700">
+            <span>Classificar deck + tags</span>
+            <input
+              type="checkbox"
+              checked={options.classificar !== false}
+              onChange={(e) => setOptions({ ...options, classificar: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-600"
+            />
+          </label>
+          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
+            <span>Card educativo</span>
+            <input
+              type="checkbox"
+              checked={options.cardBuilder === true}
+              onChange={(e) => setOptions({ ...options, cardBuilder: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-600"
+            />
+          </label>
+        </div>
+
         <div className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">
           Geração via{' '}
           {provider === 'cli' ? (

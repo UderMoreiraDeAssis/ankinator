@@ -1,12 +1,13 @@
-import type { ChunkProgress } from '../types';
+import type { ChunkProgress, EnrichProgress } from '../types';
 
 interface Props {
   total: number;
   progress: ChunkProgress[];
   fileName: string;
+  enrichProgress?: EnrichProgress | null;
 }
 
-export function ProgressPanel({ total, progress, fileName }: Props) {
+export function ProgressPanel({ total, progress, fileName, enrichProgress }: Props) {
   const done = progress.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   const questoes = progress.reduce((a, p) => a + p.questoesNoBloco, 0);
@@ -46,6 +47,17 @@ export function ProgressPanel({ total, progress, fileName }: Props) {
           </li>
         ))}
       </ul>
+
+      {enrichProgress && (
+        <div className="mt-3 flex items-center justify-between rounded bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+          <span>
+            {enrichProgress.estagio === 'classificando'
+              ? 'Classificando deck + tags…'
+              : `Reescrevendo card ${enrichProgress.index + 1}/${enrichProgress.total}…`}
+          </span>
+          {enrichProgress.erro && <span className="text-amber-600">erro</span>}
+        </div>
+      )}
     </div>
   );
 }
