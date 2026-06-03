@@ -153,7 +153,10 @@ api.post('/generate', async (req: Request, res: Response) => {
   })
     .then(async (result) => {
       let questoes = result.questoes;
-      const enrichOpts = { classificar: options?.classificar, cardBuilder: options?.cardBuilder };
+      const enrichOpts = {
+        classificar: options?.classificar ?? true,   // documented default (WR-01)
+        cardBuilder: options?.cardBuilder ?? false,  // documented default
+      };
       if (deveRodarEnrich(enrichOpts)) {
         questoes = await enrichAll(questoes, enrichOpts, (e) => {
           jobStore.emit(job, { type: 'enrich-progress', data: e });
