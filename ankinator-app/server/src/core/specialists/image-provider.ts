@@ -1,0 +1,54 @@
+/**
+ * Interface `ImageProvider` + implementação `svg-claude` (SPEC-04).
+ *
+ * ANDAIME (D-08/D-09/D-10): esta fase só DEFINE a fundação. A impl
+ * `SvgClaudeImageProvider` existe e é funcional (usa o runner da assinatura +
+ * o prompt canônico `mnemonic-image`), mas NÃO é plugada no pipeline
+ * (`generation.ts`/exporters intactos). A lógica que a invoca é da Fase 4.
+ *
+ * NÃO há provider raster nesta fase (D-09): apenas a interface fica pronta para
+ * que o IMGR-01 (v2) registre um provider de raster atrás dela no futuro.
+ *
+ * Vive 100% no server (D-08): geração de SVG = chamada de LLM via assinatura,
+ * exclusivamente no backend (o browser não tem credenciais nem FS).
+ */
+import { runClaudeCli } from './runner.js';
+import { loadPrompt } from './prompt-loader.js';
+
+/** Provedor de imagem de mnemônico. Retorna SVG autocontido (D-08). */
+export interface ImageProvider {
+  readonly nome: string;
+  /**
+   * Gera uma imagem (SVG) que reforça visualmente `mnemonic`, usando `context`
+   * (o conteúdo do card) para manter fidelidade ao material.
+   */
+  generate(mnemonic: string, context: string): Promise<{ svg: string }>;
+}
+
+/**
+ * Implementação default: gera o SVG via assinatura Claude (sem custo por token),
+ * reusando o runner compartilhado (`runClaudeCli`) e o prompt canônico
+ * `mnemonic-image` (fonte única — `prompts/mnemonic-image.md`).
+ */
+export class SvgClaudeImageProvider implements ImageProvider {
+  readonly nome = 'svg-claude';
+
+  async generate(mnemonic: string, context: string): Promise<{ svg: string }> {
+    const systemPrompt = loadPrompt('mnemonic-image');
+    // Usa AMBOS os parâmetros (Pitfall 5: sem parâmetro não usado) — o mnemônico
+    // é o quê ilustrar, o contexto mantém a imagem fiel ao material do card.
+    const userMessage = `Mnemônico:\n${mnemonic}\n\nContexto do card:\n${context}`;
+    const svg = await runClaudeCli({ systemPrompt, userMessage });
+    // TODO(IMG-02 fase 4): sanitizar SVG (remover <script>/URLs externas) antes de embutir no card.
+    return { svg };
+  }
+}
+
+/**
+ * Factory do provider de imagem. Retorna `svg-claude` por default, espelhando
+ * o shape de `createProvider()` (providers/index.ts — default no fim).
+ */
+export function createImageProvider(): ImageProvider {
+  // TODO(v2): selecionar provider raster por env quando IMGR-01 existir.
+  return new SvgClaudeImageProvider();
+}
