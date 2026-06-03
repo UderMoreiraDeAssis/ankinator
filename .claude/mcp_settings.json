@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ankinator": {
+      "command": "node",
+      "args": ["ankinator-mcp/dist/index.js"]
+    }
+  }
+}

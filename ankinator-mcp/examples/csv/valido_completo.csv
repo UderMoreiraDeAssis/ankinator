@@ -1,0 +1,11 @@
+pergunta,resposta,opcoes,dificuldade,categoria
+"O que é Python?","Python é uma linguagem de programação de alto nível, interpretada e de propósito geral","","facil","Programação"
+"Quais são os tipos de dados básicos em Python?","Os tipos básicos são: int (inteiro), float (decimal), str (texto), bool (booleano) e None (nulo)","","facil","Programação"
+"O que é uma função em programação?","Uma função é um bloco de código reutilizável que executa uma tarefa específica","","medio","Programação"
+"Qual a diferença entre lista e tupla em Python?","Listas são mutáveis (podem ser modificadas) e usam colchetes [], enquanto tuplas são imutáveis e usam parênteses ()","","medio","Programação"
+"O que é um dicionário em Python?","Um dicionário é uma estrutura de dados que armazena pares chave-valor, permitindo acesso rápido aos dados pela chave","","medio","Programação"
+"Quanto é 2 + 2?","4","A) 3|B) 4|C) 5|D) 6","facil","Matemática"
+"Qual a fórmula da área do círculo?","A = πr², onde r é o raio do círculo","","dificil","Matemática"
+"O que significa DOM em programação web?","DOM (Document Object Model) é uma interface de programação que representa a estrutura de um documento HTML como uma árvore de objetos","","dificil","Programação"
+"Qual a capital do Brasil?","Brasília","A) São Paulo|B) Rio de Janeiro|C) Brasília|D) Salvador","facil","Geografia"
+"O que é recursão em programação?","Recursão é uma técnica onde uma função chama a si mesma para resolver um problema dividindo-o em subproblemas menores","","muito_dificil","Programação"

@@ -1,0 +1,121 @@
+{
+  "instalacao_geral": {
+    "titulo": "Instalação de Add-ons no Anki",
+    "passos": [
+      {
+        "numero": 1,
+        "acao": "Abrir o Anki Desktop",
+        "detalhes": "Certifique-se de que o Anki está instalado e aberto"
+      },
+      {
+        "numero": 2,
+        "acao": "Acessar menu de add-ons",
+        "detalhes": "Menu: Tools → Add-ons (Ctrl+Shift+A no Windows/Linux, Cmd+Shift+A no macOS)"
+      },
+      {
+        "numero": 3,
+        "acao": "Instalar add-on",
+        "detalhes": "Clique em 'Get Add-ons...' e insira o código do AnkiWeb"
+      },
+      {
+        "numero": 4,
+        "acao": "Reiniciar o Anki",
+        "detalhes": "Após instalação, feche e reabra o Anki para ativar o add-on"
+      }
+    ],
+    "formato_codigo": "Código AnkiWeb: número de 9-10 dígitos (ex: 1908235722)"
+  },
+  "instalacao_manual": {
+    "titulo": "Instalação Manual (desenvolvimento)",
+    "passos": [
+      {
+        "numero": 1,
+        "acao": "Localizar pasta de add-ons",
+        "detalhes_por_os": {
+          "Windows": "%APPDATA%/Anki2/addons21/",
+          "macOS": "~/Library/Application Support/Anki2/addons21/",
+          "Linux": "~/.local/share/Anki2/addons21/"
+        }
+      },
+      {
+        "numero": 2,
+        "acao": "Copiar arquivos do add-on",
+        "detalhes": "Copie a pasta do add-on (com manifest.json e código Python) para o diretório addons21/"
+      },
+      {
+        "numero": 3,
+        "acao": "Reiniciar Anki",
+        "detalhes": "O add-on será carregado automaticamente na próxima inicialização"
+      },
+      {
+        "numero": 4,
+        "acao": "Verificar instalação",
+        "detalhes": "Menu: Tools → Add-ons - o add-on deve aparecer na lista"
+      }
+    ]
+  },
+  "instalacao_ankimon": {
+    "titulo": "Instalação do Ankimon",
+    "codigo_ankiweb": "1908235722",
+    "passos_extras": [
+      {
+        "numero": 1,
+        "acao": "Instalar via AnkiWeb código 1908235722",
+        "detalhes": "Siga os passos de instalação geral (Tools → Add-ons → Get Add-ons → código 1908235722)"
+      },
+      {
+        "numero": 2,
+        "acao": "Fechar e reabrir Anki",
+        "detalhes": "IMPORTANTE: Primeiro restart após instalação para carregar o add-on"
+      },
+      {
+        "numero": 3,
+        "acao": "Baixar arquivos extras",
+        "detalhes": "Menu: Ankimon → Download extra Resource Files (Data, Sprites, Badges) - cerca de 50MB"
+      },
+      {
+        "numero": 4,
+        "acao": "Fechar e reabrir Anki novamente",
+        "detalhes": "Segundo restart após download dos recursos para carregar assets"
+      },
+      {
+        "numero": 5,
+        "acao": "Escolher starter Pokémon",
+        "detalhes": "Diálogo de seleção aparecerá automaticamente na primeira execução"
+      },
+      {
+        "numero": 6,
+        "acao": "Reiniciar Anki pela última vez",
+        "detalhes": "Terceiro e último restart - Ankimon estará pronto para uso"
+      }
+    ],
+    "requisitos": [
+      "Anki 2.1.66+ (PyQt6 obrigatório)",
+      "PyQt5 NÃO é suportado",
+      "Linux: usar pacote oficial do GitHub (github.com/ankitects/anki/releases), não flatpak ou pacotes de distro",
+      "Conexão com internet para download de recursos extras (~50MB)"
+    ]
+  },
+  "troubleshooting": {
+    "erro_pyqt5": {
+      "sintoma": "Add-on não carrega ou erro 'PyQt5 is not supported'",
+      "solucao": "Atualize para Anki 2.1.66+ com PyQt6. PyQt5 foi descontinuado. Baixe a versão mais recente do Anki em github.com/ankitects/anki/releases"
+    },
+    "erro_arquivos_faltando": {
+      "sintoma": "Ankimon carrega mas não mostra Pokémon/sprites, ou imagens quebradas",
+      "solucao": "Execute: Menu → Ankimon → Download extra Resource Files. Aguarde o download completo (~50MB) e reinicie o Anki."
+    },
+    "erro_linux": {
+      "sintoma": "Add-on não funciona no Linux ou erro de importação",
+      "solucao": "Baixe Anki direto do GitHub (github.com/ankitects/anki/releases). NÃO use: flatpak, snap, pacotes .deb/.rpm de repositórios de distro. Apenas o pacote oficial funciona."
+    },
+    "erro_starter_nao_aparece": {
+      "sintoma": "Diálogo de escolha de starter não apareceu",
+      "solucao": "Menu: Ankimon → Choose Starter. Se ainda não aparecer, delete a pasta do add-on e reinstale do zero."
+    },
+    "erro_addon_desabilitado": {
+      "sintoma": "Ankimon aparece desabilitado na lista de add-ons",
+      "solucao": "Selecione o Ankimon na lista, clique em 'Toggle Enabled' e reinicie o Anki. Se persistir, verifique versão do Anki (deve ser 2.1.66+)."
+    }
+  }
+}

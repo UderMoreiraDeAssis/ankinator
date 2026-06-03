@@ -1,0 +1,4 @@
+pergunta,resposta
+"O que é uma variável em programação?","Uma variável é um espaço na memória usado para armazenar dados que podem mudar durante a execução do programa"
+"Qual a sintaxe básica para criar uma lista em Python?","A sintaxe é: lista = [] ou lista = list()"
+"O que significa o operador == em Python?","O operador == compara se dois valores são iguais e retorna True ou False"

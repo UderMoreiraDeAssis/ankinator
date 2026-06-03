@@ -1,0 +1,56 @@
+{
+  "versoes": [
+    {
+      "versao": "2.1.66",
+      "data_lancamento": "2024-07-12",
+      "tipo": "stable",
+      "compatibilidade": {
+        "python": "3.9+",
+        "qt": "PyQt6",
+        "pyqt5_descontinuado": true
+      },
+      "breaking_changes": [
+        "PyQt5 não é mais suportado - migração obrigatória para PyQt6",
+        "Hook reviewer_will_show_question descontinuado",
+        "Mudanças na estrutura de templates de cards"
+      ],
+      "url_release": "https://github.com/ankitects/anki/releases/tag/2.1.66"
+    },
+    {
+      "versao": "23.10.12",
+      "data_lancamento": "2023-10-12",
+      "tipo": "stable",
+      "compatibilidade": {
+        "python": "3.9+",
+        "qt": "PyQt6"
+      },
+      "breaking_changes": [],
+      "url_release": "https://github.com/ankitects/anki/releases/tag/23.10.12"
+    },
+    {
+      "versao": "23.12.1",
+      "data_lancamento": "2023-12-20",
+      "tipo": "stable",
+      "compatibilidade": {
+        "python": "3.9+",
+        "qt": "PyQt6"
+      },
+      "breaking_changes": [],
+      "url_release": "https://github.com/ankitects/anki/releases/tag/23.12.1"
+    },
+    {
+      "versao": "24.04.1",
+      "data_lancamento": "2024-04-25",
+      "tipo": "stable",
+      "compatibilidade": {
+        "python": "3.9+",
+        "qt": "PyQt6"
+      },
+      "breaking_changes": [],
+      "url_release": "https://github.com/ankitects/anki/releases/tag/24.04.1"
+    }
+  ],
+  "versao_minima_recomendada": "2.1.66",
+  "versao_maxima_testada": "24.04.1",
+  "nota": "Baseado no Ankimon addon.json (min: 2.1.66, max testado: 23.10.12) e releases oficiais do Anki"
+}

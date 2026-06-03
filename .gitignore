@@ -137,3 +137,33 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# ─────────────────────────────────────────────────────────────
+# Ankinator project-specific
+# ─────────────────────────────────────────────────────────────
+
+# Vendored third-party clones (own git repos, huge, not part of this project)
+ankimon/
+servers/
+
+# Large sample inputs and generated artifacts
+*.pdf
+pdf-chunks-output.json
+*-questoes.csv
+questoes-identificadas.json
+
+# OpenDataLoader / pipeline outputs
+opendataloader-out/
+output/
+*.apkg
+
+# MCP chunk sessions (runtime state)
+ankinator-mcp/chunk-sessions/
+**/chunk-sessions/
+
+# Build output
+ankinator-mcp/dist/
+dist/
+
+# Claude Code worktrees (each is its own checkout)
+.claude/worktrees/

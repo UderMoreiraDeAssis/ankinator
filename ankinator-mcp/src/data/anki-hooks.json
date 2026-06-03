@@ -1,0 +1,323 @@
+{
+  "hooks": [
+    {
+      "nome": "gui_hooks.reviewer_did_show_question",
+      "categoria": "reviewer",
+      "descricao": "Disparado após a pergunta ser exibida no revisor",
+      "parametros": [
+        {
+          "nome": "card",
+          "tipo": "Card",
+          "descricao": "Objeto do card sendo revisado"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Injetar HTML/CSS adicional na questão",
+        "Modificar aparência do card",
+        "Iniciar cronômetros ou estatísticas",
+        "Gamificação: mostrar elementos visuais ao iniciar uma questão"
+      ],
+      "exemplo": "gui_hooks.reviewer_did_show_question.append(on_show_question)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.reviewer_did_show_answer",
+      "categoria": "reviewer",
+      "descricao": "Disparado após a resposta ser exibida no revisor",
+      "parametros": [
+        {
+          "nome": "card",
+          "tipo": "Card",
+          "descricao": "Objeto do card sendo revisado"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Modificar aparência da resposta",
+        "Adicionar botões extras na interface",
+        "Registrar tempo de resposta",
+        "Mostrar estatísticas ou feedback visual"
+      ],
+      "exemplo": "gui_hooks.reviewer_did_show_answer.append(on_show_answer)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.reviewer_will_answer_card",
+      "categoria": "reviewer",
+      "descricao": "Disparado ANTES de responder um card (permite cancelar a ação)",
+      "parametros": [
+        {
+          "nome": "ease_tuple",
+          "tipo": "Tuple[bool, int]",
+          "descricao": "Tupla (will_answer, ease) - pode modificar para cancelar ou alterar ease"
+        },
+        {
+          "nome": "reviewer",
+          "tipo": "Reviewer",
+          "descricao": "Objeto do revisor"
+        },
+        {
+          "nome": "card",
+          "tipo": "Card",
+          "descricao": "Card sendo respondido"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Validar resposta antes de processar",
+        "Cancelar resposta baseado em condições customizadas",
+        "Modificar ease dinamicamente antes de aplicar",
+        "Interceptar respostas para gamificação"
+      ],
+      "exemplo": "gui_hooks.reviewer_will_answer_card.append(before_answer)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.reviewer_did_answer_card",
+      "categoria": "reviewer",
+      "descricao": "Disparado APÓS responder um card",
+      "parametros": [
+        {
+          "nome": "reviewer",
+          "tipo": "Reviewer",
+          "descricao": "Objeto do revisor"
+        },
+        {
+          "nome": "card",
+          "tipo": "Card",
+          "descricao": "Card que foi respondido"
+        },
+        {
+          "nome": "ease",
+          "tipo": "int",
+          "descricao": "Ease selecionado (1=Again, 2=Hard, 3=Good, 4=Easy)"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Atualizar estatísticas customizadas",
+        "Dar recompensas em sistemas de gamificação",
+        "Registrar histórico de respostas",
+        "Calcular métricas de aprendizado",
+        "Atualizar progresso de Pokémon (Ankimon)"
+      ],
+      "exemplo": "gui_hooks.reviewer_did_answer_card.append(after_answer)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.reviewer_will_end",
+      "categoria": "reviewer",
+      "descricao": "Disparado quando o revisor está prestes a fechar",
+      "parametros": [],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Salvar estado antes de fechar revisor",
+        "Limpar recursos (timers, connections, listeners)",
+        "Mostrar resumo da sessão de estudo",
+        "Persistir dados de gamificação"
+      ],
+      "exemplo": "gui_hooks.reviewer_will_end.append(on_reviewer_close)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.webview_will_set_content",
+      "categoria": "webview",
+      "descricao": "Disparado antes de definir conteúdo em uma webview (permite injetar HTML/CSS/JS)",
+      "parametros": [
+        {
+          "nome": "web_content",
+          "tipo": "WebContent",
+          "descricao": "Objeto com propriedades body, head, css, js que podem ser modificadas"
+        },
+        {
+          "nome": "context",
+          "tipo": "object",
+          "descricao": "Contexto da webview (revisor, editor, browser, etc)"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.20",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Injetar CSS global para todas as webviews",
+        "Adicionar JavaScript customizado",
+        "Modificar HTML de cards programaticamente",
+        "Adicionar elementos visuais (sprites, overlays, animações)"
+      ],
+      "exemplo": "gui_hooks.webview_will_set_content.append(inject_custom_css)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.addon_config_editor_will_save_json",
+      "categoria": "config",
+      "descricao": "Disparado antes de salvar configuração de add-on",
+      "parametros": [
+        {
+          "nome": "text",
+          "tipo": "str",
+          "descricao": "JSON como string a ser salvo (pode modificar e retornar)"
+        },
+        {
+          "nome": "addon",
+          "tipo": "str",
+          "descricao": "Nome/ID do add-on sendo configurado"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Validar configuração antes de salvar",
+        "Normalizar valores de config (ex: garantir tipos corretos)",
+        "Aplicar configurações imediatamente após salvar",
+        "Migrar configs de versões antigas"
+      ],
+      "exemplo": "gui_hooks.addon_config_editor_will_save_json.append(validate_config)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.addon_config_editor_will_display_json",
+      "categoria": "config",
+      "descricao": "Disparado antes de exibir configuração de add-on no editor",
+      "parametros": [
+        {
+          "nome": "text",
+          "tipo": "str",
+          "descricao": "JSON como string a ser exibido (pode modificar e retornar)"
+        },
+        {
+          "nome": "addon",
+          "tipo": "str",
+          "descricao": "Nome/ID do add-on sendo configurado"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Formatar JSON para melhor legibilidade",
+        "Adicionar comentários ao JSON para guiar usuário",
+        "Ocultar campos sensíveis (API keys)",
+        "Traduzir labels de configuração"
+      ],
+      "exemplo": "gui_hooks.addon_config_editor_will_display_json.append(format_config_display)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.sync_did_finish",
+      "categoria": "sync",
+      "descricao": "Disparado após sincronização com AnkiWeb completar",
+      "parametros": [],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Sincronizar dados customizados do add-on",
+        "Fazer backup após sync bem-sucedido",
+        "Atualizar estado local após mudanças remotas",
+        "Recarregar configurações ou dados"
+      ],
+      "exemplo": "gui_hooks.sync_did_finish.append(on_sync_complete)",
+      "usado_em_ankimon": true
+    },
+    {
+      "nome": "gui_hooks.card_will_show",
+      "categoria": "reviewer",
+      "descricao": "Disparado antes de mostrar um card (permite modificar HTML dinamicamente)",
+      "parametros": [
+        {
+          "nome": "text",
+          "tipo": "str",
+          "descricao": "HTML do card (deve retornar HTML modificado)"
+        },
+        {
+          "nome": "card",
+          "tipo": "Card",
+          "descricao": "Card a ser exibido"
+        },
+        {
+          "nome": "kind",
+          "tipo": "str",
+          "descricao": "'question' ou 'answer' - indica qual lado do card"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.0",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Modificar HTML do card dinamicamente",
+        "Adicionar elementos customizados (imagens, sprites)",
+        "Aplicar filtros ou transformações ao conteúdo",
+        "Substituir ou envolver conteúdo existente"
+      ],
+      "exemplo": "gui_hooks.card_will_show.append(modify_card_html)",
+      "usado_em_ankimon": true,
+      "retorno_obrigatorio": true,
+      "nota": "IMPORTANTE: Este hook DEVE retornar o HTML (modificado ou original)"
+    },
+    {
+      "nome": "gui_hooks.av_player_will_play",
+      "categoria": "media",
+      "descricao": "Disparado antes de tocar áudio/vídeo em um card",
+      "parametros": [
+        {
+          "nome": "tag",
+          "tipo": "AVTag",
+          "descricao": "Tag de áudio/vídeo que será reproduzida"
+        }
+      ],
+      "versoes": {
+        "adicionado_em": "2.1.20",
+        "descontinuado_em": null,
+        "substituido_por": null
+      },
+      "uso_comum": [
+        "Modificar áudio antes de tocar (volume, velocidade)",
+        "Bloquear ou permitir reprodução condicionalmente",
+        "Adicionar efeitos sonoros customizados",
+        "Registrar estatísticas de reprodução de mídia"
+      ],
+      "exemplo": "gui_hooks.av_player_will_play.append(on_play_audio)",
+      "usado_em_ankimon": true
+    }
+  ],
+  "categorias": {
+    "reviewer": "Hooks relacionados ao revisor de cards (mostrar questão/resposta, responder, fechar)",
+    "webview": "Hooks para modificar interface HTML/CSS/JS das webviews do Anki",
+    "config": "Hooks de configuração de add-ons (salvar, exibir, validar)",
+    "sync": "Hooks de sincronização com AnkiWeb",
+    "media": "Hooks de mídia (reprodução de áudio/vídeo)"
+  },
+  "nota_versoes": "Versões baseadas no Ankimon (compatível com Anki 2.1.66+). Hooks podem existir em versões anteriores mas com comportamento diferente. Consulte documentação oficial para detalhes: https://addon-docs.ankiweb.net/hooks-and-filters.html"
+}
