@@ -67,6 +67,18 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
                 {c.metadata?.banca && (
                   <span className="text-xs text-slate-400">· {c.metadata.banca}{c.metadata.ano ? ` ${c.metadata.ano}` : ''}</span>
                 )}
+                {/* badges deck/tags read-only — só quando preenchidos (SPEC-05 campos opcionais — D-17) */}
+                {c.deck && (
+                  <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-700">
+                    {c.deck}
+                  </span>
+                )}
+                {c.tags?.length ? (
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                    {c.tags.slice(0, 3).join(' ')}
+                    {c.tags.length > 3 ? ` +${c.tags.length - 3}` : ''}
+                  </span>
+                ) : null}
                 <button
                   onClick={() => onToggleDrop(c.id)}
                   className={[
