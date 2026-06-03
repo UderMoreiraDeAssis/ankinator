@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T11:45:31.804Z"
-last_activity: 2026-06-03 -- Phase 02 planning complete
+last_updated: "2026-06-03T11:51:09.127Z"
+last_activity: 2026-06-03 -- Phase 02 execution started
 progress:
   total_phases: 5
   completed_phases: 1
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Flashcards que maximizam retenção a partir de qualquer texto de concurso, via assinatura Claude (sem custo por token).
-**Current focus:** Phase 01 — andaime-dos-especialistas
+**Current focus:** Phase 02 — loader-pdf-langchain
 
 ## Current Position
 
-Phase: 01 (andaime-dos-especialistas) — ✅ COMPLETE (4/4 planos)
-Plan: 4 of 4 (todos completos)
-Status: Ready to execute
+Phase: 02 (loader-pdf-langchain) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 02
 Next: Phase 02 (Loader PDF LangChain) — `/gsd-plan-phase 2` (sem planos ainda).
-Last activity: 2026-06-03 -- Phase 02 planning complete
+Last activity: 2026-06-03 -- Phase 02 execution started
 
 Progress: [██████████] 100% (Fase 1)
 

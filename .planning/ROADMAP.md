@@ -55,8 +55,8 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Wave 1: normalize() puro Document[]→LoadedDocument (D-07..D-10) + export cleanMarkdown + unit CLI-free (D-14) (PDF-03 núcleo)
-- [ ] 02-02-PLAN.md — Wave 1: sidecar Python odl_langchain_loader.py (markdown-por-página, JSON stdout) + requirements.txt pin 2.0.0 + checkpoint legitimidade (PDF-01; D-11/D-12/D-13)
+- [x] 02-01-PLAN.md — Wave 1: normalize() puro Document[]→LoadedDocument (D-07..D-10) + export cleanMarkdown + unit CLI-free (D-14) (PDF-03 núcleo)
+- [x] 02-02-PLAN.md — Wave 1: sidecar Python odl_langchain_loader.py (markdown-por-página, JSON stdout) + requirements.txt pin 2.0.0 + checkpoint legitimidade (PDF-01; D-11/D-12/D-13)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 0/4 | Planned | - |
+| 2. Loader PDF LangChain | 2/4 | In Progress|  |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
