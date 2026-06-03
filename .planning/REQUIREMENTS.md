@@ -11,9 +11,9 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 - [x] **SPEC-01**: Existe um módulo `server/src/core/specialists/` com um runner que reusa o mecanismo de spawn do `CliProvider` (assinatura), aceitando um prompt de especialista e retornando saída estruturada.
 - [x] **SPEC-02**: Cada especialista tem UM arquivo `.md` canônico (fonte única) com seu system prompt/conhecimento — sem duplicar texto entre app e Skill.
-- [ ] **SPEC-03**: Cada especialista tem uma Skill espelho em `.claude/skills/<nome>/SKILL.md` que referencia/embute o mesmo `.md` canônico, utilizável manualmente no Claude Code.
+- [x] **SPEC-03**: Cada especialista tem uma Skill espelho em `.claude/skills/<nome>/SKILL.md` que referencia/embute o mesmo `.md` canônico, utilizável manualmente no Claude Code.
 - [ ] **SPEC-04**: Existe a interface `ImageProvider` com a implementação `svg-claude` (sem implementar providers de raster).
-- [ ] **SPEC-05**: O tipo `Questao` é estendido (deck, tags, mnemônico, svg) de forma consistente entre server e web, sem quebrar o fluxo atual.
+- [x] **SPEC-05**: O tipo `Questao` é estendido (deck, tags, mnemônico, svg) de forma consistente entre server e web, sem quebrar o fluxo atual.
 
 ### Loader PDF (LangChain)
 
@@ -78,9 +78,9 @@ Reconhecidos, fora do roadmap atual.
 |-------------|-------|--------|
 | SPEC-01 | Phase 1 | Complete |
 | SPEC-02 | Phase 1 | Complete |
-| SPEC-03 | Phase 1 | Pending |
+| SPEC-03 | Phase 1 | Complete |
 | SPEC-04 | Phase 1 | Pending |
-| SPEC-05 | Phase 1 | Pending |
+| SPEC-05 | Phase 1 | Complete |
 | PDF-01 | Phase 2 | Pending |
 | PDF-02 | Phase 2 | Pending |
 | PDF-03 | Phase 2 | Pending |
