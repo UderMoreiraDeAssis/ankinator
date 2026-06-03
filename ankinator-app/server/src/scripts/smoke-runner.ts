@@ -11,6 +11,11 @@
  *      userMessage NÃO vaza para args — vai por stdin).
  *  (b) O PASSO 3 (runClaudeCli) EXERCITA o CLI e só é rodado no Plano 04, em modo `tsx` (src)
  *      E `node dist` (prod), para fechar o Pitfall 1 (resolução do .md cross-mode).
+ *
+ * FLAG `--assert-args` (Plano 04): roda SÓ os passos 1+2 (CLI-free) e encerra com sucesso ANTES
+ *      do passo 3 — permite executar o guard determinístico de não-regressão SPEC-01 (args/cwd/env)
+ *      offline, sem spawnar o `claude` (sem quota, sem rede). Sem a flag, o passo 3 ainda roda
+ *      (exercita o CLI) — comportamento original preservado para o checkpoint humano.
  */
 import os from 'node:os';
 import { runClaudeCli, buildSpawnArgs } from '../core/specialists/runner.js';
@@ -65,6 +70,12 @@ if (plan.env.PATH !== process.env.PATH) fail('env não deriva de process.env (PA
 // userMessage NÃO pode aparecer em args (vai por stdin — mitigação de injection)
 if (plan.args.includes(USER_MESSAGE_FIXO)) fail('userMessage VAZOU para args (deveria ir por stdin)');
 console.log('   ✓ args na ordem canônica exata; cwd = os.tmpdir(); env deriva de process.env; userMessage NÃO vaza para args (vai por stdin).');
+
+// ── Modo CLI-free (guard SPEC-01): `--assert-args` encerra antes do passo 3 ──
+if (process.argv.includes('--assert-args')) {
+  console.log('\n--assert-args: passos 1+2 OK (CLI-free); passo 3 (CLI) pulado por design. Guard SPEC-01 verde.');
+  process.exit(0);
+}
 
 // ── PASSO 3: runClaudeCli (EXERCITA o CLI — rodado só no Plano 04) ──
 console.log('\n3) runClaudeCli (exercita o claude CLI — rodado no Plano 04):');
