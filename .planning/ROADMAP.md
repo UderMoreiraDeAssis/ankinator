@@ -27,10 +27,13 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
   2. Cada especialista tem um `.md` canônico único; a Skill correspondente em `.claude/skills/` referencia o mesmo conteúdo (sem cópia divergente).
   3. A interface `ImageProvider` existe com `svg-claude` registrada; nenhum provider raster é implementado.
   4. O tipo `Questao` ganha campos opcionais (deck, tags, mnemônico, svg) espelhados em server e web; build passa e o fluxo atual continua intacto.
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] 01-01: TBD (definido pelo planner)
+- [ ] 01-01-PLAN.md — Wave 0: smoke-runner.ts scaffold + baseline do CliProvider + npm ci
+- [ ] 01-02-PLAN.md — Wave 1: runClaudeCli (extração) + CliProvider delega + prompt-loader + 5 .md canônicos (SPEC-01/02)
+- [ ] 01-03-PLAN.md — Wave 1: Questao +4 campos opcionais (server+web) + 5 SKILL.md espelho (SPEC-05/03)
+- [ ] 01-04-PLAN.md — Wave 2: ImageProvider/svg-claude + validação cross-mode loadPrompt + checkpoint de regressão (SPEC-04/01)
 
 ### Phase 2: Loader PDF LangChain
 **Goal**: Adicionar `langchain-opendataloader-pdf` como loader de PDF opcional via sidecar Python (reusando o padrão `ODL_PYTHON`), com saída normalizada para `LoadedDocument` e fallback automático para o loader Node atual.
@@ -91,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Andaime dos Especialistas | 0/TBD | Not started | - |
+| 1. Andaime dos Especialistas | 0/4 | Not started | - |
 | 2. Loader PDF LangChain | 0/TBD | Not started | - |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
