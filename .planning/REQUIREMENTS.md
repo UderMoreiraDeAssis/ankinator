@@ -23,13 +23,13 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 ### Classificação de Deck
 
-- [ ] **DECK-01**: O especialista classificador gera uma hierarquia de deck Anki (`Matéria::Assunto::Subtópico`) para o conjunto de cards.
-- [ ] **DECK-02**: O classificador atribui tags relevantes (banca, ano, nível, tema) por card.
+- [x] **DECK-01**: O especialista classificador gera uma hierarquia de deck Anki (`Matéria::Assunto::Subtópico`) para o conjunto de cards.
+- [x] **DECK-02**: O classificador atribui tags relevantes (banca, ano, nível, tema) por card.
 
 ### Card Educativo
 
-- [ ] **CARD-01**: O construtor de card reescreve pergunta/resposta para atomicidade (minimum information principle), evitando cards enciclopédicos.
-- [ ] **CARD-02**: O verso inclui explicação curta e atribuição de fonte (página/origem).
+- [x] **CARD-01**: O construtor de card reescreve pergunta/resposta para atomicidade (minimum information principle), evitando cards enciclopédicos.
+- [x] **CARD-02**: O verso inclui explicação curta e atribuição de fonte (página/origem).
 
 ### Mnemônicos
 
@@ -47,7 +47,7 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 - [ ] **ORCH-01**: O orquestrador Anki decide por-card quais estágios rodar (ex.: mnemônico/imagem só p/ cards de memorização).
 - [ ] **ORCH-02**: Estágios caros são batched/seletivos para poupar quota da assinatura (ex.: classificar o deck inteiro numa chamada).
 - [ ] **ORCH-03**: O orquestrador aplica princípios Anki (atomicidade, evitar redundância) ao agregar o resultado.
-- [ ] **PIPE-01**: Existe a fase `enrichAll()` que roda após `generateAll()`, reusando o job/SSE para progresso.
+- [x] **PIPE-01**: Existe a fase `enrichAll()` que roda após `generateAll()`, reusando o job/SSE para progresso.
 - [ ] **PIPE-02**: A UI expõe toggles do modo "educativo" (classificar, card educativo, mnemônico, imagem) com defaults inteligentes.
 - [x] **PIPE-03**: O fluxo atual (sem modo educativo, sem Python) continua funcionando sem regressão.
 
@@ -84,11 +84,11 @@ Reconhecidos, fora do roadmap atual.
 | PDF-01 | Phase 2 | Complete |
 | PDF-02 | Phase 2 | Complete |
 | PDF-03 | Phase 2 | Complete |
-| DECK-01 | Phase 3 | Pending |
-| DECK-02 | Phase 3 | Pending |
-| CARD-01 | Phase 3 | Pending |
-| CARD-02 | Phase 3 | Pending |
-| PIPE-01 | Phase 3 | Pending |
+| DECK-01 | Phase 3 | Complete |
+| DECK-02 | Phase 3 | Complete |
+| CARD-01 | Phase 3 | Complete |
+| CARD-02 | Phase 3 | Complete |
+| PIPE-01 | Phase 3 | Complete |
 | PIPE-02 | Phase 3 | Pending |
 | PIPE-03 | Phase 3 | Complete |
 | MNEM-01 | Phase 4 | Pending |
