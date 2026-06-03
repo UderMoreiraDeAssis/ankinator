@@ -30,7 +30,7 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
 **Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0 (build-safe): npm ci + baseline do CliProvider (sem smoke-runner — movido p/ Plano 02)
+- [x] 01-01-PLAN.md — Wave 0 (build-safe): npm ci + baseline do CliProvider (sem smoke-runner — movido p/ Plano 02)
 - [ ] 01-02-PLAN.md — Wave 1: runClaudeCli + buildSpawnArgs (extração) + CliProvider delega + prompt-loader + 5 .md canônicos + smoke-runner.ts (após runner/loader) (SPEC-01/02)
 - [ ] 01-03-PLAN.md — Wave 1: Questao +4 campos opcionais (server+web) + 5 SKILL.md espelho (SPEC-05/03)
 - [ ] 01-04-PLAN.md — Wave 2: ImageProvider/svg-claude + assertion CLI-free de args + cross-mode loadPrompt + checkpoint hard-block de regressão (SPEC-04/01)
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Andaime dos Especialistas | 0/4 | Not started | - |
+| 1. Andaime dos Especialistas | 1/4 | In Progress|  |
 | 2. Loader PDF LangChain | 0/TBD | Not started | - |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |

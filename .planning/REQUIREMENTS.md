@@ -9,7 +9,7 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 ### Especialistas (Andaime)
 
-- [ ] **SPEC-01**: Existe um módulo `server/src/core/specialists/` com um runner que reusa o mecanismo de spawn do `CliProvider` (assinatura), aceitando um prompt de especialista e retornando saída estruturada.
+- [x] **SPEC-01**: Existe um módulo `server/src/core/specialists/` com um runner que reusa o mecanismo de spawn do `CliProvider` (assinatura), aceitando um prompt de especialista e retornando saída estruturada.
 - [ ] **SPEC-02**: Cada especialista tem UM arquivo `.md` canônico (fonte única) com seu system prompt/conhecimento — sem duplicar texto entre app e Skill.
 - [ ] **SPEC-03**: Cada especialista tem uma Skill espelho em `.claude/skills/<nome>/SKILL.md` que referencia/embute o mesmo `.md` canônico, utilizável manualmente no Claude Code.
 - [ ] **SPEC-04**: Existe a interface `ImageProvider` com a implementação `svg-claude` (sem implementar providers de raster).
@@ -76,7 +76,7 @@ Reconhecidos, fora do roadmap atual.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SPEC-01 | Phase 1 | Pending |
+| SPEC-01 | Phase 1 | Complete |
 | SPEC-02 | Phase 1 | Pending |
 | SPEC-03 | Phase 1 | Pending |
 | SPEC-04 | Phase 1 | Pending |
