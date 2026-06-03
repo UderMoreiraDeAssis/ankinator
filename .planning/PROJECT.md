@@ -18,17 +18,15 @@ Gerar flashcards que **maximizam a retenção** a partir de um texto qualquer de
 - ✓ Chunking semântico + geração de questões via Claude (provider CLI assinatura / API) — v1
 - ✓ Revisão de cards na UI + exportação Anki (CSV e AnkiConnect) — v1
 - ✓ Loader PDF via `langchain-opendataloader-pdf` (sidecar Python opt-in, normalizado p/ `LoadedDocument`, fallback Node default) — validado na Phase 02 (PDF-01/02/03; 11/11 automated, smoke real pendente em 02-HUMAN-UAT)
+- ✓ Classificador de deck (deck::subdeck + tags) + construtor de card educativo + modo "educativo" na UI via `enrichAll()` gated por `deveRodarEnrich` — validado na Phase 03 (PIPE-01/02/03, DECK-01/02, CARD-01/02; 7/7 must-haves, 18 testes + guards, UI runtime pendente em 03-HUMAN-UAT)
 
 ### Active
 
 <!-- Current scope. Building toward these (upgrade-2026 milestone). -->
 - [ ] Andaime de especialistas: fonte única `.md` → Skill (`.claude/skills/`) + estágio no app (`server/src/core/specialists/`)
-- [ ] Especialista classificador de deck (deck::subdeck + tags)
-- [ ] Especialista construtor de card educativo (atomicidade, explicação, fonte)
 - [ ] Especialista de mnemônicos
 - [ ] Especialista de imagem de mnemônico (SVG gerado pelo Claude, sem API key)
 - [ ] Orquestrador Anki (decide por-card quais estágios rodar; batching p/ poupar quota)
-- [ ] Modo "educativo" opcional na UI (toggles + defaults inteligentes; nova fase `enrichAll()`)
 
 ### Out of Scope
 
@@ -72,4 +70,4 @@ Gerar flashcards que **maximizam a retenção** a partir de um texto qualquer de
 **After each phase transition:** atualizar Validated/Active/Out of Scope e a tabela de decisões (✓ Good / ⚠️ Revisit).
 
 ---
-*Last updated: 2026-06-03 after Phase 02 complete (loader PDF LangChain — opt-in sidecar)*
+*Last updated: 2026-06-03 after Phase 03 complete (classificador de deck + card educativo + modo educativo na UI via enrichAll gated)*
