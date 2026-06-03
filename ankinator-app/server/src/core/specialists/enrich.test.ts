@@ -7,8 +7,21 @@
  * Os testes de exporter (tagsDaQuestao merge, ankiconnect routing, csv deck column)
  * estão marcados como it.todo até o Plano 02 exportar as funções privadas.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parseClassificacoesJson, parseSingleCard, enrichAll, deveRodarEnrich } from './enrich.js';
+
+// ── Mocks de infra para testes comportamentais de enrichAll ──────────────────
+
+vi.mock('./runner.js', () => ({
+  runClaudeCli: vi.fn(),
+}));
+
+vi.mock('./prompt-loader.js', () => ({
+  loadPrompt: vi.fn((nome: string) => nome),
+}));
+
+import { runClaudeCli } from './runner.js';
+import { loadPrompt } from './prompt-loader.js';
 import { tagsDaQuestao, toAnkiCsv } from '../exporters/csv.js';
 import { tagsDaQuestao as tagsDaQuestaoAnki } from '../exporters/ankiconnect.js';
 import type { Questao } from '../types.js';
@@ -63,44 +76,133 @@ describe('tagsDaQuestao merge', () => {
 // ── split extraida (CARD-01) ──────────────────────────────────────────────────
 
 describe('split extraida', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
   it('split 1→N só ocorre para tipo criada — extraida nunca divide (parseSingleCard / enrichAll)', () => {
     // RED: parseSingleCard ainda não existe
     expect(typeof parseSingleCard).toBe('function');
   });
 
-  it.todo(
-    'extraida com múltiplos cards no JSON retorna apenas 1 (sem split) — validado no enrichAll'
-  );
+  it('extraida com múltiplos cards no JSON retorna apenas 1 (sem split) — validado no enrichAll', async () => {
+    // Arrange: LLM devolve 2 cards no JSON para um único card extraida
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"cards":[{"pergunta":"P1","resposta":"R1"},{"pergunta":"P2","resposta":"R2"}]}'
+    );
+
+    // Act
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'Porig', resposta: 'Rorig' } as import('../types.js').Questao],
+      { cardBuilder: true }
+    );
+
+    // Assert: extraida NUNCA divide — D-09/D-10
+    expect(result.length).toBe(1);
+  });
 });
 
 // ── card-builder extraida verso (CARD-02) ──────────────────────────────────────
 
 describe('card-builder extraida verso', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
   it('parseSingleCard retorna array com pergunta e resposta', () => {
     // RED: função não existe ainda
     expect(typeof parseSingleCard).toBe('function');
   });
 
-  it.todo(
-    'extraida: ajusta só q.resposta (explicação + fonte); pergunta/gabarito intactos — TODO(Plano 01)'
-  );
+  it('extraida: ajusta só q.resposta (explicação + fonte); pergunta/gabarito intactos', async () => {
+    // Arrange: LLM devolve card com pergunta alterada e resposta nova
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"cards":[{"pergunta":"PERGUNTA ALTERADA","resposta":"Resposta nova com explicação e fonte"}]}'
+    );
+
+    // Act
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'Pergunta original', resposta: 'Resposta original' } as import('../types.js').Questao],
+      { cardBuilder: true }
+    );
+
+    // Assert: pergunta original intacta (D-10), apenas resposta ajustada
+    expect(result[0].pergunta).toBe('Pergunta original');
+    expect(result[0].resposta).toBe('Resposta nova com explicação e fonte');
+  });
 });
 
 // ── enrichAll sequência (PIPE-01) ─────────────────────────────────────────────
 
 describe('enrichAll sequência', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
   it('enrichAll é uma função assíncrona exportada', () => {
     // RED: função não existe ainda
     expect(typeof enrichAll).toBe('function');
   });
 
-  it.todo(
-    'encadeia classificar → card-builder em ordem (estágio 1 antes de estágio 2) — TODO(Plano 01)'
-  );
+  it('encadeia classificar → card-builder em ordem (estágio 1 antes de estágio 2)', async () => {
+    // Arrange: loadPrompt retorna o nome do especialista como systemPrompt
+    // runClaudeCli registra a ordem dos systemPrompt recebidos
+    const promptsRecebidos: string[] = [];
+    vi.mocked(runClaudeCli).mockImplementation(async ({ systemPrompt }) => {
+      promptsRecebidos.push(systemPrompt as string);
+      if ((systemPrompt as string).includes('deck-classifier')) {
+        return '{"classificacoes":[]}';
+      }
+      return '{"cards":[]}';
+    });
 
-  it.todo(
-    'isolamento de erro por-unidade: erro em um card não aborta o lote — TODO(Plano 01)'
-  );
+    // Act
+    await enrichAll(
+      [{ id: '1', tipo: 'criada', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { classificar: true, cardBuilder: true }
+    );
+
+    // Assert: deck-classifier aparece antes de card-builder na sequência de chamadas
+    const idxClassificador = promptsRecebidos.findIndex((p) => p.includes('deck-classifier'));
+    const idxCardBuilder = promptsRecebidos.findIndex((p) => p.includes('card-builder'));
+    expect(idxClassificador).toBeGreaterThanOrEqual(0);
+    expect(idxCardBuilder).toBeGreaterThanOrEqual(0);
+    expect(idxClassificador).toBeLessThan(idxCardBuilder);
+  });
+
+  it('isolamento de erro por-unidade: erro em um card não aborta o lote', async () => {
+    // Arrange: 3 cards criados; 2ª chamada do card-builder (card id '2') rejeita
+    let callCount = 0;
+    vi.mocked(runClaudeCli).mockImplementation(async () => {
+      callCount++;
+      if (callCount === 2) {
+        throw new Error('Falha simulada no card 2');
+      }
+      return '{"cards":[{"pergunta":"PX","resposta":"RX"}]}';
+    });
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    const onProgress = (e: import('./enrich.js').EnrichProgress) => progressos.push(e);
+
+    // Act: não deve lançar
+    const result = await enrichAll(
+      [
+        { id: '1', tipo: 'criada', pergunta: 'P1', resposta: 'R1' } as import('../types.js').Questao,
+        { id: '2', tipo: 'criada', pergunta: 'P2', resposta: 'R2' } as import('../types.js').Questao,
+        { id: '3', tipo: 'criada', pergunta: 'P3', resposta: 'R3' } as import('../types.js').Questao,
+      ],
+      { cardBuilder: true },
+      onProgress
+    );
+
+    // Assert: lote não abortou — 3 cards no resultado (criada pode gerar novas UUIDs para os ok)
+    expect(result.length).toBe(3);
+
+    // Card 2 com erro: foi mantido pelo catch (D-13) — id original preservado, pergunta/resposta intactos
+    const card2 = result.find((q) => q.id === '2');
+    expect(card2).toBeDefined();
+    expect(card2?.pergunta).toBe('P2');
+    expect(card2?.resposta).toBe('R2');
+
+    // onProgress foi chamado com erro para o card 2
+    const progressoComErro = progressos.find((p) => p.erro !== undefined);
+    expect(progressoComErro).toBeDefined();
+    expect(progressoComErro?.erro).toContain('Falha simulada');
+  });
 });
 
 // ── ankiconnect routing (DECK-01-anki) ───────────────────────────────────────
