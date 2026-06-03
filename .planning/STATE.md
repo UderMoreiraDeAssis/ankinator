@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-03T05:00:00.000Z"
-last_activity: 2026-06-03
+status: "Fase 1 fechada. 01-04 completo: ImageProvider/svg-claude (SPEC-04) + guard CLI-free SPEC-01 + loadPrompt cross-mode (Pitfall 1). Task 4 (HARD-BLOCK) LIBERADA — usuário forneceu PDFs reais; orquestrador rodou smoke-cli 2× (curso-8.pdf → 5 questões; curso-230990-completo.pdf → 6 questões), confirmando zero regressão (SPEC-01 geração + PIPE-03 load→chunk→generate). Evidência: 01-04-SUMMARY.md + checkpoint-04-regression-signoff.txt."
+last_updated: "2026-06-03T10:40:28.268Z"
+last_activity: 2026-06-03 -- Fase 1 completa ponta-a-ponta; checkpoint de regressão liberado com 2 PDFs reais.
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 4
   completed_plans: 4
-  percent: 100
-plan_04_status: complete
+  percent: 20
 ---
 
 # Project State
@@ -97,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T05:00:00.000Z
-Stopped at: Fase 1 COMPLETA (4/4). Checkpoint 01-04 liberado com 2 PDFs reais. Pronto para a Phase 02.
-Resume file: None (próximo passo: `/gsd-plan-phase 2`)
+Last session: 2026-06-03T10:40:28.257Z
+Stopped at: Phase 02 context gathered (15/15 decisions, --power)
+Resume file: .planning/phases/02-loader-pdf-langchain/02-CONTEXT.md
