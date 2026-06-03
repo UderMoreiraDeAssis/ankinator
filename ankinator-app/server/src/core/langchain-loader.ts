@@ -29,17 +29,36 @@ function pythonBin(): string | null {
 
 /**
  * Roda um subprocesso e captura stdout/stderr integralmente.
- * Cópia byte-idêntica de ocr-loader.ts:23-33 (D-11 / SEM temp dir D-01).
+ *
+ * CR-01 (Phase 02): NÃO concatena `d.toString()` por chunk. Aqui o stdout É o
+ * payload do documento (não apenas um exit code, como em ocr-loader.ts, que lê o
+ * conteúdo do disco). Streams Node fatiam em fronteiras de BYTE, não de caractere;
+ * um caractere UTF-8 multi-byte (á, ã, ç, é — onipresentes em material de concurso
+ * PT-BR) partido entre dois chunks vira mojibake e corrompe todo flashcard gerado.
+ * Bufferizamos os chunks em Buffer[] e decodificamos UMA vez com
+ * Buffer.concat(...).toString('utf8'), que respeita as fronteiras de caractere.
  */
 function run(cmd: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (d) => (stdout += d.toString()));
-    child.stderr.on('data', (d) => (stderr += d.toString()));
-    child.on('error', () => resolve({ code: -1, stdout, stderr }));
-    child.on('close', (code) => resolve({ code: code ?? -1, stdout, stderr }));
+    const out: Buffer[] = [];
+    const err: Buffer[] = [];
+    child.stdout.on('data', (d: Buffer) => out.push(d));
+    child.stderr.on('data', (d: Buffer) => err.push(d));
+    child.on('error', () =>
+      resolve({
+        code: -1,
+        stdout: Buffer.concat(out).toString('utf8'),
+        stderr: Buffer.concat(err).toString('utf8'),
+      })
+    );
+    child.on('close', (code) =>
+      resolve({
+        code: code ?? -1,
+        stdout: Buffer.concat(out).toString('utf8'),
+        stderr: Buffer.concat(err).toString('utf8'),
+      })
+    );
   });
 }
 
