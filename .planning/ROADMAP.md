@@ -1,0 +1,98 @@
+# Roadmap: Ankinator — Upgrade 2026
+
+## Overview
+
+A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora a extração de PDF. A jornada vai do **andaime** dos especialistas (estrutura + fonte única + interface de imagem), passa pelo **loader LangChain** opcional, entrega os especialistas de **classificação e card educativo** ligados a um modo "educativo" opcional na UI, adiciona **mnemônicos e imagens SVG**, e fecha com o **orquestrador** que decide por-card o que rodar — tudo via assinatura Claude, sem custo por token.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+- [ ] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
+- [ ] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf`, normalizado para `LoadedDocument`, fallback Node
+- [ ] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico; fase `enrichAll()` + toggles na UI
+- [ ] **Phase 4: Mnemônicos + Imagem SVG** - Especialistas de mnemônico e imagem (SVG via Claude), sanitização e embed no export Anki
+- [ ] **Phase 5: Orquestrador Anki** - Decisão por-card, batching p/ poupar quota, princípios Anki, integração ponta-a-ponta
+
+## Phase Details
+
+### Phase 1: Andaime dos Especialistas
+**Goal**: Criar a fundação reutilizável dos especialistas — um runner que reusa o spawn do `CliProvider` (assinatura), o padrão de fonte única `.md` espelhado em Skills, a interface `ImageProvider` (impl `svg-claude`), e a extensão consistente do tipo `Questao` — sem ativar nenhum estágio no fluxo ainda e sem regressão.
+**Depends on**: Nothing (first phase)
+**Requirements**: SPEC-01, SPEC-02, SPEC-03, SPEC-04, SPEC-05
+**Success Criteria** (what must be TRUE):
+  1. Existe `server/src/core/specialists/` com um runner que envia um prompt de especialista ao `claude` CLI e retorna saída estruturada, reusando o mecanismo do `CliProvider`.
+  2. Cada especialista tem um `.md` canônico único; a Skill correspondente em `.claude/skills/` referencia o mesmo conteúdo (sem cópia divergente).
+  3. A interface `ImageProvider` existe com `svg-claude` registrada; nenhum provider raster é implementado.
+  4. O tipo `Questao` ganha campos opcionais (deck, tags, mnemônico, svg) espelhados em server e web; build passa e o fluxo atual continua intacto.
+**Plans**: TBD
+
+Plans:
+- [ ] 01-01: TBD (definido pelo planner)
+
+### Phase 2: Loader PDF LangChain
+**Goal**: Adicionar `langchain-opendataloader-pdf` como loader de PDF opcional via sidecar Python (reusando o padrão `ODL_PYTHON`), com saída normalizada para `LoadedDocument` e fallback automático para o loader Node atual.
+**Depends on**: Phase 1
+**Requirements**: PDF-01, PDF-02, PDF-03
+**Success Criteria** (what must be TRUE):
+  1. Um script Python extrai um PDF em Documents por página usando `langchain-opendataloader-pdf`.
+  2. O app aciona o loader LangChain por env/flag (opt-in) e cai para o loader Node quando Python/pacote estiver ausente.
+  3. A saída é normalizada para `LoadedDocument` e o chunker existente processa sem mudanças.
+**Plans**: TBD
+
+Plans:
+- [ ] 02-01: TBD
+
+### Phase 3: Classificador de Deck + Card Educativo
+**Goal**: Entregar os dois primeiros especialistas de conteúdo (classificador de deck/tags e construtor de card educativo), conectados a uma nova fase `enrichAll()` pós-geração e a toggles do modo "educativo" na UI, sem regredir o fluxo padrão.
+**Depends on**: Phase 1
+**Requirements**: DECK-01, DECK-02, CARD-01, CARD-02, PIPE-01, PIPE-02, PIPE-03
+**Success Criteria** (what must be TRUE):
+  1. Com o modo educativo ligado, os cards recebem deck hierárquico (`Matéria::Assunto::Subtópico`) e tags.
+  2. Os cards são reescritos para atomicidade, com explicação curta e fonte no verso.
+  3. A UI permite ligar/desligar os estágios; progresso aparece via SSE; com tudo desligado o fluxo atual roda igual.
+**Plans**: TBD
+
+Plans:
+- [ ] 03-01: TBD
+
+### Phase 4: Mnemônicos + Imagem SVG
+**Goal**: Adicionar os especialistas de mnemônico e de imagem de mnemônico (SVG gerado pelo Claude), com sanitização do SVG e embed nos cards exportados (CSV e AnkiConnect).
+**Depends on**: Phase 3
+**Requirements**: MNEM-01, MNEM-02, IMG-01, IMG-02, IMG-03
+**Success Criteria** (what must be TRUE):
+  1. Cards de memorização recebem um mnemônico apropriado (técnica escolhida pelo conteúdo).
+  2. É gerado um SVG autocontido ilustrando o mnemônico, sanitizado (sem script/URLs externas).
+  3. O SVG aparece corretamente nos cards exportados via CSV e AnkiConnect.
+**Plans**: TBD
+
+Plans:
+- [ ] 04-01: TBD
+
+### Phase 5: Orquestrador Anki
+**Goal**: Amarrar tudo com o orquestrador que decide por-card quais estágios rodar, aplica batching para poupar quota da assinatura e princípios Anki na agregação, entregando o modo educativo ponta-a-ponta.
+**Depends on**: Phase 4
+**Requirements**: ORCH-01, ORCH-02, ORCH-03
+**Success Criteria** (what must be TRUE):
+  1. O orquestrador decide por-card quais estágios aplicar (ex.: mnemônico/imagem só em cards de memorização).
+  2. Estágios caros são batched/seletivos, evitando explosão de chamadas ao CLI.
+  3. O fluxo educativo roda de ponta a ponta a partir da UI e produz cards enriquecidos exportáveis.
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Andaime dos Especialistas | 0/TBD | Not started | - |
+| 2. Loader PDF LangChain | 0/TBD | Not started | - |
+| 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
+| 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
+| 5. Orquestrador Anki | 0/TBD | Not started | - |
