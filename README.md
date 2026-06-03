@@ -1,3 +1,20 @@
+> ## 🎴 Ankinator 2026 — novo app web
+>
+> O caminho recomendado agora é o **app web local** em [`ankinator-app/`](./ankinator-app/),
+> que usa o [OpenDataLoader](https://github.com/opendataloader-project) para extração
+> estruturada de PDF + Claude para gerar questões, com interface de arrastar→revisar→exportar.
+>
+> ```bash
+> cd ankinator-app && npm install && cp .env.example .env   # preencha ANTHROPIC_API_KEY
+> npm run dev        # http://localhost:5173
+> ```
+>
+> Veja [`ankinator-app/README.md`](./ankinator-app/README.md). O servidor MCP em
+> [`ankinator-mcp/`](./ankinator-mcp/) e os scripts em [`legacy/`](./legacy/) seguem
+> disponíveis como referência, mas não são mais o fluxo principal. O conteúdo abaixo é histórico.
+>
+> ---
+
 # Ankinator - Sistema Avançado de Questões para Concursos Públicos
 
 <div align="center">
