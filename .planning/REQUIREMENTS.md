@@ -17,9 +17,9 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 ### Loader PDF (LangChain)
 
-- [ ] **PDF-01**: Existe um script Python `tools/odl_langchain_loader.py` que usa `langchain-opendataloader-pdf` para extrair PDF em Documents por página (texto/markdown + metadata).
-- [ ] **PDF-02**: Existe `langchain-loader.ts` que invoca o sidecar via spawn, ativado por env/flag (opt-in), com fallback automático para o loader Node atual quando indisponível.
-- [ ] **PDF-03**: A saída do loader LangChain é normalizada para o tipo `LoadedDocument` existente (sections/elements/markdown), reaproveitando o chunker.
+- [x] **PDF-01**: Existe um script Python `tools/odl_langchain_loader.py` que usa `langchain-opendataloader-pdf` para extrair PDF em Documents por página (texto/markdown + metadata).
+- [x] **PDF-02**: Existe `langchain-loader.ts` que invoca o sidecar via spawn, ativado por env/flag (opt-in), com fallback automático para o loader Node atual quando indisponível.
+- [x] **PDF-03**: A saída do loader LangChain é normalizada para o tipo `LoadedDocument` existente (sections/elements/markdown), reaproveitando o chunker.
 
 ### Classificação de Deck
 
@@ -81,9 +81,9 @@ Reconhecidos, fora do roadmap atual.
 | SPEC-03 | Phase 1 | Complete |
 | SPEC-04 | Phase 1 | Complete |
 | SPEC-05 | Phase 1 | Complete |
-| PDF-01 | Phase 2 | Pending |
-| PDF-02 | Phase 2 | Pending |
-| PDF-03 | Phase 2 | Pending |
+| PDF-01 | Phase 2 | Complete |
+| PDF-02 | Phase 2 | Complete |
+| PDF-03 | Phase 2 | Complete |
 | DECK-01 | Phase 3 | Pending |
 | DECK-02 | Phase 3 | Pending |
 | CARD-01 | Phase 3 | Pending |

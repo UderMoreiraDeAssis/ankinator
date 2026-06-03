@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 4/4 | Complete   | 2026-06-03 |
+| 2. Loader PDF LangChain | 4/4 | Complete    | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
