@@ -33,6 +33,11 @@ export interface Questao {
   pageStart?: number;
   pageEnd?: number;
   metadata?: QuestaoMetadata;
+  // ── SPEC-05 (opcionais; ignorados quando ausentes; embed real nas fases 3-4) ──
+  deck?: string;          // hierarquia Anki "Matéria::Assunto::Subtópico"
+  tags?: string[];        // banca, ano, nível, tema
+  mnemonico?: string;     // texto do mnemônico
+  mnemonicoSvg?: string;  // SVG autocontido do mnemônico
 }
 
 export interface ChunkProgress {
