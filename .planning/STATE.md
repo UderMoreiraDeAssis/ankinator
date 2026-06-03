@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: milestone_complete
-last_updated: 2026-06-03T16:23:14.977Z
+status: in_progress
+last_updated: 2026-06-03
 last_activity: 2026-06-03
 progress:
-  total_phases: 3
+  total_phases: 5
   completed_phases: 3
   total_plans: 12
   completed_plans: 12
-  percent: 100
-stopped_at: Milestone complete (Phase 03 was final phase)
+  percent: 60
+stopped_at: Phase 03 complete — Phase 04 (Mnemônicos + Imagem SVG) next
 ---
 
 # Project State
@@ -21,17 +21,17 @@ stopped_at: Milestone complete (Phase 03 was final phase)
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Flashcards que maximizam retenção a partir de qualquer texto de concurso, via assinatura Claude (sem custo por token).
-**Current focus:** Milestone complete
+**Current focus:** Phase 04 — Mnemônicos + Imagem SVG
 
 ## Current Position
 
-Phase: 03
+Phase: 04
 Plan: Not started
-Status: Milestone complete
-Next: Phase 02 (Loader PDF LangChain) — `/gsd-plan-phase 2` (sem planos ainda).
+Status: Phase 03 complete — Phase 04 next
+Next: Phase 04 (Mnemônicos + Imagem SVG) — `/gsd-discuss-phase 4 --power` (em andamento).
 Last activity: 2026-06-03
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
