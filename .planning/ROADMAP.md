@@ -43,10 +43,13 @@ Plans:
   1. Um script Python extrai um PDF em Documents por página usando `langchain-opendataloader-pdf`.
   2. O app aciona o loader LangChain por env/flag (opt-in) e cai para o loader Node quando Python/pacote estiver ausente.
   3. A saída é normalizada para `LoadedDocument` e o chunker existente processa sem mudanças.
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Wave 1: normalize() puro Document[]→LoadedDocument (D-07..D-10) + export cleanMarkdown + unit CLI-free (D-14) (PDF-03 núcleo)
+- [ ] 02-02-PLAN.md — Wave 1: sidecar Python odl_langchain_loader.py (markdown-por-página, JSON stdout) + requirements.txt pin 2.0.0 + checkpoint legitimidade (PDF-01; D-11/D-12/D-13)
+- [ ] 02-03-PLAN.md — Wave 2: langchain-loader.ts (spawn sem temp-dir + isLangchainAvailable + runLangchainLoader→normalize) + config.ts env vars (PDF-02; D-01/D-02/D-04)
+- [ ] 02-04-PLAN.md — Wave 3: branch em loadDocument (D-03/D-06) + buildConvertOptions extraído + guard CLI-free D-15 + smoke gated D-14 (PDF-02/PDF-03 não-regressão)
 
 ### Phase 3: Classificador de Deck + Card Educativo
 **Goal**: Entregar os dois primeiros especialistas de conteúdo (classificador de deck/tags e construtor de card educativo), conectados a uma nova fase `enrichAll()` pós-geração e a toggles do modo "educativo" na UI, sem regredir o fluxo padrão.
@@ -95,8 +98,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 0/TBD | Not started | - |
+| 2. Loader PDF LangChain | 0/4 | Planned | - |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
-</content>
