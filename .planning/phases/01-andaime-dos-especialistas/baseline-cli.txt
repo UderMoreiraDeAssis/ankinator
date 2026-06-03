@@ -1,0 +1,73 @@
+# Baseline do CliProvider — pré-refatoração (SPEC-01 "sem regressão")
+
+Capturado: 2026-06-03 (Plano 01-01, Wave 0)
+Estado do código: cli-provider.ts INTACTO (antes de extrair runClaudeCli no Plano 02)
+Versão tsc do lockfile (npm ci): TypeScript 5.9.3
+claude CLI esperado em runtime: 2.1.x (assinatura; sem ANTHROPIC_API_KEY)
+
+------------------------------------------------------------------------------
+NATUREZA DESTE BASELINE: SIMBÓLICO (sem fixture de PDF)
+------------------------------------------------------------------------------
+
+Não há nenhum PDF de teste versionado no repositório:
+
+    find . -name '*.pdf' -not -path '*/node_modules/*'   →  (vazio)
+
+Portanto NÃO foi possível rodar
+    cd ankinator-app/server && npx tsx src/scripts/smoke-cli.ts <pdf>
+para capturar uma saída real do smoke-cli.ts (contagem + forma das questões).
+
+IMPORTANTE — por que isso NÃO enfraquece a guarda de regressão:
+A saída do smoke-cli.ts seria, de qualquer modo, NÃO-DETERMINÍSTICA (a geração
+do LLM via `claude -p` varia entre execuções). O que importa comparar antes/depois
+da refatoração NÃO é o texto exato das questões, e sim:
+  (a) a CONTAGEM de questões geradas (ordem de grandeza ~6 por chunk, conforme
+      maxPerChunk no smoke-cli.ts), e
+  (b) a FORMA da saída: cada item no formato
+          [<tipo: extraida|criada>] Q: <pergunta>
+                                    A: <resposta>
+          (<banca> <ano>)        # quando metadata.banca presente
+  (c) o fato de o processo terminar sem erro novo do CLI.
+
+------------------------------------------------------------------------------
+COMO A REGRESSÃO SPEC-01 SERÁ DEMONSTRADA (dois mecanismos, no Plano 04)
+------------------------------------------------------------------------------
+
+Como não há fixture determinística aqui, a guarda "sem regressão" do CliProvider
+após extrair runClaudeCli (Plano 02) é coberta por DOIS mecanismos no Plano 04:
+
+1) ASSERTION DETERMINÍSTICA, CLI-free (helper criado no Plano 02; rodado no Plano 04):
+   verifica que o array final de `args`, o `cwd: os.tmpdir()`, o `env: {...process.env}`,
+   o timeout (ANKINATOR_CLI_TIMEOUT_MS / 180_000) e o parse do envelope CliEnvelope
+   permanecem byte-a-byte equivalentes ao comportamento atual do CliProvider.
+   Esta é a verdadeira prova de "sem regressão" — independe de PDF e do LLM.
+   Flags de assinatura que DEVEM permanecer idênticos (referência travada do estado atual):
+       -p
+       --output-format json
+       --model <model>
+       --system-prompt <SYSTEM_FIDELITY>   (hoje hardcoded; vira parâmetro, CliProvider passa SYSTEM_FIDELITY)
+       --exclude-dynamic-system-prompt-sections
+       --strict-mcp-config
+   Mecanismo de entrada do prompt: por STDIN (não em arg). Spawn por array (não shell string).
+
+2) CHECKPOINT HUMANO HARD-BLOCK (Plano 04):
+   só libera a fase quando o usuário fornecer um PDF e confirmar visualmente que
+   o fluxo upload→extract→gerar→exportar continua produzindo cards equivalentes.
+
+------------------------------------------------------------------------------
+REFERÊNCIA DO COMPORTAMENTO ATUAL (lida do código, pré-refatoração)
+------------------------------------------------------------------------------
+
+Fonte: ankinator-app/server/src/core/providers/cli-provider.ts (método invoke()).
+Smoke de referência: ankinator-app/server/src/scripts/smoke-cli.ts
+  - Uso: tsx src/scripts/smoke-cli.ts <pdf>
+  - Carrega doc → chunkDocument → new CliProvider('sonnet')
+  - generateForChunk(chunks[0], { maxPerChunk: 6, incluirExtraidas: true, incluirCriadas: true })
+  - Imprime: "Documento: <nome> · <N> bloco(s)" e, por questão:
+        [<tipo>] Q: <pergunta>
+                 A: <resposta>
+                 (<banca> <ano>)   # se metadata.banca
+
+Quando um PDF de teste estiver disponível, este baseline poderá ser regravado com
+a saída real do smoke-cli.ts ANTES de qualquer mudança no CliProvider, para
+comparação direta de contagem/forma.
