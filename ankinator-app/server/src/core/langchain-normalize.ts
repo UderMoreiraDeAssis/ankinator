@@ -28,6 +28,18 @@ export interface RawDoc {
 const ATX = /^(#{1,6})\s+(.+?)\s*#*$/;
 
 /**
+ * Coerce `metadata.page` para inteiro 1-indexed válido.
+ *
+ * WR-01 (Phase 02): `page` vem verbatim do sidecar/biblioteca (não confiável).
+ * Sem coerção, um `page` string ("1") faz `Math.max(...)` retornar NaN e um `page`
+ * 0/negativo produz numPages inválido que se propaga para toda Section e atribuição
+ * de fonte nos cards. Só aceitamos inteiro >= 1; qualquer outra coisa → 1.
+ */
+function coercePage(rawPage: unknown): number {
+  return typeof rawPage === 'number' && Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1;
+}
+
+/**
  * Extrai seções a partir dos Documents brutos, reparseando os headings ATX
  * de cada `page_content`. Espelha a lógica de `buildSections` de `odl-parse.ts`
  * (flush/pageStart/pageEnd/filtro de seção vazia), porém recebe markdown bruto
@@ -66,9 +78,8 @@ function buildSectionsFromMarkdown(docs: RawDoc[], fallbackTitle: string): Secti
   };
 
   for (const doc of docs) {
-    // CR-02 (Phase 02): metadata pode vir ausente do sidecar/biblioteca — coalesce
-    // com `?.` para não lançar "Cannot read properties of undefined".
-    const page = doc.metadata?.page ?? 1;
+    // CR-02: metadata pode vir ausente; WR-01: coerce page para inteiro >= 1.
+    const page = coercePage(doc.metadata?.page);
     const lines = doc.page_content.split('\n');
 
     for (const line of lines) {
@@ -137,8 +148,8 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   // O chunker ignora `elements`; preservamos para inspeção/depuração.
   const elements: DocElement[] = docs.map((d) => ({
     type: 'text block' as const,
-    // CR-02 (Phase 02): coalesce metadata ausente com `?.`.
-    page: d.metadata?.page ?? 1,
+    // CR-02: coalesce metadata ausente; WR-01: coerce page para inteiro >= 1.
+    page: coercePage(d.metadata?.page),
     content: d.page_content,
   }));
 
@@ -153,8 +164,9 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   // D-10: campos-topo derivados.
   // Pitfall 1 — page é 1-indexed → numPages = max(page) SEM +1.
   // R1 — não assumir Documents contíguos; usar max dos valores emitidos.
-  // CR-02 (Phase 02): coalesce metadata ausente com `?.`.
-  const pages = docs.map((d) => d.metadata?.page ?? 1);
+  // CR-02: coalesce metadata ausente; WR-01: coerce page para inteiro >= 1
+  // (evita NaN de `Math.max` quando page é string, e 0/negativos inválidos).
+  const pages = docs.map((d) => coercePage(d.metadata?.page));
   const numPages = pages.length ? Math.max(...pages) : 1;
 
   // Pitfall 4 — title = 1º heading ATX no markdown bruto, OU null (nunca a 1ª linha de texto).
