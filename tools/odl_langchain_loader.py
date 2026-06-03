@@ -79,10 +79,20 @@ def main() -> int:
     # D-01: montar array JSON e emitir no stdout (sem arquivo, sem temp dir).
     # O Node consome via JSON.parse(stdout) em langchain-loader.ts (Plano 03).
     # ensure_ascii=False mantém UTF-8 legível e reduz tamanho do output.
+    #
+    # WR-02 (Phase 02): projetar metadata para o contrato declarado de 3 campos
+    # {source, format, page} em vez de emitir d.metadata inteiro. A biblioteca pode
+    # popular metadata com bounding boxes / refs de imagem / blobs base64 — tudo isso
+    # iria para o stdout (inflando o payload que o Node bufferiza e faz JSON.parse) e
+    # reabriria o Pitfall 5. O lado TS ignora chaves extras → puro desperdício/risco.
     out = [
         {
             "page_content": d.page_content,
-            "metadata": d.metadata,
+            "metadata": {
+                "source": d.metadata.get("source"),
+                "format": d.metadata.get("format"),
+                "page": d.metadata.get("page"),
+            },
         }
         for d in docs
     ]
