@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import path from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { api } from './api.js';
@@ -19,8 +19,11 @@ app.use('/api', api);
 const webDist = path.resolve(here, '../../web/dist');
 if (existsSync(webDist)) {
   app.use(express.static(webDist));
-  app.get(/^(?!\/api).*/, (_req, res) => {
-    res.sendFile(path.join(webDist, 'index.html'));
+  // Fallback SPA: qualquer GET fora de /api retorna o index.html (lido em memória).
+  const indexHtml = readFileSync(path.join(webDist, 'index.html'), 'utf8');
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    res.type('html').send(indexHtml);
   });
 }
 
