@@ -729,9 +729,11 @@ const opts = { classificar: false, cardBuilder: false };
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Refinamento dos prompts `.md` canônicos**
+> Q1 e Q2 endereçadas no plano 03-01 Task 3 (refino dos `.md` canônicos). Q3 decidida como não-ação (deixar timeout default; sinalizar no `smoke-enrich.ts` se ocorrer).
+
+1. **RESOLVED — Refinamento dos prompts `.md` canônicos**
    - O que sabemos: `deck-classifier.md` pede saída em JSON mas não especifica o campo `id` na saída — apenas "Para cada card, devolva `deck` e `tags`".
    - O que não está claro: O LLM vai incluir o `id` na saída sem instrução explícita? A userMessage pode incluir o id, mas o system prompt deve explicitar que ele deve ser preservado na saída.
    - Recomendação: Atualizar `deck-classifier.md` para incluir `id` no formato de saída JSON: `{"classificacoes":[{"id":"<id-original>","deck":"...","tags":[...]}]}`. Isso é atualização do `.md` canônico — permitido pelas Canonical's Discretion.
