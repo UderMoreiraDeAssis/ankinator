@@ -6,6 +6,7 @@
 import crypto from 'node:crypto';
 import type { LoadedDocument, Questao, SemanticChunk } from './core/types.js';
 import type { ChunkProgress, GenerateResult } from './core/generation.js';
+import type { EnrichProgress } from './core/specialists/enrich.js';
 
 export interface DocEntry {
   id: string;
@@ -34,6 +35,7 @@ export interface Job {
 
 export type JobEvent =
   | { type: 'progress'; data: ChunkProgress }
+  | { type: 'enrich-progress'; data: EnrichProgress }
   | { type: 'done'; data: { total: number; erros: GenerateResult['erros'] } }
   | { type: 'error'; data: { message: string } };
 

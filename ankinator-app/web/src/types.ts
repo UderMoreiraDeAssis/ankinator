@@ -53,6 +53,18 @@ export interface GenerateOptions {
   incluirExtraidas?: boolean;
   incluirCriadas?: boolean;
   tags?: string[];
+  /** Rodar especialista classificador de deck+tags após a geração. Default: true. */
+  classificar?: boolean;
+  /** Rodar especialista card-builder após a classificação. Default: false. */
+  cardBuilder?: boolean;
+}
+
+/** Espelho do EnrichProgress do server — consumido por App.tsx e ProgressPanel. */
+export interface EnrichProgress {
+  estagio: 'classificando' | 'reescrevendo';
+  index: number;
+  total: number;
+  erro?: string;
 }
 
 export interface JobState {

@@ -112,4 +112,8 @@ export interface GenerateOptions {
   tags?: string[];
   /** Modelo do Claude a usar. */
   model?: string;
+  /** Rodar especialista classificador de deck+tags após a geração. Default: true. */
+  classificar?: boolean;
+  /** Rodar especialista card-builder após a classificação. Default: false. */
+  cardBuilder?: boolean;
 }
