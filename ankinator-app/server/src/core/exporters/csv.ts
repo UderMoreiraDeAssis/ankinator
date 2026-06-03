@@ -12,6 +12,8 @@ export interface CsvOptions {
   fonte?: string;
   /** Tags padrão adicionadas a todas as questões. */
   tagsPadrao?: string[];
+  /** Deck fallback quando q.deck está ausente (D-08). */
+  deck?: string;
 }
 
 function fonteDaQuestao(q: Questao, baseFonte: string): string {
@@ -23,8 +25,8 @@ function fonteDaQuestao(q: Questao, baseFonte: string): string {
   return baseFonte;
 }
 
-function tagsDaQuestao(q: Questao, padrao: string[]): string {
-  const tags = new Set<string>([q.tipo, ...padrao]);
+export function tagsDaQuestao(q: Questao, padrao: string[]): string {
+  const tags = new Set<string>([q.tipo, ...padrao, ...(q.tags ?? [])]);
   if (q.metadata?.banca) {
     tags.add(q.metadata.banca.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
   }
@@ -50,27 +52,37 @@ function versoDaQuestao(q: Questao): string {
 export function toAnkiCsv(questoes: Questao[], opts: CsvOptions = {}): string {
   const baseFonte = opts.fonte ? path.basename(opts.fonte, path.extname(opts.fonte)) : 'material';
   const padrao = opts.tagsPadrao ?? [];
+  const deckFallback = opts.deck ?? 'Ankinator';
+
+  // gate: coluna Deck só quando algum card tem q.deck preenchido (D-08 / PIPE-03 byte-identidade)
+  const temDeck = questoes.some((q) => q.deck);
 
   const rows = questoes.map((q) => ({
     frente: q.pergunta,
     verso: versoDaQuestao(q),
     tags: tagsDaQuestao(q, padrao),
     fonte: fonteDaQuestao(q, baseFonte),
+    ...(temDeck ? { deck: q.deck ?? deckFallback } : {}),
   }));
 
-  const csv = stringify(rows, {
+  const columns = [
+    { key: 'frente', header: 'Frente' },
+    { key: 'verso', header: 'Verso' },
+    { key: 'tags', header: 'Tags' },
+    { key: 'fonte', header: 'Fonte' },
+    ...(temDeck ? [{ key: 'deck', header: 'Deck' }] : []),
+  ];
+
+  const csvBody = stringify(rows, {
     header: true,
-    columns: [
-      { key: 'frente', header: 'Frente' },
-      { key: 'verso', header: 'Verso' },
-      { key: 'tags', header: 'Tags' },
-      { key: 'fonte', header: 'Fonte' },
-    ],
+    columns,
     delimiter: ';',
     quoted: true,
     quoted_string: true,
     escape: '"',
   });
 
-  return '﻿' + csv;
+  // BOM primeiro, depois headers Anki, depois dados (Pitfall 7)
+  const headerLines = temDeck ? '#separator:Semicolon\n#deck column:5\n' : '';
+  return '﻿' + headerLines + csvBody;
 }

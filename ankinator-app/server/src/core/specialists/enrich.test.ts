@@ -9,9 +9,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { parseClassificacoesJson, parseSingleCard, enrichAll, deveRodarEnrich } from './enrich.js';
-// TODO(Plano 02): exportar tagsDaQuestao/toAnkiCsv para teste
-// import { tagsDaQuestao } from '../exporters/csv.js';
-// import { tagsDaQuestao as tagsDaQuestaoAnki } from '../exporters/ankiconnect.js';
+import { tagsDaQuestao, toAnkiCsv } from '../exporters/csv.js';
+import type { Questao } from '../types.js';
 
 // ── parseClassificacoesJson ───────────────────────────────────────────────────
 
@@ -39,13 +38,25 @@ describe('parseClassificacoesJson', () => {
 // ── tagsDaQuestao merge (DECK-02) ─────────────────────────────────────────────
 
 describe('tagsDaQuestao merge', () => {
-  it.todo(
-    'une q.tags ao Set sem duplicatas (...(q.tags ?? [])) — TODO(Plano 02): exportar tagsDaQuestao para teste'
-  );
+  it('une q.tags ao Set sem duplicatas (...(q.tags ?? []))', () => {
+    const q = { tipo: 'extraida', tags: ['direito', 'constitucional'] } as Questao;
+    const result = tagsDaQuestao(q, ['padrao']);
+    // q.tipo + padrao + q.tags — sem duplicatas
+    expect(result).toContain('extraida');
+    expect(result).toContain('padrao');
+    expect(result).toContain('direito');
+    expect(result).toContain('constitucional');
+    // sem duplicatas: cada tag aparece uma só vez
+    const partes = result.split(' ');
+    expect(partes).toHaveLength(new Set(partes).size);
+  });
 
-  it.todo(
-    'não quebra quando q.tags é undefined (...(q.tags ?? [])) — TODO(Plano 02): exportar tagsDaQuestao para teste'
-  );
+  it('não quebra quando q.tags é undefined (...(q.tags ?? []))', () => {
+    const q = { tipo: 'criada' } as Questao;
+    // não deve lançar TypeError
+    expect(() => tagsDaQuestao(q, [])).not.toThrow();
+    expect(tagsDaQuestao(q, [])).toBe('criada');
+  });
 });
 
 // ── split extraida (CARD-01) ──────────────────────────────────────────────────
@@ -102,9 +113,24 @@ describe('ankiconnect routing', () => {
 // ── csv deck column (DECK-01-csv) ─────────────────────────────────────────────
 
 describe('csv deck column', () => {
-  it.todo(
-    'coluna Deck + header #deck column:5 quando temDeck; ausente quando não — TODO(Plano 02): exportar toAnkiCsv para teste'
-  );
+  it('coluna Deck + header #deck column:5 quando algum card tem q.deck', () => {
+    const questoes: Questao[] = [
+      { id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R', deck: 'Direito::Constitucional' } as Questao,
+    ];
+    const csv = toAnkiCsv(questoes, {});
+    expect(csv).toContain('#deck column:5');
+    expect(csv).toContain('Deck');
+    expect(csv).toContain('Direito::Constitucional');
+  });
+
+  it('NÃO inclui coluna Deck nem header quando nenhum card tem q.deck (byte-identidade PIPE-03)', () => {
+    const questoes: Questao[] = [
+      { id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as Questao,
+    ];
+    const csv = toAnkiCsv(questoes, {});
+    expect(csv).not.toContain('#deck column');
+    expect(csv).not.toContain(';Deck');
+  });
 });
 
 // ── deveRodarEnrich (PIPE-03 gate) ────────────────────────────────────────────
