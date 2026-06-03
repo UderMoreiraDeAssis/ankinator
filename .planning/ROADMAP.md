@@ -12,7 +12,7 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
-- [ ] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf`, normalizado para `LoadedDocument`, fallback Node
+- [x] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf`, normalizado para `LoadedDocument`, fallback Node (completed 2026-06-03)
 - [ ] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico; fase `enrichAll()` + toggles na UI
 - [ ] **Phase 4: Mnemônicos + Imagem SVG** - Especialistas de mnemônico e imagem (SVG via Claude), sanitização e embed no export Anki
 - [ ] **Phase 5: Orquestrador Anki** - Decisão por-card, batching p/ poupar quota, princípios Anki, integração ponta-a-ponta
@@ -64,7 +64,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md — Wave 3: branch em loadDocument (D-03/D-06) + buildConvertOptions extraído + guard CLI-free D-15 + smoke gated D-14 (PDF-02/PDF-03 não-regressão)
+- [x] 02-04-PLAN.md — Wave 3: branch em loadDocument (D-03/D-06) + buildConvertOptions extraído + guard CLI-free D-15 + smoke gated D-14 (PDF-02/PDF-03 não-regressão)
 
 ### Phase 3: Classificador de Deck + Card Educativo
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 3/4 | In Progress|  |
+| 2. Loader PDF LangChain | 4/4 | Complete   | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 0/TBD | Not started | - |
 | 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
