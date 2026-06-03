@@ -116,6 +116,7 @@ export function App() {
     setProgress([]);
     setCards([]);
     setDropped(new Set());
+    setEnrichProgress(null);   // WR-02: clear stale enrich progress on "Novo PDF"
     setError(null);
   };
 
