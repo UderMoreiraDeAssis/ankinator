@@ -18,7 +18,7 @@ result: [pending]
 
 ### 2. Enrich progress appears inside the "Gerar" step (no 5th stepper step)
 expected: During generation, after chunk items, "Classificando deck + tags…" (and "Reescrevendo card N/M…" when Card educativo is on) appears inside the generating step. The Stepper still shows exactly 4 steps. (D-16)
-result: [pending]
+result: passed — 2026-06-03, confirmed via live screenshot: "Classificando deck + tags…" renders inside the active step 3 ("Gerar"), below the 7-block list; Stepper shows exactly 4 steps (Enviar PDF · Estrutura · Gerar · Revisar & Exportar), no 5th step. SSE wiring confirmed working end-to-end. Classification ran by default (Classificar toggle default-ON behaving as designed).
 
 ### 3. Deck/tags badges appear read-only in CardTable
 expected: On the review screen, cards enriched with deck/tags show a violet deck badge and a slate tags badge, both read-only (no editable field). (D-17)
@@ -31,9 +31,9 @@ result: [pending]
 ## Summary
 
 total: 4
-passed: 0
+passed: 1
 issues: 0
-pending: 4
+pending: 3
 skipped: 0
 blocked: 0
 
