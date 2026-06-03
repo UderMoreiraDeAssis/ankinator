@@ -41,5 +41,13 @@ Só inclua banca/ano se o material der suporte; não invente.
 
 ## Saída
 
-Para cada card, devolva `deck` (string `A::B::C`) e `tags` (lista de strings). Não altere
-a pergunta nem a resposta do card.
+Retorne APENAS JSON no formato:
+
+```json
+{"classificacoes":[{"id":"<id-original-do-card>","deck":"<Matéria::Assunto::Subtópico>","tags":["tag1","tag2"]}]}
+```
+
+- Preserve o `id` exatamente como recebido — ele é usado para casar a classificação com o card correto.
+- Inclua todos os cards recebidos na saída, mesmo que a classificação seja genérica.
+- Não altere a pergunta nem a resposta do card.
+- Não inclua nenhum texto fora do JSON.

@@ -42,5 +42,14 @@ gabarito) e `[CRIADA]` (questão nova de estudo derivada dos conceitos do trecho
 
 ## Saída
 
-Devolva o card reescrito (pergunta + resposta com explicação curta e fonte quando houver).
-Quando dividir, devolva os múltiplos cards atômicos resultantes.
+Retorne APENAS JSON no formato:
+
+```json
+{"cards":[{"pergunta":"...","resposta":"..."}]}
+```
+
+- Para um card único (sem divisão): array com **1 elemento**.
+- Para split (card `[CRIADA]` dividido em múltiplos atômicos): array com **N elementos**.
+- Inclua sempre a explicação curta (1–2 frases que ancoram o "porquê") e a fonte (quando disponível) embutidas na `resposta`.
+- Cards `[EXTRAÍDA]` **NÃO devem ser divididos**: devolva exatamente 1 elemento com a `pergunta` e o `gabarito` preservados; somente a `resposta` pode ser enriquecida com a explicação e a fonte.
+- Não inclua nenhum texto fora do JSON.
