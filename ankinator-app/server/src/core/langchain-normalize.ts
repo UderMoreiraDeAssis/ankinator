@@ -24,8 +24,23 @@ export interface RawDoc {
   };
 }
 
-/** Regex para headings ATX: `# título`, `## título`, ..., `###### título`. */
-const ATX = /^(#{1,6})\s+(.+?)\s*#*$/;
+/**
+ * Regex para headings ATX: `# título`, `## título`, ..., `###### título`.
+ *
+ * WR-06 (Phase 02): a sequência de fechamento opcional de `#` (estilo CommonMark)
+ * só é removida quando PRECEDIDA de espaço (`(?:\s+#+)?`). Assim um título cujo texto
+ * termina literalmente em `#` (ex.: `# C#`) preserva o `#` (vira "C#"), em vez do antigo
+ * `\s*#*$` que engolia qualquer `#` final e transformava "C#" em "C".
+ */
+const ATX = /^(#{1,6})\s+(.+?)(?:\s+#+)?\s*$/;
+
+/**
+ * Detecta abertura/fechamento de bloco de código cercado (``` ou ~~~).
+ * WR-06 (Phase 02): linhas dentro de um fence NÃO devem ser interpretadas como
+ * headings ATX (um comentário `# foo` em ```python viraria título/seção espúria —
+ * comum em PDFs de material de TI/programação para concurso).
+ */
+const FENCE = /^\s*(`{3,}|~{3,})/;
 
 /**
  * Coerce `metadata.page` para inteiro 1-indexed válido.
@@ -77,13 +92,26 @@ function buildSectionsFromMarkdown(docs: RawDoc[], fallbackTitle: string): Secti
     current = null;
   };
 
+  // WR-06 (Phase 02): estado de bloco de código cercado, rastreado entre linhas/docs.
+  let inFence = false;
+
   for (const doc of docs) {
     // CR-02: metadata pode vir ausente; WR-01: coerce page para inteiro >= 1.
     const page = coercePage(doc.metadata?.page);
     const lines = doc.page_content.split('\n');
 
     for (const line of lines) {
-      const match = line.match(ATX);
+      // WR-06: alterna o estado de fence e nunca trata linhas dentro do fence como heading.
+      if (FENCE.test(line)) {
+        inFence = !inFence;
+        if (!current) {
+          current = { title: fallbackTitle, level: 1, pageStart: page, pageEnd: page, parts: [] };
+        }
+        current.parts.push(line);
+        current.pageEnd = Math.max(current.pageEnd, page);
+        continue;
+      }
+      const match = inFence ? null : line.match(ATX);
       if (match) {
         // Flush da seção anterior e abre nova seção a partir deste heading ATX.
         flush();
@@ -170,8 +198,16 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   const numPages = pages.length ? Math.max(...pages) : 1;
 
   // Pitfall 4 — title = 1º heading ATX no markdown bruto, OU null (nunca a 1ª linha de texto).
+  // WR-06 (Phase 02): pular blocos de código cercados — um `# comentário` dentro de
+  // ```python NÃO deve virar o título do documento.
   let title: string | null = null;
+  let inFenceTitle = false;
   for (const line of rawMarkdown.split('\n')) {
+    if (FENCE.test(line)) {
+      inFenceTitle = !inFenceTitle;
+      continue;
+    }
+    if (inFenceTitle) continue;
     const match = line.match(ATX);
     if (match) {
       title = match[2];
