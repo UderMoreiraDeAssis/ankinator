@@ -151,6 +151,24 @@ export function StructurePanel(props: Props) {
               className="h-4 w-4 rounded border-slate-300 text-brand-600"
             />
           </label>
+          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
+            <span>Mnemônico</span>
+            <input
+              type="checkbox"
+              checked={options.mnemonico !== false}
+              onChange={(e) => setOptions({ ...options, mnemonico: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-600"
+            />
+          </label>
+          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
+            <span>Imagem de mnemônico</span>
+            <input
+              type="checkbox"
+              checked={options.imagem === true}
+              onChange={(e) => setOptions({ ...options, imagem: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-brand-600"
+            />
+          </label>
         </div>
 
         <div className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">

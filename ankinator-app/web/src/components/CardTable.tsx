@@ -79,6 +79,19 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
                     {c.tags.length > 3 ? ` +${c.tags.length - 3}` : ''}
                   </span>
                 ) : null}
+                {c.mnemonico && (
+                  <span
+                    className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+                    title={c.mnemonico.slice(0, 60)}
+                  >
+                    📝 mnemônico
+                  </span>
+                )}
+                {c.mnemonicoSvg && (
+                  <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
+                    🖼️ SVG
+                  </span>
+                )}
                 <button
                   onClick={() => onToggleDrop(c.id)}
                   className={[

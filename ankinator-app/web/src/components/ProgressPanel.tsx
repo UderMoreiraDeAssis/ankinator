@@ -53,7 +53,11 @@ export function ProgressPanel({ total, progress, fileName, enrichProgress }: Pro
           <span>
             {enrichProgress.estagio === 'classificando'
               ? 'Classificando deck + tags…'
-              : `Reescrevendo card ${enrichProgress.index + 1}/${enrichProgress.total}…`}
+              : enrichProgress.estagio === 'reescrevendo'
+              ? `Reescrevendo card ${enrichProgress.index + 1}/${enrichProgress.total}…`
+              : enrichProgress.estagio === 'gerando-mnemonico'
+              ? 'Gerando mnemônicos…'
+              : `Gerando imagem ${enrichProgress.index + 1}/${enrichProgress.total}…`}
           </span>
           {enrichProgress.erro && <span className="text-amber-600">erro</span>}
         </div>
