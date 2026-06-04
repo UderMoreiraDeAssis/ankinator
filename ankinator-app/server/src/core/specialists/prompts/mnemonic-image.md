@@ -31,5 +31,11 @@ usuário a recuperar a informação.
 
 ## Saída
 
-Devolva APENAS o markup `<svg>...</svg>` autocontido, sem texto antes ou depois e sem cercas
-de código. Este SVG vai para o campo `mnemonicoSvg` do card.
+Devolva APENAS o markup `<svg>...</svg>` autocontido. Regras de saída obrigatórias:
+
+1. Sem texto antes ou depois e sem cercas de código.
+2. Não use os atributos `id` ou `version` no elemento `<svg>` raiz — o Anki 25.02.x remove
+   esses atributos e pode quebrar o SVG; mantenha o `<svg>` raiz sem id e sem version.
+3. O SVG deve começar exatamente com `<svg` e terminar com `</svg>`.
+
+Este SVG vai para o campo `mnemonicoSvg` do card.

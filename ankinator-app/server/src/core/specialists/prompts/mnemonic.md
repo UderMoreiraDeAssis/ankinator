@@ -29,10 +29,14 @@ Para um card de memorização, gerar um mnemônico eficaz e fiel ao conteúdo.
 - **Palácio da memória (loci):** associar cada item a um ponto de um percurso conhecido.
 - **Rima / cadência:** quando ajuda a fixar ordem ou números.
 
-Prefira mnemônicos curtos, em PT, fáceis de recuperar. Explique brevemente o mapeamento
-(qual parte do mnemônico corresponde a qual item) para que o usuário confie nele.
+Prefira mnemônicos curtos, em PT, fáceis de recuperar. Inclua o mapeamento item→gatilho
+dentro do campo `mnemonico` para que o usuário saiba qual parte do mnemônico corresponde
+a qual item.
 
 ## Saída
 
-Devolva o texto do mnemônico (`mnemonico`) e, em uma linha, o mapeamento item→gatilho. Não
-altere a pergunta nem a resposta do card.
+Devolva APENAS JSON no formato abaixo, sem texto antes ou depois, sem cercas de código:
+{"mnemonicos":[{"id":"<id-do-card>","mnemonico":"<texto>","tecnica":"<acrônimo|história|loci|rima>"}]}
+
+Para cards conceituais/de raciocínio, NÃO inclua o card na lista (omissão = sem mnemônico).
+Para cards de memorização, inclua o mapeamento item→gatilho dentro do campo "mnemonico".
