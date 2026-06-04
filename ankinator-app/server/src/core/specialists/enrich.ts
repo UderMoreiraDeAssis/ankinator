@@ -68,19 +68,32 @@ interface RawMnemonico {
  * Extrai um array de uma chave específica de um texto JSON livre.
  * Tolera cercas ```json, recorta do primeiro { ao último }, retorna [] em falha.
  * Padrão idêntico a parseQuestoesJson (generation.ts).
+ *
+ * @param logLabel  Quando definido, loga um trecho do texto original em caso de falha de parse.
  */
-function parseJsonBlock<T>(text: string, key: string): T[] {
+function parseJsonBlock<T>(text: string, key: string, logLabel?: string): T[] {
   if (!text) return [];
   // remove cercas ```json ... ```
   const unfenced = text.replace(/```(?:json)?/gi, '').trim();
   // recorta do primeiro { ao último }
   const start = unfenced.indexOf('{');
   const end = unfenced.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) return [];
+  if (start === -1 || end === -1 || end <= start) {
+    if (logLabel) {
+      console.error(`[ankinator/${logLabel}] parse: nenhum bloco JSON encontrado. Trecho: ${text.slice(0, 200)}`);
+    }
+    return [];
+  }
   try {
     const obj = JSON.parse(unfenced.slice(start, end + 1)) as Record<string, unknown>;
     return Array.isArray(obj[key]) ? (obj[key] as T[]) : [];
-  } catch {
+  } catch (err) {
+    if (logLabel) {
+      console.error(
+        `[ankinator/${logLabel}] parse: JSON inválido — ${err instanceof Error ? err.message : String(err)}. ` +
+        `Trecho: ${text.slice(0, 200)}`
+      );
+    }
     return [];
   }
 }
@@ -109,9 +122,10 @@ export function parseSingleCard(text: string): RawCard[] {
  * Extrai mnemônicos do JSON batch do especialista de mnemônicos (D-01).
  * Formato esperado: {"mnemonicos":[{"id":"...","mnemonico":"...","tecnica":"..."}]}
  * Tolera cercas ```json e retorna [] para JSON inválido ou sem chave `mnemonicos`.
+ * Em falha de parse, loga um trecho do output cru para diagnóstico (RT-01).
  */
 export function parseMnemonicosJson(text: string): RawMnemonico[] {
-  return parseJsonBlock<RawMnemonico>(text, 'mnemonicos');
+  return parseJsonBlock<RawMnemonico>(text, 'mnemonicos', 'parseMnemonicosJson');
 }
 
 // ── Gate PIPE-03 ──────────────────────────────────────────────────────────────
@@ -293,7 +307,7 @@ export async function enrichAll(
   }
 
   // ── ESTÁGIO 3: Mnemônico batch (D-01/D-02/D-03/T-04-09) ─────────────────
-  // Uma única chamada LLM para todos os cards; merge anti-posicional por id.
+  // Uma única chamada LLM para todos os cards; merge por id com fallback posicional (RT-01).
   if (opts.mnemonico) {
     onProgress?.({ estagio: 'gerando-mnemonico', index: 0, total: 1 });
     try {
@@ -305,19 +319,47 @@ export async function enrichAll(
       });
       const parsed = parseMnemonicosJson(text);
 
-      // Merge por id via Map (D-02/D-03 / anti-Pitfall 3 — NUNCA posicional)
+      // Merge por id via Map (D-02/D-03 / anti-Pitfall 3 — primário)
       // Filtrar entradas sem id ou sem mnemonico antes de montar o Map (D-03)
-      const byId = new Map(
-        parsed.filter((m) => m.id && m.mnemonico).map((m) => [m.id!, m])
-      );
-      resultado = resultado.map((q) => {
+      const comId = parsed.filter((m) => m.id && m.mnemonico);
+      const byId = new Map(comId.map((m) => [m.id!, m]));
+      const mergedPorId = resultado.map((q) => {
         const m = byId.get(q.id);
-        // Cards não presentes no JSON ficam sem mnemônico (fail-soft — D-01)
         return m ? { ...q, mnemonico: m.mnemonico } : q;
       });
+
+      // RT-01: fallback posicional — quando nenhum id casou mas a contagem bate.
+      // O LLM pode retornar mnemônicos sem o campo `id` (ou com ids diferentes).
+      // Se ZERO cards receberam mnemônico via id mas há entradas válidas por mnemonico,
+      // e a quantidade de entradas com mnemonico == número de cards no lote,
+      // aplicamos positional matching e logamos o aviso.
+      const mergedCount = mergedPorId.filter((q) => q.mnemonico).length;
+      const entradas = parsed.filter((m) => m.mnemonico);
+      if (mergedCount === 0 && entradas.length > 0 && entradas.length === resultado.length) {
+        console.error(
+          `[ankinator/mnemônico] aviso: nenhum id casou — usando fallback posicional ` +
+          `(${entradas.length} entradas para ${resultado.length} cards). ` +
+          `Verifique se o modelo está retornando o campo 'id' corretamente.`
+        );
+        resultado = resultado.map((q, i) => {
+          const m = entradas[i];
+          return m?.mnemonico ? { ...q, mnemonico: m.mnemonico } : q;
+        });
+      } else {
+        if (mergedCount === 0 && entradas.length > 0) {
+          // IDs não casaram e contagem diverge — loga quantos foram descartados
+          console.error(
+            `[ankinator/mnemônico] aviso: ${entradas.length} mnemônico(s) descartado(s) — ` +
+            `nenhum id casou e contagem diverge (${entradas.length} retornados vs ${resultado.length} cards). ` +
+            `Verifique se o modelo está retornando ids corretos.`
+          );
+        }
+        resultado = mergedPorId;
+      }
     } catch (err) {
       const erro = err instanceof Error ? err.message : String(err);
-      onProgress?.({ estagio: 'gerando-mnemonico', index: 0, total: 1, erro });
+      console.error(`[ankinator/mnemônico] Estágio mnemônico falhou: ${erro}`);
+      onProgress?.({ estagio: 'gerando-mnemonico', index: 0, total: 1, erro: `Estágio mnemônico falhou: ${erro}` });
       // Segue sem mnemônicos — nunca derruba o job (D-08)
     }
   }
@@ -342,12 +384,15 @@ export async function enrichAll(
           resultado[i] = { ...q, mnemonicoSvg: limpo };
         } else {
           // Fail-closed: SVG inválido/malicioso → não grava, reporta erro (D-08/T-04-06)
-          onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro: 'SVG inválido após sanitização' });
+          const erroSvg = 'SVG inválido após sanitização';
+          console.error(`[ankinator/imagem] card ${q.id}: ${erroSvg}`);
+          onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro: erroSvg });
         }
       } catch (err) {
         // D-13: isolamento por-card — erro na geração não aborta o lote
         const erro = err instanceof Error ? err.message : String(err);
-        onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro });
+        console.error(`[ankinator/imagem] card ${q.id}: Estágio imagem falhou: ${erro}`);
+        onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro: `Estágio imagem falhou: ${erro}` });
         // card mantém q.mnemonico mas sem q.mnemonicoSvg — nunca perde o card
       }
     }
