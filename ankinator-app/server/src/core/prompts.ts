@@ -27,6 +27,8 @@ Você recebe um TRECHO do material por vez. Para cada trecho você produz dois t
 [EXTRAÍDA] — questões de prova/exercício que JÁ EXISTEM no trecho.
   • Mantenha fielmente enunciado e gabarito.
   • Preencha metadata (banca, ano, alternativas, gabarito) quando o texto informar.
+  • OBRIGATÓRIO para questões de múltipla escolha: capture TODAS as alternativas (A, B, C, D, E…)
+    em metadata.alternativas — mesmo quando aparecem embutidas no enunciado. Nunca omita alternativas.
 
 [CRIADA] — questões NOVAS de estudo, baseadas nos conceitos-chave do trecho.
   • Foque no que tipicamente cai em concurso.
@@ -38,8 +40,8 @@ Você recebe um TRECHO do material por vez. Para cada trecho você produz dois t
  * (o `claude` CLI não suporta tool-use forçado como a API).
  */
 export const JSON_OUTPUT_INSTRUCTION = `Responda APENAS com um objeto JSON válido, sem nenhum texto antes ou depois, sem cercas de código (\`\`\`). Formato exato:
-{"questoes":[{"tipo":"extraida|criada","pergunta":"...","resposta":"...","metadata":{"banca":"...","ano":2020,"alternativas":["..."],"gabarito":"..."}}]}
-O campo "metadata" é opcional. Se não houver questões válidas no trecho, responda {"questoes":[]}.`;
+{"questoes":[{"tipo":"extraida|criada","pergunta":"...","resposta":"...","metadata":{"banca":"...","ano":2020,"alternativas":["A) opção um","B) opção dois","C) opção três"],"gabarito":"..."}}]}
+O campo "metadata" é opcional para questões criadas. Para questões de múltipla escolha (extraídas), metadata.alternativas é OBRIGATÓRIO e deve conter todas as alternativas do enunciado. Se não houver questões válidas no trecho, responda {"questoes":[]}.`;
 
 /** Definição da ferramenta que força a saída estruturada. */
 export const REGISTRAR_QUESTOES_TOOL: Anthropic.Tool = {
