@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Phase 4: Mnemônicos + Imagem SVG — Perguntas</title>
+<style>
+  :root { --green:#22c55e; --green-bg:#f0fdf4; --orange:#f97316; --gray:#e2e8f0; --ink:#0f172a; --muted:#64748b; --brand:#4f46e5; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:#f8fafc; }
+  header { position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid var(--gray); padding:16px 24px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  h1 { margin:0 0 10px; font-size:19px; }
+  .statbar { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .chips { display:flex; gap:10px; flex-wrap:wrap; }
+  .chip { font-size:13px; padding:3px 10px; border-radius:999px; background:#f1f5f9; color:var(--muted); }
+  .chip b { color:var(--ink); }
+  .bar { flex:1; min-width:160px; height:10px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+  .bar > i { display:block; height:100%; width:0; background:var(--green); transition:width .2s; }
+  .actions { display:flex; gap:8px; }
+  button { font:inherit; cursor:pointer; border:1px solid var(--gray); background:#fff; padding:7px 14px; border-radius:8px; }
+  button.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+  button:hover { filter:brightness(.97); }
+  main { padding:20px 24px 80px; max-width:1280px; margin:0 auto; }
+  .carry { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; margin-bottom:20px; font-size:13px; color:#92400e; }
+  .carry h2 { margin:0 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+  .carry ul { margin:4px 0 0; padding-left:18px; }
+  section { margin-bottom:22px; }
+  .sec-head { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; padding:8px 0; border-bottom:2px solid var(--gray); }
+  .sec-head h2 { margin:0; font-size:16px; }
+  .sec-head .count { font-size:13px; color:var(--muted); margin-left:auto; }
+  .sec-head .caret { transition:transform .15s; }
+  section.collapsed .grid { display:none; }
+  section.collapsed .caret { transform:rotate(-90deg); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:14px; margin-top:14px; }
+  .card { border:1px solid var(--gray); background:#fff; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .card.answered { border:2px solid var(--green); background:var(--green-bg); }
+  .qhead { display:flex; align-items:baseline; gap:8px; }
+  .qid { font-size:11px; font-weight:700; color:#fff; background:var(--brand); padding:2px 7px; border-radius:6px; }
+  .card.answered .qid { background:var(--green); }
+  .qtitle { font-weight:600; }
+  .qctx { font-size:12.5px; color:var(--muted); font-style:italic; margin:0; }
+  .opts { display:flex; flex-direction:column; gap:7px; }
+  label.opt { display:flex; gap:8px; align-items:flex-start; padding:8px; border:1px solid var(--gray); border-radius:8px; cursor:pointer; }
+  label.opt:hover { background:#f8fafc; }
+  label.opt.sel { border-color:var(--green); background:#fff; }
+  label.opt input { margin-top:3px; }
+  .opt .lbl { font-weight:600; font-size:14px; }
+  .opt .desc { font-size:12.5px; color:var(--muted); }
+  textarea { width:100%; min-height:54px; resize:vertical; padding:8px; border:1px solid var(--gray); border-radius:8px; font:inherit; font-size:13px; }
+  textarea.has { border:2px solid var(--orange); }
+  .save-foot { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--gray); padding:12px 24px; display:flex; gap:10px; align-items:center; justify-content:flex-end; }
+  .hint { font-size:12.5px; color:var(--muted); margin-right:auto; max-width:680px; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Phase 4: Mnemônicos + Imagem SVG — Perguntas de discussão</h1>
+  <div class="statbar">
+    <div class="chips">
+      <span class="chip"><b id="s-total">0</b> total</span>
+      <span class="chip"><b id="s-ans">0</b> respondidas</span>
+      <span class="chip"><b id="s-rem">0</b> restantes</span>
+      <span class="chip"><b id="s-chat">0</b> com nota</span>
+    </div>
+    <div class="bar"><i id="s-fill"></i></div>
+    <div class="actions">
+      <button class="primary" onclick="save()">Salvar respostas</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="carry">
+    <h2>Carregando das fases anteriores (não re-perguntado)</h2>
+    <ul id="carry"></ul>
+  </div>
+  <div id="root"></div>
+</main>
+<div class="save-foot">
+  <span class="hint">Responda no seu ritmo, depois <b>Salvar respostas</b> — usa o seletor de arquivo p/ sobrescrever <code>04-QUESTIONS.json</code> (ou baixa o JSON p/ você substituir). Depois volte ao Claude e diga <b>"refresh"</b> ou <b>"finalize"</b>.</span>
+  <button class="primary" onclick="save()">Salvar respostas</button>
+</div>
+<script>
+const DATA = {"phase":"04-mnem-nicos-imagem-svg","generated_at":"2026-06-03","language":"pt-BR","carry_forward":["D-01: enrich roda ENCADEADO no mesmo job de /generate (sem endpoint/job novo).","D-02: progresso via evento enrich-progress na union JobEvent.","D-03: estágios vivem em core/specialists/enrich.ts (enrichAll).","D-04: especialistas usam modelo sonnet (default do runner).","D-13: isolamento de erro por-card; nunca derruba o job; card mantém conteúdo cru.","D-16: progresso dentro do passo generating; NÃO adicionar 5º step no Stepper.","Fonte única .md: mnemonic.md e mnemonic-image.md já existem — refinar, não duplicar.","Tipo Questao já tem mnemonico?/mnemonicoSvg? em server e web — SEM mudança de tipo.","Andaime pronto: ImageProvider + SvgClaudeImageProvider (createImageProvider) existem, porém UNWIRED.","Bloco 'Modo educativo' (StructurePanel) é extensível (D-14); defaults sob restrição de quota (D-15)."],"stats":{"total":14,"answered":0,"chat_more":0,"remaining":14},"sections":[{"id":"mnemonico-estagio","title":"Estágio Mnemônico (MNEM-01 / MNEM-02)","questions":[{"id":"Q-01","title":"Seletividade — quais cards recebem mnemônico?","context":"MNEM-01 fala em cards 'difíceis/memorização'. A seleção inteligente por-card é território da Phase 5 (ORCH-01). mnemonic.md já instrui o especialista a pular cards conceituais e só gerar p/ memorizáveis.","options":[{"id":"a","label":"Especialista decide (envia todos, retorna vazio p/ conceituais)","description":"Roda mnemonic p/ todos os cards do lote; o .md já manda devolver vazio quando não é memorização. Zero heurística no código; seleção 'real' fica p/ Phase 5. Custo: gasta chamada mesmo em cards que voltam vazios (mitigado por batch — Q-02)."},{"id":"b","label":"Heurística no código filtra antes da chamada","description":"Regex/sinais (listas, datas, números, tipo) escolhem candidatos antes de chamar o CLI. Poupa chamadas, mas duplica a lógica que já está no .md e antecipa ORCH-01 (Phase 5)."},{"id":"c","label":"Roda p/ todos sem filtro algum","description":"Todo card ligado recebe tentativa de mnemônico, sem o .md pular nada. Mais simples, mais caro, polui cards conceituais com mnemônicos forçados."},{"id":"d","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-02","title":"Granularidade da chamada (quota)","context":"Padrões existentes: classificador = 1 chamada com TODOS os cards (D-05, barato, casa por id); card-builder = por-card 1 spawn/card (D-12, default-OFF). Quota é o gargalo declarado.","options":[{"id":"a","label":"Por-card (1 spawn/card)","description":"Espelha card-builder (D-12): isolamento de erro natural (D-13) e parsing simples. Multiplica quota — aceitável se for default-OFF (Q-12)."},{"id":"b","label":"Batch único (todos numa chamada, casa por id)","description":"Espelha classificador (D-05): 1 chamada, parser por id (D-06). Poupa quota e antecipa ORCH-02 barato; porém 1 erro afeta o lote e o parsing fica mais sensível a omissão/reordenação do LLM."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-03","title":"Escolha da técnica (MNEM-02) — controle do usuário?","context":"mnemonic.md já escolhe a técnica (acrônimo/história/loci/rima) conforme o conteúdo. MNEM-02 pede 'técnicas variadas escolhidas conforme o conteúdo'.","options":[{"id":"a","label":"Especialista escolhe sozinho (sem UI)","description":"Leitura literal de MNEM-02; o .md já decide. Zero superfície de UI. Reversível: adicionar seleção depois é incremento barato."},{"id":"b","label":"Usuário escolhe técnica preferida na UI","description":"Select/preferência no StructurePanel passada ao especialista. Mais controle, mas adiciona estado de UI + parâmetro no prompt e contraria 'conforme o conteúdo'."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"imagem-estagio","title":"Estágio Imagem SVG (IMG-01)","questions":[{"id":"Q-04","title":"Dependência imagem → mnemônico","context":"IMG-01: o SVG 'ilustra o mnemônico'. image-provider.generate(mnemonic, context) já recebe o mnemônico como entrada. Logo a imagem pressupõe um mnemônico.","options":[{"id":"a","label":"Encadeado: imagem só p/ cards que já têm mnemônico","description":"O estágio imagem roda APÓS o de mnemônico, só nos cards com q.mnemonico preenchido. Fiel a IMG-01; sem mnemônico não há o que ilustrar."},{"id":"b","label":"Independente: gera SVG mesmo sem mnemônico","description":"Imagem ilustra a própria pergunta/resposta. Desacopla os estágios, mas foge de 'ilustra o mnemônico' e muda a entrada do provider."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-05","title":"Granularidade / cap da imagem (quota)","context":"A imagem é a chamada MAIS cara (1 CLI por card p/ gerar SVG). Batching/seletividade é explicitamente ORCH-02 (Phase 5).","options":[{"id":"a","label":"Por-card, sem cap — confiar no default-OFF + toggle","description":"Mínima superfície; batching real é Phase 5. Risco de estouro de quota se o usuário ligar imagem num lote grande — mitigado só pelo default-OFF (Q-12)."},{"id":"b","label":"Por-card, com cap suave (só os N primeiros memorizáveis)","description":"Limite duro (ex.: N=10) p/ proteger a quota agora, com aviso no enrich-progress de quantos ficaram de fora. Antecipa um pedaço de ORCH-02, mas é um guard simples e reversível."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"sanitizacao","title":"Sanitização do SVG (IMG-02)","questions":[{"id":"Q-06","title":"Estratégia de sanitização","context":"image-provider.ts:42 tem TODO(IMG-02). mnemonic-image.md já PEDE ao Claude não emitir <script>/URLs externas/foreignObject, mas a sanitização real é responsabilidade desta fase. App prefere mínimas dependências; é single-user local.","options":[{"id":"a","label":"Lib dedicada (DOMPurify perfil SVG / sanitize-html)","description":"Robusto e testado contra XSS/SVG-injection; allowlist mantida pela lib. Custo: nova dependência (DOMPurify precisa de DOM — jsdom no Node, ou rodar no front)."},{"id":"b","label":"Manual: parser + allowlist de tags/atributos","description":"Sem dependência nova: parseia o SVG (ex.: linkedom) e remove o que não está na allowlist (<script>, on*, href externo, foreignObject). Controle total; risco de furo se a allowlist falhar."},{"id":"c","label":"Defesa em camadas: prompt (feito) + regex que REJEITA proibidos","description":"Confia no .md p/ não gerar lixo e só REJEITA o SVG se achar padrão proibido (não reescreve). Mais simples; não garante allowlist positiva."},{"id":"d","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-07","title":"Escopo da allowlist SVG","context":"Decide o que o SVG pode conter depois de sanitizado. mnemonic-image.md produz vetor geométrico simples (formas, texto, gradientes).","options":[{"id":"a","label":"Geométrico estrito (path, rect, circle, line, polygon, text, g, defs, linearGradient, stop) + atributos de estilo","description":"Cobre o que o mnemonic-image.md produz; bloqueia tudo que cheira a vetor de ataque. Pode rejeitar SVGs válidos exóticos."},{"id":"b","label":"Allowlist ampla; só bloqueia perigosos (script, foreignObject, image href externo, on*)","description":"Aceita mais variações do Claude; superfície de risco maior."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-08","title":"Falha na sanitização","context":"Isolamento de erro por-card é o padrão (D-13): nunca derruba o job.","options":[{"id":"a","label":"Descartar o SVG; card mantém só o mnemônico texto; erro no enrich-progress","description":"Espelha D-13. Card nunca fica com SVG sujo; degrada com graça."},{"id":"b","label":"Limpar e embutir o que sobrou","description":"Tenta salvar parte do SVG. Risco de embutir markup quebrado/parcial."},{"id":"c","label":"Re-pedir ao Claude uma vez (1 retry) antes de descartar","description":"Melhora a taxa de sucesso; custa +1 chamada (quota)."},{"id":"d","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"embed-export","title":"Embed no Export (IMG-03)","questions":[{"id":"Q-09","title":"Mecanismo de embed do SVG","context":"Anki (QtWebEngine) renderiza SVG. Caminhos: inline no HTML, <img> com data-URI base64, ou arquivo de mídia (collection.media / AnkiConnect storeMediaFile).","options":[{"id":"a","label":"SVG inline no HTML do verso (<svg>…</svg> direto)","description":"Sem arquivos de mídia; funciona igual em CSV e AnkiConnect. Verso fica com markup grande; depende do Anki renderizar inline (confirmar no smoke)."},{"id":"b","label":"<img> com data-URI base64 (data:image/svg+xml;base64,…)","description":"Autocontido, sem mídia externa; um só campo. Base64 incha o CSV; alguns renderizadores limitam data-URI."},{"id":"c","label":"Arquivo de mídia + <img src='nome.svg'>","description":"Mais 'nativo' no Anki; AnkiConnect storeMediaFile resolve. No CSV exige o usuário colocar o arquivo em collection.media (atrito no import)."},{"id":"d","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-10","title":"CSV vs AnkiConnect — mesmo mecanismo?","context":"Os dois exporters têm caminhos de mídia diferentes (CSV = import manual; AnkiConnect = API com storeMediaFile). Não-regressão: com toggles off, nada muda (PIPE-03).","options":[{"id":"a","label":"Mesmo mecanismo nos dois (inline ou data-URI; sem mídia externa)","description":"Um só código de embed; PIPE-03 fácil. Provável par com Q-09 (a/b)."},{"id":"b","label":"Por-exporter: AnkiConnect usa storeMediaFile; CSV usa data-URI/inline","description":"Cada um no caminho mais nativo; mais código e dois caminhos de teste."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-11","title":"Onde mnemônico + imagem moram no card","context":"Phase 3 embutiu a explicação no próprio verso p/ NÃO mexer no note type (D-11). Os campos Questao.mnemonico/mnemonicoSvg já existem.","options":[{"id":"a","label":"Embutidos no verso (q.resposta/versoHtml); nota 'Basic' intacta","description":"Zero mudança de note type (espelha D-11); menor superfície. Mnemônico + SVG anexados ao fim do verso."},{"id":"b","label":"Campos separados na nota Anki ('Mnemônico', 'Imagem') — novo note type","description":"Mais estruturado (estilizar/ocultar por campo no Anki); custa criar/gerenciar um modelo de nota novo nos dois exporters."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"ui-revisao","title":"UI & Revisão (PIPE-02 / D-17)","questions":[{"id":"Q-12","title":"Defaults dos toggles mnemônico/imagem","context":"Padrão de quota da Phase 3 (D-15): classificar ON (barato), card educativo OFF (multiplica chamadas). Imagem é a chamada mais cara.","options":[{"id":"a","label":"Ambos DESLIGADOS por default","description":"Consistente com D-15; o estágio mais caro nunca roda sem opt-in consciente. Entrega valor só quando pedido."},{"id":"b","label":"Mnemônico ON, imagem OFF","description":"Mnemônico (texto) é mais barato que imagem; entrega algo 'de fábrica'. Ainda multiplica chamadas se for por-card (Q-02)."},{"id":"c","label":"Ambos ON","description":"Máximo valor visível, máximo risco de quota. Improvável dado o gargalo."},{"id":"d","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-13","title":"CardTable na revisão — badge ou preview?","context":"D-17: deck/tags são read-only na CardTable. Renderizar o SVG no app web é uma superfície de sanitização DIFERENTE do Anki (Q-06 cobre o Anki).","options":[{"id":"a","label":"Só badge indicador (📝 mnemônico / 🖼️ SVG) — sem renderizar","description":"Mínima superfície (espelha D-17); não renderiza SVG não-confiável no front. Usuário vê que existe, confere no Anki."},{"id":"b","label":"Preview: renderiza o SVG inline + texto do mnemônico read-only","description":"Revisão visual real antes de exportar; mas exige sanitizar o SVG TAMBÉM p/ o front (reusar Q-06) e mais layout."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"verificacao","title":"Verificação & Não-regressão (D-18)","questions":[{"id":"Q-14","title":"Teste da sanitização + não-regressão","context":"Padrão das Phases 1-3 (D-18): guard determinístico CLI-free + unit puro + smoke gated. Sanitização é security-sensitive.","options":[{"id":"a","label":"Unit puro c/ fixtures maliciosos + guard CLI-free (PIPE-03) + smoke gated do SVG real","description":"Fixtures (script/onload/href externo/foreignObject) provam remoção sem queimar quota; guard prova byte-identidade com toggles off; SVG real só no smoke opt-in. Espelha D-18."},{"id":"b","label":"Só smoke real (gera SVG e inspeciona)","description":"Menos código de teste; queima quota e é não-determinístico no CI."},{"id":"c","label":"Custom","description":""}],"answer":null,"chat_more":"","status":"unanswered"}]}]};
+
+const FILENAME = "04-QUESTIONS.json";
+let fileHandle = null;
+
+function recompute() {
+  let total=0, ans=0, chat=0;
+  for (const s of DATA.sections) for (const q of s.questions) {
+    total++;
+    const hasAns = q.answer !== null && String(q.answer).trim() !== "";
+    if (hasAns) ans++;
+    if (q.chat_more && q.chat_more.trim() !== "") chat++;
+    q.status = hasAns ? "answered" : (q.chat_more && q.chat_more.trim() ? "chat-more" : "unanswered");
+  }
+  DATA.stats = { total, answered:ans, chat_more:chat, remaining: total-ans };
+}
+function renderStats() {
+  const st = DATA.stats;
+  document.getElementById("s-total").textContent = st.total;
+  document.getElementById("s-ans").textContent = st.answered;
+  document.getElementById("s-rem").textContent = st.remaining;
+  document.getElementById("s-chat").textContent = st.chat_more;
+  document.getElementById("s-fill").style.width = (st.total ? (100*st.answered/st.total) : 0) + "%";
+}
+function secCount(s){ let a=0; for(const q of s.questions){ if(q.answer!==null && String(q.answer).trim()!=="") a++; } return a+"/"+s.questions.length; }
+
+function render() {
+  document.getElementById("carry").innerHTML = DATA.carry_forward.map(c=>"<li>"+esc(c)+"</li>").join("");
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+  for (const s of DATA.sections) {
+    const sec = document.createElement("section");
+    sec.innerHTML =
+      '<div class="sec-head" onclick="this.parentNode.classList.toggle(\'collapsed\')">'+
+        '<span class="caret">▼</span><h2>'+esc(s.title)+'</h2>'+
+        '<span class="count">'+secCount(s)+' respondidas</span></div>'+
+      '<div class="grid"></div>';
+    const grid = sec.querySelector(".grid");
+    for (const q of s.questions) grid.appendChild(card(q));
+    root.appendChild(sec);
+  }
+  renderStats();
+}
+function card(q) {
+  const el = document.createElement("div");
+  el.className = "card" + ((q.answer!==null && String(q.answer).trim()!=="") ? " answered":"");
+  const opts = q.options.map(o => {
+    const sel = q.answer === o.id;
+    const isCustom = o.description === "";
+    return '<label class="opt'+(sel?' sel':'')+'">'+
+      '<input type="radio" name="'+q.id+'" '+(sel?'checked':'')+' onchange="pick(\''+q.id+'\',\''+o.id+'\')">'+
+      '<span><span class="lbl">'+esc(o.label)+'</span>'+(isCustom?'':'<br><span class="desc">'+esc(o.description)+'</span>')+'</span></label>';
+  }).join("");
+  el.innerHTML =
+    '<div class="qhead"><span class="qid">'+q.id+'</span><span class="qtitle">'+esc(q.title)+'</span></div>'+
+    '<p class="qctx">'+esc(q.context)+'</p>'+
+    '<div class="opts">'+opts+'</div>'+
+    '<textarea class="'+(q.chat_more&&q.chat_more.trim()?'has':'')+'" placeholder="Nota: contexto, nuance, ou resposta livre p/ esta pergunta…" oninput="note(\''+q.id+'\',this)">'+esc(q.chat_more||"")+'</textarea>';
+  return el;
+}
+function find(id){ for(const s of DATA.sections) for(const q of s.questions) if(q.id===id) return q; }
+function pick(qid, oid){ const q=find(qid); q.answer=oid; recompute(); render(); }
+function note(qid, ta){ const q=find(qid); q.chat_more=ta.value; ta.classList.toggle("has", ta.value.trim()!==""); recompute(); renderStats();
+  // live-update only the section count without full re-render to keep focus
+  for (const s of DATA.sections){ if(s.questions.includes(q)){ const secs=[...document.querySelectorAll("section")]; const i=DATA.sections.indexOf(s); if(secs[i]) secs[i].querySelector(".count").textContent=secCount(s)+" respondidas"; } }
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+async function save() {
+  recompute();
+  const json = JSON.stringify(DATA, null, 2);
+  // Try File System Access API (overwrite the original file)
+  if (window.showSaveFilePicker) {
+    try {
+      if (!fileHandle) {
+        fileHandle = await window.showSaveFilePicker({ suggestedName: FILENAME, types:[{description:"JSON", accept:{"application/json":[".json"]}}] });
+      }
+      const w = await fileHandle.createWritable();
+      await w.write(json); await w.close();
+      flash("Salvo em "+(fileHandle.name||FILENAME)+". Volte ao Claude e diga \"refresh\" ou \"finalize\".");
+      return;
+    } catch(e){ if(e && e.name==="AbortError") return; /* fall through to download */ }
+  }
+  // Fallback: download
+  const blob = new Blob([json], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = FILENAME; a.click();
+  URL.revokeObjectURL(a.href);
+  flash("JSON baixado como "+FILENAME+". Substitua o arquivo original, depois diga \"refresh\" ao Claude.");
+}
+function flash(msg){ const h=document.querySelector(".hint"); const old=h.innerHTML; h.innerHTML="<b>"+esc(msg)+"</b>"; setTimeout(()=>h.innerHTML=old, 6000); }
+
+recompute(); render();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+{
+  "phase": "04-mnem-nicos-imagem-svg",
+  "generated_at": "2026-06-03",
+  "language": "pt-BR",
+  "carry_forward": [
+    "D-01: enrich roda ENCADEADO no mesmo job de /generate (sem endpoint/job novo).",
+    "D-02: progresso via evento enrich-progress na union JobEvent.",
+    "D-03: estágios vivem em core/specialists/enrich.ts (enrichAll).",
+    "D-04: especialistas usam modelo sonnet (default do runner).",
+    "D-13: isolamento de erro por-card; nunca derruba o job; card mantém conteúdo cru.",
+    "D-16: progresso dentro do passo generating; NÃO adicionar 5º step no Stepper.",
+    "Fonte única .md: mnemonic.md e mnemonic-image.md já existem — refinar, não duplicar.",
+    "Tipo Questao já tem mnemonico?/mnemonicoSvg? em server e web — SEM mudança de tipo.",
+    "Andaime pronto: ImageProvider + SvgClaudeImageProvider (createImageProvider) existem, porém UNWIRED.",
+    "Bloco 'Modo educativo' (StructurePanel) é extensível (D-14); defaults sob restrição de quota (D-15)."
+  ],
+  "stats": {
+    "total": 14,
+    "answered": 14,
+    "chat_more": 14,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "mnemonico-estagio",
+      "title": "Estágio Mnemônico (MNEM-01 / MNEM-02)",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Seletividade — quais cards recebem mnemônico?",
+          "context": "MNEM-01 fala em cards 'difíceis/memorização'. A seleção inteligente por-card é território da Phase 5 (ORCH-01). mnemonic.md já instrui o especialista a pular cards conceituais e só gerar p/ memorizáveis.",
+          "options": [
+            { "id": "a", "label": "Especialista decide (envia todos, retorna vazio p/ conceituais)", "description": "Roda mnemonic p/ todos os cards do lote; o .md já manda devolver vazio quando não é memorização. Zero heurística no código; seleção 'real' fica p/ Phase 5. Custo: gasta chamada mesmo em cards que voltam vazios (mitigado por batch — Q-02)." },
+            { "id": "b", "label": "Heurística no código filtra antes da chamada", "description": "Regex/sinais (listas, datas, números, tipo) escolhem candidatos antes de chamar o CLI. Poupa chamadas, mas duplica a lógica que já está no .md e antecipa ORCH-01 (Phase 5)." },
+            { "id": "c", "label": "Roda p/ todos sem filtro algum", "description": "Todo card ligado recebe tentativa de mnemônico, sem o .md pular nada. Mais simples, mais caro, polui cards conceituais com mnemônicos forçados." },
+            { "id": "d", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "MNEM-01 fala em cards 'difíceis/memorização' e o `mnemonic.md` JÁ tem a seção 'Quando NÃO gerar' (recusa cards conceituais/raciocínio e devolve vazio). A seleção inteligente por-card é explicitamente ORCH-01 (Phase 5). (a) reusa a regra que já vive na fonte única `.md` — ZERO heurística duplicada no código — e deixa a seleção 'real' onde pertence. (b) duplica a lógica do `.md` e antecipa ORCH-01; (c) polui cards conceituais com mnemônicos forçados. O custo de gastar chamada em cards que voltam vazios é anulado por Q-02b (1 chamada batch p/ todos). Mínima superfície.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Granularidade da chamada (quota)",
+          "context": "Padrões existentes: classificador = 1 chamada com TODOS os cards (D-05, barato, casa por id); card-builder = por-card 1 spawn/card (D-12, default-OFF). Quota é o gargalo declarado.",
+          "options": [
+            { "id": "a", "label": "Por-card (1 spawn/card)", "description": "Espelha card-builder (D-12): isolamento de erro natural (D-13) e parsing simples. Multiplica quota — aceitável se for default-OFF (Q-12)." },
+            { "id": "b", "label": "Batch único (todos numa chamada, casa por id)", "description": "Espelha classificador (D-05): 1 chamada, parser por id (D-06). Poupa quota e antecipa ORCH-02 barato; porém 1 erro afeta o lote e o parsing fica mais sensível a omissão/reordenação do LLM." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "b",
+          "chat_more": "Mnemônico NÃO divide cards (≠ card-builder) e produz texto casável por id — o padrão exato do classificador (D-05: 1 chamada com TODOS; D-06: parser casa-por-id via `Map`, anti-posicional). Batch único poupa a quota (o gargalo declarado) e é o que torna Q-01a barato (conceituais vazios não viram spawns extras). (a) por-card multiplicaria a quota sem o ganho que justifica o por-card no card-builder — o split 1→N, que aqui não existe. O risco '1 erro afeta o lote' degrada com graça: id ausente no parse → card sem mnemônico (mantém cru, D-13), job segue. Casa com Q-12b.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Escolha da técnica (MNEM-02) — controle do usuário?",
+          "context": "mnemonic.md já escolhe a técnica (acrônimo/história/loci/rima) conforme o conteúdo. MNEM-02 pede 'técnicas variadas escolhidas conforme o conteúdo'.",
+          "options": [
+            { "id": "a", "label": "Especialista escolhe sozinho (sem UI)", "description": "Leitura literal de MNEM-02; o .md já decide. Zero superfície de UI. Reversível: adicionar seleção depois é incremento barato." },
+            { "id": "b", "label": "Usuário escolhe técnica preferida na UI", "description": "Select/preferência no StructurePanel passada ao especialista. Mais controle, mas adiciona estado de UI + parâmetro no prompt e contraria 'conforme o conteúdo'." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "MNEM-02 pede técnicas 'escolhidas conforme o conteúdo' e o `mnemonic.md` já traz '## Técnicas (escolha a melhor para o card)' com acrônimo/história/loci/rima — a decisão da técnica JÁ é do especialista, guiada pelo conteúdo. (a) é a leitura literal de MNEM-02, com ZERO superfície de UI. (b) adiciona estado de UI + parâmetro no prompt e CONTRADIZ 'conforme o conteúdo' ao impor uma técnica fixa. Reversível: expor uma preferência opcional depois é incremento barato se o usuário pedir (gatilho de revisão).",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "imagem-estagio",
+      "title": "Estágio Imagem SVG (IMG-01)",
+      "questions": [
+        {
+          "id": "Q-04",
+          "title": "Dependência imagem → mnemônico",
+          "context": "IMG-01: o SVG 'ilustra o mnemônico'. image-provider.generate(mnemonic, context) já recebe o mnemônico como entrada. Logo a imagem pressupõe um mnemônico.",
+          "options": [
+            { "id": "a", "label": "Encadeado: imagem só p/ cards que já têm mnemônico", "description": "O estágio imagem roda APÓS o de mnemônico, só nos cards com q.mnemonico preenchido. Fiel a IMG-01; sem mnemônico não há o que ilustrar." },
+            { "id": "b", "label": "Independente: gera SVG mesmo sem mnemônico", "description": "Imagem ilustra a própria pergunta/resposta. Desacopla os estágios, mas foge de 'ilustra o mnemônico' e muda a entrada do provider." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "IMG-01 (verbatim) diz que o SVG 'ilustra o mnemônico', e a assinatura do provider já é `generate(mnemonic, context)` (`image-provider.ts:19-26`) — exige um mnemônico de entrada. O `mnemonic-image.md` reforça: 'a imagem deve refletir FIELMENTE o mnemônico'. Sem mnemônico não há o que ilustrar. (a) encadeia o estágio imagem APÓS o de mnemônico, só nos cards com `q.mnemonico` preenchido — fiel ao requisito e ao andaime pronto. (b) desacopla, mas foge de IMG-01 e mudaria a entrada do provider (retrabalho). Forma a cadeia Q-01a→Q-02b→Q-04a.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Granularidade / cap da imagem (quota)",
+          "context": "A imagem é a chamada MAIS cara (1 CLI por card p/ gerar SVG). Batching/seletividade é explicitamente ORCH-02 (Phase 5).",
+          "options": [
+            { "id": "a", "label": "Por-card, sem cap — confiar no default-OFF + toggle", "description": "Mínima superfície; batching real é Phase 5. Risco de estouro de quota se o usuário ligar imagem num lote grande — mitigado só pelo default-OFF (Q-12)." },
+            { "id": "b", "label": "Por-card, com cap suave (só os N primeiros memorizáveis)", "description": "Limite duro (ex.: N=10) p/ proteger a quota agora, com aviso no enrich-progress de quantos ficaram de fora. Antecipa um pedaço de ORCH-02, mas é um guard simples e reversível." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "A imagem é a chamada MAIS cara e o batching/seletividade é explicitamente ORCH-02 (Phase 5) — o projeto adia conscientemente a otimização de quota p/ o orquestrador (mesmo motivo de o card-builder ser por-card sem cap em D-12). (a) mantém mínima superfície e usa o default-OFF (Q-12) como guarda, igual a D-12/D-15. (b) introduz um número mágico (N=10) que nenhum requisito pede, antecipa um pedaço de ORCH-02 e exige novo sinal no `enrich-progress` — flexibilidade especulativa que o projeto rejeitou em casos análogos. Gatilho de revisão: se o smoke real mostrar dor de quota num lote grande, o cap suave (b) é o 1º incremento — reversível.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "sanitizacao",
+      "title": "Sanitização do SVG (IMG-02)",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "Estratégia de sanitização",
+          "context": "image-provider.ts:42 tem TODO(IMG-02). mnemonic-image.md já PEDE ao Claude não emitir <script>/URLs externas/foreignObject, mas a sanitização real é responsabilidade desta fase. App prefere mínimas dependências; é single-user local.",
+          "options": [
+            { "id": "a", "label": "Lib dedicada (DOMPurify perfil SVG / sanitize-html)", "description": "Robusto e testado contra XSS/SVG-injection; allowlist mantida pela lib. Custo: nova dependência (DOMPurify precisa de DOM — jsdom no Node, ou rodar no front)." },
+            { "id": "b", "label": "Manual: parser + allowlist de tags/atributos", "description": "Sem dependência nova: parseia o SVG (ex.: linkedom) e remove o que não está na allowlist (<script>, on*, href externo, foreignObject). Controle total; risco de furo se a allowlist falhar." },
+            { "id": "c", "label": "Defesa em camadas: prompt (feito) + regex que REJEITA proibidos", "description": "Confia no .md p/ não gerar lixo e só REJEITA o SVG se achar padrão proibido (não reescreve). Mais simples; não garante allowlist positiva." },
+            { "id": "d", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "IMG-02 é security-sensitive e a fonte NÃO é plenamente confiável: o PDF de origem pode tentar injeção indireta p/ o Claude emitir `<script>`/`on*`/`href` externo no SVG, que renderiza em contextos que EXECUTAM JS (Anki/QtWebEngine e o preview web). Sanitizar SVG corretamente é notoriamente difícil (vetores via `<script>`, `on*`, `javascript:`, `<use>`/`xlink:href`, CSS `url()`, `<animate>`/`<set>`). Consenso de segurança: não escrever o próprio sanitizador — usar lib mantida/auditada (DOMPurify perfil SVG, nativo no front; `sanitize-html`/jsdom no Node). Nomeio a tensão com 'mínimas dependências' do projeto, mas p/ um controle de segurança de baixa reversibilidade a robustez supera a leveza. (c) prompt+regex é denylist sem allowlist positiva — burlável, inadequada. (b) allowlist manual também adiciona parser (linkedom) e carrega risco de bug bespoke no ponto mais crítico. Defesa em camadas: Q-07a aperta a allowlist da lib + Q-08a descarta fail-closed + Q-14a prova com fixtures.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Escopo da allowlist SVG",
+          "context": "Decide o que o SVG pode conter depois de sanitizado. mnemonic-image.md produz vetor geométrico simples (formas, texto, gradientes).",
+          "options": [
+            { "id": "a", "label": "Geométrico estrito (path, rect, circle, line, polygon, text, g, defs, linearGradient, stop) + atributos de estilo", "description": "Cobre o que o mnemonic-image.md produz; bloqueia tudo que cheira a vetor de ataque. Pode rejeitar SVGs válidos exóticos." },
+            { "id": "b", "label": "Allowlist ampla; só bloqueia perigosos (script, foreignObject, image href externo, on*)", "description": "Aceita mais variações do Claude; superfície de risco maior." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "O `mnemonic-image.md` produz uma superfície minúscula e conhecida — só `<rect>`,`<circle>`,`<path>`,`<text>`,`<g>` + cores/fontes do sistema e `viewBox`. Uma allowlist geométrica ESTRITA é positiva e fail-closed por construção: permite só o conhecido-seguro e descarta TODO o resto (`<script>`, `on*`, `<foreignObject>`, `<use>`/`href`, `<animate>` caem por omissão) — allowlist > denylist. (b) allowlist ampla aumenta a superfície de risco sem ganho (o Claude não emite exótico aqui). Aperta a lib de Q-06a (ALLOWED_TAGS geométrico); `linearGradient`/`stop` podem entrar defensivamente (inertes). Testada por Q-14a.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Falha na sanitização",
+          "context": "Isolamento de erro por-card é o padrão (D-13): nunca derruba o job.",
+          "options": [
+            { "id": "a", "label": "Descartar o SVG; card mantém só o mnemônico texto; erro no enrich-progress", "description": "Espelha D-13. Card nunca fica com SVG sujo; degrada com graça." },
+            { "id": "b", "label": "Limpar e embutir o que sobrou", "description": "Tenta salvar parte do SVG. Risco de embutir markup quebrado/parcial." },
+            { "id": "c", "label": "Re-pedir ao Claude uma vez (1 retry) antes de descartar", "description": "Melhora a taxa de sucesso; custa +1 chamada (quota)." },
+            { "id": "d", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "Espelha D-13 (isolamento por-card; nunca derruba o job; card mantém conteúdo cru). O mnemônico-texto é o valor primário; o SVG é reforço (Q-04). Se a sanitização falhar, descartar o SVG e manter o card com o mnemônico-texto degrada com graça e nunca embute markup sujo — fail-closed. (b) 'embutir o que sobrou' arrisca markup parcial/quebrado (e parcial pode seguir perigoso). (c) 1 retry gasta +1 chamada NA etapa MAIS cara (imagem) — o pior lugar p/ queimar quota. Erro vai no `enrich-progress` (D-02). Compõe com Q-04a/Q-06a/Q-14a.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "embed-export",
+      "title": "Embed no Export (IMG-03)",
+      "questions": [
+        {
+          "id": "Q-09",
+          "title": "Mecanismo de embed do SVG",
+          "context": "Anki (QtWebEngine) renderiza SVG. Caminhos: inline no HTML, <img> com data-URI base64, ou arquivo de mídia (collection.media / AnkiConnect storeMediaFile).",
+          "options": [
+            { "id": "a", "label": "SVG inline no HTML do verso (<svg>…</svg> direto)", "description": "Sem arquivos de mídia; funciona igual em CSV e AnkiConnect. Verso fica com markup grande; depende do Anki renderizar inline (confirmar no smoke)." },
+            { "id": "b", "label": "<img> com data-URI base64 (data:image/svg+xml;base64,…)", "description": "Autocontido, sem mídia externa; um só campo. Base64 incha o CSV; alguns renderizadores limitam data-URI." },
+            { "id": "c", "label": "Arquivo de mídia + <img src='nome.svg'>", "description": "Mais 'nativo' no Anki; AnkiConnect storeMediaFile resolve. No CSV exige o usuário colocar o arquivo em collection.media (atrito no import)." },
+            { "id": "d", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "O precedente D-11 foi embutir conteúdo direto no campo (`q.resposta`/verso), ZERO arquivo de mídia, ZERO mudança de note type (`'Basic'` Front/Back, `ankiconnect.ts:113`). Hoje o CSV é texto puro SEM suporte a mídia e o AnkiConnect só usa `addNotes` (sem `storeMediaFile`). (c) arquivo de mídia exigiria infra NOVA no AnkiConnect e, no CSV, o usuário teria de copiar arquivos p/ `collection.media` (atrito no import) — mais pesado, dois caminhos. (a) SVG inline é o análogo direto de D-11: concatena o `<svg>` sanitizado ao fim do verso, UM caminho p/ os dois exporters (Q-10a/Q-11a), inspecionável (sem inchaço base64) e reusável no preview. (b) data-URI também evita mídia, mas o base64 incha o CSV ~33% sem ganho sobre o inline. O smoke (Q-14a) confirma o render no Anki.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "CSV vs AnkiConnect — mesmo mecanismo?",
+          "context": "Os dois exporters têm caminhos de mídia diferentes (CSV = import manual; AnkiConnect = API com storeMediaFile). Não-regressão: com toggles off, nada muda (PIPE-03).",
+          "options": [
+            { "id": "a", "label": "Mesmo mecanismo nos dois (inline ou data-URI; sem mídia externa)", "description": "Um só código de embed; PIPE-03 fácil. Provável par com Q-09 (a/b)." },
+            { "id": "b", "label": "Por-exporter: AnkiConnect usa storeMediaFile; CSV usa data-URI/inline", "description": "Cada um no caminho mais nativo; mais código e dois caminhos de teste." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "Par direto de Q-09a: como o embed é inline no campo (sem mídia externa), os dois exporters usam o MESMO mecanismo — concatenação de string no verso. (a) um só código de embed → PIPE-03 trivial (toggles off ⇒ `q.mnemonicoSvg` undefined ⇒ saída byte-idêntica) e um só caminho de teste. (b) por-exporter (AnkiConnect `storeMediaFile` vs CSV data-URI) duplica código/testes e exige infra de mídia que NENHUM exporter tem hoje. Reversível: migrar p/ `storeMediaFile` nativo é opção futura se o inline mostrar limite no Anki (gatilho com Q-09).",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Onde mnemônico + imagem moram no card",
+          "context": "Phase 3 embutiu a explicação no próprio verso p/ NÃO mexer no note type (D-11). Os campos Questao.mnemonico/mnemonicoSvg já existem.",
+          "options": [
+            { "id": "a", "label": "Embutidos no verso (q.resposta/versoHtml); nota 'Basic' intacta", "description": "Zero mudança de note type (espelha D-11); menor superfície. Mnemônico + SVG anexados ao fim do verso." },
+            { "id": "b", "label": "Campos separados na nota Anki ('Mnemônico', 'Imagem') — novo note type", "description": "Mais estruturado (estilizar/ocultar por campo no Anki); custa criar/gerenciar um modelo de nota novo nos dois exporters." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "Espelha D-11 exatamente: a Phase 3 embutiu a explicação na própria `q.resposta` p/ NÃO tocar o note type, evitando o pitfall do tipo `Questao` duplicado server+web; note type segue `'Basic'`. Os campos `q.mnemonico`/`q.mnemonicoSvg` ARMAZENAM o dado (escritos pelos especialistas); o EXPORT anexa mnemônico-texto + SVG sanitizado ao fim do verso via o `versoHtml()`/`versoDaQuestao()` existente. (a) = zero mudança de note type, menor superfície. (b) note type novo exige criar/gerenciar um modelo nos DOIS exporters — mais superfície e o mesmo risco do tipo duplicado. Compõe com Q-09a/Q-10a.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "ui-revisao",
+      "title": "UI & Revisão (PIPE-02 / D-17)",
+      "questions": [
+        {
+          "id": "Q-12",
+          "title": "Defaults dos toggles mnemônico/imagem",
+          "context": "Padrão de quota da Phase 3 (D-15): classificar ON (barato), card educativo OFF (multiplica chamadas). Imagem é a chamada mais cara.",
+          "options": [
+            { "id": "a", "label": "Ambos DESLIGADOS por default", "description": "Consistente com D-15; o estágio mais caro nunca roda sem opt-in consciente. Entrega valor só quando pedido." },
+            { "id": "b", "label": "Mnemônico ON, imagem OFF", "description": "Mnemônico (texto) é mais barato que imagem; entrega algo 'de fábrica'. Ainda multiplica chamadas se for por-card (Q-02)." },
+            { "id": "c", "label": "Ambos ON", "description": "Máximo valor visível, máximo risco de quota. Improvável dado o gargalo." },
+            { "id": "d", "label": "Custom", "description": "" }
+          ],
+          "answer": "b",
+          "chat_more": "Aplica o precedente de defaults-SPLIT que a Phase 3 já adotou (D-15/Q-15b: classificar LIGADO por ser 1 chamada barata e universal; multiplicador caro DESLIGADO) — a Phase 3 NÃO escolheu 'ambos off'. Com Q-02b o mnemônico é UMA chamada batch barata (não-multiplicador), o análogo do classificador → LIGADO, entregando o valor central da fase 'de fábrica' a um usuário que estuda p/ concurso e quer mnemônicos. A imagem é a chamada por-card MAIS cara (Q-05a sem cap) → DESLIGADA, opt-in consciente — é o guarda de quota. (a) 'ambos off' subtrai o valor barato do mnemônico (sub-entrega); (c) 'ambos on' liga o estágio mais caro por default. Gatilho: se mnemônico-automático incomodar em decks conceituais, desligar é 1 clique.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "CardTable na revisão — badge ou preview?",
+          "context": "D-17: deck/tags são read-only na CardTable. Renderizar o SVG no app web é uma superfície de sanitização DIFERENTE do Anki (Q-06 cobre o Anki).",
+          "options": [
+            { "id": "a", "label": "Só badge indicador (📝 mnemônico / 🖼️ SVG) — sem renderizar", "description": "Mínima superfície (espelha D-17); não renderiza SVG não-confiável no front. Usuário vê que existe, confere no Anki." },
+            { "id": "b", "label": "Preview: renderiza o SVG inline + texto do mnemônico read-only", "description": "Revisão visual real antes de exportar; mas exige sanitizar o SVG TAMBÉM p/ o front (reusar Q-06) e mais layout." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "Espelha a mínima superfície de D-17 (deck/tags read-only na `CardTable`, sem render rico). Renderizar SVG no app web é uma superfície de sanitização DIFERENTE do Anki — render de conteúdo influenciável por injeção indireta dentro do próprio React (risco de XSS via `dangerouslySetInnerHTML`). (a) badges (📝/🖼️) sinalizam a existência sem renderizar SVG não-plenamente-confiável no front (defesa em camadas: não renderizar o que não precisa); o usuário confere o render real no Anki (o alvo de verdade). (b) preview dá revisão visual, mas abre essa segunda superfície + layout p/ uma ferramenta single-user onde o resultado aparece no Anki de qualquer forma. Reversível: o preview é incremento futuro e reusaria o sanitizador de Q-06a (DOMPurify roda nativo no browser) — gatilho se houver demanda por revisão in-app.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "verificacao",
+      "title": "Verificação & Não-regressão (D-18)",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Teste da sanitização + não-regressão",
+          "context": "Padrão das Phases 1-3 (D-18): guard determinístico CLI-free + unit puro + smoke gated. Sanitização é security-sensitive.",
+          "options": [
+            { "id": "a", "label": "Unit puro c/ fixtures maliciosos + guard CLI-free (PIPE-03) + smoke gated do SVG real", "description": "Fixtures (script/onload/href externo/foreignObject) provam remoção sem queimar quota; guard prova byte-identidade com toggles off; SVG real só no smoke opt-in. Espelha D-18." },
+            { "id": "b", "label": "Só smoke real (gera SVG e inspeciona)", "description": "Menos código de teste; queima quota e é não-determinístico no CI." },
+            { "id": "c", "label": "Custom", "description": "" }
+          ],
+          "answer": "a",
+          "chat_more": "Replica a disciplina provada D-18 (Phases 1-3) e é obrigatória aqui por a sanitização ser security-sensitive: (1) unit puro (vitest, já instalado na Phase 3) com fixtures maliciosos — `<script>`, `onload`, `href` externo, `<foreignObject>`, `<use>` — provando remoção SEM queimar quota e de forma determinística; (2) guard CLI-free provando que, com toggles off, `enrichAll` não chama o estágio imagem e `/generate` fica byte-idêntico (PIPE-03); (3) smoke opt-in que gera o SVG real só sob demanda. (b) 'só smoke' queima quota e é não-determinístico no CI — inaceitável p/ um controle de segurança, que exige casos adversariais repetíveis. Fecha o ciclo Q-06a/Q-07a/Q-08a.",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}
