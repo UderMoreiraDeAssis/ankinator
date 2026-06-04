@@ -29,7 +29,7 @@ Phase 04.1 (Estabilização de Runtime): fixes RT-01/02/05 aplicados — erro do
 Phase 06 (Cards Educativos Ricos): ✅ CONFIRMADO no Anki real — layout rico + alternativas renderizadas como lista ordenada.
 Phase 07 (parcial): mnemônico liberalizado (gera p/ maioria dos cards) + alternativas sempre capturadas (prompt) + 5 subagents reais em `.claude/agents/` (ankinator-mnemonic/image/deck-classifier/card-builder/orchestrator).
 Status: Falta o runner ORQUESTRADO (rodar `claude` da raiz do projeto + Task tool, opt-in com fallback determinístico). Incerteza real: claude headless `-p` + subagents só valida no runtime do usuário. O caminho determinístico atual já dá especialistas funcionando (mnemônico corrigido).
-Next: usuário roda 1 geração real → confirmar mnemônicos/imagens ao vivo (deterministic path). Depois: construir o runner orquestrado experimental + afrouxar fidelidade p/ `[CRIADA]` (qualidade das questões).
+Next: ver **`.planning/TAREFAS.md`** (lista de tarefas para retomar após `/clear`). Topo da fila: UI da tela "Estrutura" (UI-1 rolagem horizontal, UI-2 selecionar/desmarcar tudo, UI-3 erros de escrita) → validar mnemônicos/imagens ao vivo → runner orquestrado (opt-in) → qualidade `[CRIADA]`.
 Last activity: 2026-06-04
 
 Progress (rumo ao Destino): [███████░░░] ~70%
