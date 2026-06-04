@@ -1,14 +1,11 @@
 /**
- * Testes unit RED de Wave 0 — enrich.ts (a ser implementado no Plano 01).
+ * Testes unit — enrich.ts (Wave 1 + Wave 2).
  *
- * Estado esperado: VERMELHO até que os Planos 01/02 implementem as funções.
- * Cobertura: DECK-01, DECK-02, CARD-01, CARD-02, PIPE-01, exporters.
- *
- * Os testes de exporter (tagsDaQuestao merge, ankiconnect routing, csv deck column)
- * estão marcados como it.todo até o Plano 02 exportar as funções privadas.
+ * Cobertura: DECK-01, DECK-02, CARD-01, CARD-02, PIPE-01, exporters,
+ *            MNEM-01, MNEM-02, IMG-01, IMG-02 (Phase 04 Plan 02).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseClassificacoesJson, parseSingleCard, enrichAll, deveRodarEnrich } from './enrich.js';
+import { parseClassificacoesJson, parseSingleCard, parseMnemonicosJson, enrichAll, deveRodarEnrich } from './enrich.js';
 
 // ── Mocks de infra para testes comportamentais de enrichAll ──────────────────
 
@@ -270,7 +267,6 @@ describe('csv deck column', () => {
 
 describe('deveRodarEnrich', () => {
   it('retorna false quando ambos toggles são false', () => {
-    // RED: função não existe ainda
     expect(deveRodarEnrich({ classificar: false, cardBuilder: false })).toBe(false);
   });
 
@@ -280,5 +276,267 @@ describe('deveRodarEnrich', () => {
 
   it('retorna true quando cardBuilder=true', () => {
     expect(deveRodarEnrich({ classificar: false, cardBuilder: true })).toBe(true);
+  });
+
+  // Phase 4 Plan 02 — PIPE-03 ampliado com novos toggles
+  it('retorna true quando mnemonico=true (PIPE-03)', () => {
+    expect(deveRodarEnrich({ mnemonico: true })).toBe(true);
+  });
+
+  it('retorna true quando imagem=true com mnemonico=false (PIPE-03)', () => {
+    expect(deveRodarEnrich({ imagem: true, mnemonico: false })).toBe(true);
+  });
+
+  it('retorna false quando todos os 4 toggles estão off (PIPE-03)', () => {
+    expect(deveRodarEnrich({ classificar: false, cardBuilder: false, mnemonico: false, imagem: false })).toBe(false);
+  });
+});
+
+// ── parseMnemonicosJson (MNEM-01 / D-01) ─────────────────────────────────────
+
+describe('parseMnemonicosJson', () => {
+  it('extrai mnemônicos por id de JSON limpo', () => {
+    const text = '{"mnemonicos":[{"id":"a","mnemonico":"Mnemônico A","tecnica":"acrônimo"}]}';
+    expect(parseMnemonicosJson(text)).toEqual([{ id: 'a', mnemonico: 'Mnemônico A', tecnica: 'acrônimo' }]);
+  });
+
+  it('tolera cercas ```json e retorna [] para lista vazia', () => {
+    const text = '```json\n{"mnemonicos":[]}\n```';
+    expect(parseMnemonicosJson(text)).toEqual([]);
+  });
+
+  it('retorna [] para texto vazio', () => {
+    expect(parseMnemonicosJson('')).toEqual([]);
+  });
+
+  it('retorna [] para JSON sem chave mnemonicos', () => {
+    const text = '{"questoes":[{"id":"x"}]}';
+    expect(parseMnemonicosJson(text)).toEqual([]);
+  });
+
+  it('retorna [] para JSON inválido', () => {
+    expect(parseMnemonicosJson('isso nao e json')).toEqual([]);
+  });
+
+  it('funciona sem campo tecnica (tecnica opcional — D-01)', () => {
+    const text = '{"mnemonicos":[{"id":"b","mnemonico":"Mnem B"}]}';
+    const result = parseMnemonicosJson(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].mnemonico).toBe('Mnem B');
+    expect(result[0].tecnica).toBeUndefined();
+  });
+});
+
+// ── enrichAll estágio 3: mnemônico batch (MNEM-01/MNEM-02/D-01/D-02/D-03) ───
+
+describe('enrichAll mnemônico batch', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('merge por id: card "a" recebe mnemônico, card "b" fica sem (fail-soft)', async () => {
+    // LLM retorna mnemônico apenas para id 'a' (omite 'b' — conceitual)
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"a","mnemonico":"Associar A com algo","tecnica":"história"}]}'
+    );
+
+    const result = await enrichAll(
+      [
+        { id: 'a', tipo: 'extraida', pergunta: 'P1', resposta: 'R1' } as import('../types.js').Questao,
+        { id: 'b', tipo: 'criada',   pergunta: 'P2', resposta: 'R2' } as import('../types.js').Questao,
+      ],
+      { mnemonico: true }
+    );
+
+    // card 'a' deve ter mnemônico; card 'b' não (fail-soft, omissão)
+    expect(result.find(q => q.id === 'a')?.mnemonico).toBe('Associar A com algo');
+    expect(result.find(q => q.id === 'b')?.mnemonico).toBeUndefined();
+  });
+
+  it('merge anti-posicional: JSON reordenado ainda casa pelo id correto (D-02/D-03)', async () => {
+    // LLM retorna mnemônicos em ordem invertida
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"z","mnemonico":"Mnem Z"},{"id":"y","mnemonico":"Mnem Y"}]}'
+    );
+
+    const result = await enrichAll(
+      [
+        { id: 'y', tipo: 'extraida', pergunta: 'PY', resposta: 'RY' } as import('../types.js').Questao,
+        { id: 'z', tipo: 'extraida', pergunta: 'PZ', resposta: 'RZ' } as import('../types.js').Questao,
+      ],
+      { mnemonico: true }
+    );
+
+    expect(result.find(q => q.id === 'y')?.mnemonico).toBe('Mnem Y');
+    expect(result.find(q => q.id === 'z')?.mnemonico).toBe('Mnem Z');
+  });
+
+  it('tecnica opcional: JSON sem tecnica ainda preenche q.mnemonico', async () => {
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"x","mnemonico":"Mnem X"}]}'
+    );
+
+    const result = await enrichAll(
+      [{ id: 'x', tipo: 'extraida', pergunta: 'PX', resposta: 'RX' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+
+    expect(result[0].mnemonico).toBe('Mnem X');
+  });
+
+  it('usa loadPrompt("mnemonic") como systemPrompt', async () => {
+    vi.mocked(runClaudeCli).mockResolvedValue('{"mnemonicos":[]}');
+
+    await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+
+    expect(vi.mocked(loadPrompt)).toHaveBeenCalledWith('mnemonic');
+  });
+
+  it('erro no estágio mnemônico não derruba o job (D-08)', async () => {
+    vi.mocked(runClaudeCli).mockRejectedValue(new Error('CLI falhou'));
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    // não deve lançar
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true },
+      (e) => progressos.push(e)
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].mnemonico).toBeUndefined();
+    expect(progressos.some(p => p.erro)).toBe(true);
+  });
+});
+
+// ── enrichAll estágio 4: imagem por-card (IMG-01/IMG-02/D-04/D-05/D-08) ──────
+
+// Mock do image-provider — controlamos o que generate retorna
+vi.mock('./image-provider.js', () => ({
+  createImageProvider: vi.fn(() => ({
+    nome: 'mock',
+    generate: vi.fn(),
+  })),
+}));
+
+// Mock do sanitize-svg — permite controlar o retorno nos testes de fail-closed
+vi.mock('./sanitize-svg.js', () => ({
+  sanitizarSvg: vi.fn((svg: string) => {
+    // Por padrão: SVGs que começam com <svg passam; outros retornam null
+    return svg.trim().startsWith('<svg') ? svg : null;
+  }),
+}));
+
+import { createImageProvider } from './image-provider.js';
+import { sanitizarSvg } from './sanitize-svg.js';
+
+describe('enrichAll estágio imagem', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Restaurar comportamento padrão do sanitizarSvg
+    vi.mocked(sanitizarSvg).mockImplementation((svg: string) =>
+      svg.trim().startsWith('<svg') ? svg : null
+    );
+  });
+
+  it('generate é chamado APENAS para cards com q.mnemonico (gate D-04)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [
+        { id: 'a', tipo: 'extraida', pergunta: 'PA', resposta: 'RA', mnemonico: 'Mnem A' } as import('../types.js').Questao,
+        { id: 'b', tipo: 'extraida', pergunta: 'PB', resposta: 'RB' /* sem mnemonico */ } as import('../types.js').Questao,
+        { id: 'c', tipo: 'extraida', pergunta: 'PC', resposta: 'RC', mnemonico: 'Mnem C' } as import('../types.js').Questao,
+      ],
+      { imagem: true }
+    );
+
+    // generate deve ser chamado apenas 2 vezes (cards 'a' e 'c' têm mnemônico)
+    expect(mockGenerate).toHaveBeenCalledTimes(2);
+  });
+
+  it('SVG válido → q.mnemonicoSvg gravado (D-05)', async () => {
+    const svgValido = '<svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80"/></svg>';
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: svgValido });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const result = await enrichAll(
+      [{ id: 'x', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'Mnem X' } as import('../types.js').Questao],
+      { imagem: true }
+    );
+
+    expect(result[0].mnemonicoSvg).toBeDefined();
+    expect(result[0].mnemonicoSvg).toContain('<svg');
+  });
+
+  it('fail-closed: sanitizarSvg retorna null → sem mnemonicoSvg + erro no progresso (D-08/T-04-06)', async () => {
+    // sanitizarSvg retorna null (SVG malicioso/inválido)
+    vi.mocked(sanitizarSvg).mockReturnValue(null);
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><script>alert(1)</script></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    const result = await enrichAll(
+      [{ id: 'y', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'Mnem Y' } as import('../types.js').Questao],
+      { imagem: true },
+      (e) => progressos.push(e)
+    );
+
+    // mnemonicoSvg NÃO deve ser gravado (fail-closed)
+    expect(result[0].mnemonicoSvg).toBeUndefined();
+    // card ainda existe no resultado
+    expect(result).toHaveLength(1);
+    // erro reportado no progresso
+    expect(progressos.some(p => p.erro)).toBe(true);
+  });
+
+  it('erro em generate num card não aborta o lote — card mantém mnemonico mas sem mnemonicoSvg (D-08)', async () => {
+    const mockGenerate = vi.fn()
+      .mockResolvedValueOnce({ svg: '<svg><rect/></svg>' })
+      .mockRejectedValueOnce(new Error('Falha na geração'))
+      .mockResolvedValueOnce({ svg: '<svg><circle/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    const result = await enrichAll(
+      [
+        { id: '1', tipo: 'extraida', pergunta: 'P1', resposta: 'R1', mnemonico: 'M1' } as import('../types.js').Questao,
+        { id: '2', tipo: 'extraida', pergunta: 'P2', resposta: 'R2', mnemonico: 'M2' } as import('../types.js').Questao,
+        { id: '3', tipo: 'extraida', pergunta: 'P3', resposta: 'R3', mnemonico: 'M3' } as import('../types.js').Questao,
+      ],
+      { imagem: true },
+      (e) => progressos.push(e)
+    );
+
+    // lote não abortou
+    expect(result).toHaveLength(3);
+    // card 2 mantém mnemonico mas sem mnemonicoSvg
+    expect(result.find(q => q.id === '2')?.mnemonico).toBe('M2');
+    expect(result.find(q => q.id === '2')?.mnemonicoSvg).toBeUndefined();
+    // erro foi reportado
+    expect(progressos.some(p => p.erro?.includes('Falha na geração'))).toBe(true);
+  });
+
+  it('imagem roda APÓS mnemônico (encadeamento — estágio 3 antes de estágio 4)', async () => {
+    // Estágio 3 mnemônico
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"1","mnemonico":"Mnem gerado"}]}'
+    );
+    // Estágio 4 imagem — only called for cards that got a mnemonic
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true, imagem: true }
+    );
+
+    // card deve ter tanto mnemônico quanto mnemonicoSvg
+    expect(result[0].mnemonico).toBe('Mnem gerado');
+    expect(result[0].mnemonicoSvg).toBeDefined();
+    // generate chamado 1 vez (card recebeu mnemônico do estágio 3)
+    expect(mockGenerate).toHaveBeenCalledTimes(1);
   });
 });
