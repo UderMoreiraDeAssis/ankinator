@@ -14,7 +14,7 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
 - [x] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
 - [x] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf`, normalizado para `LoadedDocument`, fallback Node (completed 2026-06-03)
 - [x] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico; fase `enrichAll()` + toggles na UI (completed 2026-06-03)
-- [ ] **Phase 4: Mnemônicos + Imagem SVG** - Especialistas de mnemônico e imagem (SVG via Claude), sanitização e embed no export Anki
+- [x] **Phase 4: Mnemônicos + Imagem SVG** - Especialistas de mnemônico e imagem (SVG via Claude), sanitização e embed no export Anki (completed 2026-06-04)
 - [ ] **Phase 5: Orquestrador Anki** - Decisão por-card, batching p/ poupar quota, princípios Anki, integração ponta-a-ponta
 
 ## Phase Details
@@ -110,7 +110,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — Wave 3: embed <svg> inline no verso (csv + ankiconnect, mesmo mecanismo, sem escapeHtml) + wiring /generate defaults D-12 + guard/smoke estendidos + checkpoint render Anki (IMG-03)
+- [x] 04-03-PLAN.md — Wave 3: embed <svg> inline no verso (csv + ankiconnect, mesmo mecanismo, sem escapeHtml) + wiring /generate defaults D-12 + guard/smoke estendidos + checkpoint render Anki (IMG-03)
 
 ### Phase 5: Orquestrador Anki
 
@@ -139,5 +139,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 4/4 | Complete    | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete | 2026-06-03 |
-| 4. Mnemônicos + Imagem SVG | 3/4 | In Progress|  |
+| 4. Mnemônicos + Imagem SVG | 4/4 | Complete   | 2026-06-04 |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |

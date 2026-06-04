@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-04T02:21:32.566Z"
+status: verifying
+last_updated: "2026-06-04T02:32:17.116Z"
 last_activity: 2026-06-04
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 60
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase: 04 (mnem-nicos-imagem-svg) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Next: Phase 04 (Mnemônicos + Imagem SVG) — `/clear` then `/gsd:plan-phase 4`.
 Last activity: 2026-06-04
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 94%
 | Phase 03 P02 | 8min | 3 tasks | 4 files |
 | Phase 03 P03 | 5min | 4 tasks | 4 files |
 | Phase 04 P01 | 5 min | 2 tasks | 6 files |
+| Phase 04 P04-03 | 8 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Decisões completas em PROJECT.md (Key Decisions). Recentes:
 - [Phase 04 P01]: ALLOWED_TAGS geometric-only allowlist (15 tags); style absent from ALLOWED_ATTR (F-09 depends on this) — D-06/D-07; 13 adversarial fixtures pass
 - [Phase 04 P01]: mnemonic.md ## Saída rewritten to JSON batch format — prerequisite for Plan 02 parser — Pitfall 5 closed
 - [Phase 04 P01]: mnemonic-image.md: no id/version on <svg> root (Anki 25.02.x strips them — A1); SVG must start with <svg and end with </svg>
+- [Phase ?]: versoHtml tornada export de forma aditiva para teste positivo IMG-03
+- [Phase ?]: Phase 04 P03: D-12 defaults mnemonico=true imagem=false em enrichOpts do /generate
+- [Phase ?]: Phase 04 P03: SVG embed cru em csv.ts e ankiconnect.ts — NUNCA escapeHtml no mnemonicoSvg (T-04-11)
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-04T02:21:32.554Z
-Stopped at: Phase 04 context gathered (power finalize — 14/14)
+Last session: 2026-06-04T02:32:17.104Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

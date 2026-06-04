@@ -40,7 +40,7 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 - [x] **IMG-01**: O especialista de imagem gera um SVG autocontido (sem refs externas) que ilustra o mnemônico, via assinatura Claude.
 - [x] **IMG-02**: O SVG é sanitizado (sem `<script>`, sem URLs externas) antes de ser embutido.
-- [ ] **IMG-03**: O SVG é embutido nos cards exportados (CSV e AnkiConnect) de forma que o Anki renderize.
+- [x] **IMG-03**: O SVG é embutido nos cards exportados (CSV e AnkiConnect) de forma que o Anki renderize.
 
 ### Orquestração & Pipeline
 
@@ -95,7 +95,7 @@ Reconhecidos, fora do roadmap atual.
 | MNEM-02 | Phase 4 | Complete |
 | IMG-01 | Phase 4 | Complete |
 | IMG-02 | Phase 4 | Complete |
-| IMG-03 | Phase 4 | Pending |
+| IMG-03 | Phase 4 | Complete |
 | ORCH-01 | Phase 5 | Pending |
 | ORCH-02 | Phase 5 | Pending |
 | ORCH-03 | Phase 5 | Pending |
