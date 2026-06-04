@@ -32,9 +32,9 @@ Phases 1–4 entregaram **código que passa em 144 testes determinísticos**, ma
 - [x] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico (⚠ card-builder só reescreve TEXTO e vem OFF; aparência rica fica na Phase 6)
 - [~] **Phase 4: Mnemônicos + Imagem SVG** - Código entregue + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** (zero mnemônicos/imagens ao vivo) → estabilização na Phase 4.1
 - [~] **Phase 4.1: Estabilização de Runtime (INSERTED)** - Código entregue (RT-01 erro visível + parse tolerante/fallback, RT-02 imagem, RT-05 loader langchain auto). ⏳ Falta validação de runtime humano (rodar PDF real)
-- [ ] **Phase 5: Orquestrador Anki por-card** - Conectar o `anki-orchestrator` (hoje andaime morto, nunca carregado), decisão por-card, batching p/ poupar quota
-- [~] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - Código entregue: `card-html.ts` (layout seccionado índigo/verde/âmbar, escape + SVG inline sanitizado), wired em CSV + AnkiConnect. Preview ✅ (`/tmp/ankinator-card-preview.html`). ⏳ Falta validação visual no Anki real
-- [ ] **Phase 7: Qualidade das Questões + Agentes Especialistas** - Questões boas (criadas/atomizadas, não coladas) + formalizar os especialistas como agentes/skills Claude
+- [~] **Phase 5: Orquestrador Anki por-card** - Agente `ankinator-orchestrator` criado em `.claude/agents/` (regra de mnemônico solta, delega via Task). ⏳ Falta wire-ar o runner orquestrado (rodar `claude` da raiz + Task tool, opt-in com fallback)
+- [~] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - ENTREGUE: `card-html.ts` (layout seccionado, escape + SVG inline sanitizado, alternativas como lista ordenada), wired em CSV + AnkiConnect. ✅ Confirmado no Anki real pelo usuário
+- [~] **Phase 7: Qualidade das Questões + Agentes Especialistas** - 5 subagents reais em `.claude/agents/` ✓ + mnemônico liberalizado (gera p/ maioria) ✓ + alternativas sempre capturadas (prompt) ✓. ⏳ Falta runner orquestrado + afrouxar fidelidade p/ `[CRIADA]`
 
 ## Phase Details
 
@@ -199,6 +199,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6 → 7
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete (sem aparência rica) | 2026-06-03 |
 | 4. Mnemônicos + Imagem SVG | 4/4 | Código OK, **UAT runtime FALHOU** | 2026-06-04 |
 | 4.1 Estabilização de Runtime | — | Código OK (⏳ validar runtime) | 2026-06-04 |
-| 5. Orquestrador Anki por-card | 0/TBD | Not started | - |
-| 6. Cards Educativos Ricos | — | Código OK + preview ✅ (⏳ validar Anki) | 2026-06-04 |
-| 7. Qualidade das Questões + Agentes | 0/TBD | Not started | - |
+| 5. Orquestrador Anki por-card | — | Agente criado (⏳ wire runner orq.) | 2026-06-04 |
+| 6. Cards Educativos Ricos | — | ✅ Confirmado no Anki | 2026-06-04 |
+| 7. Qualidade das Questões + Agentes | — | Subagents + mnemônico OK (⏳ runner orq.) | 2026-06-04 |

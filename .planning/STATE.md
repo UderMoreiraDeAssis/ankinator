@@ -26,12 +26,13 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase 04 (Mnemônicos + Imagem SVG): código OK + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** — zero mnemônicos/imagens ao vivo, cards crus (ver 04-HUMAN-UAT.md).
 Phase 04.1 (Estabilização de Runtime): fixes RT-01/02/05 aplicados — erro do CLI agora VISÍVEL (log + SSE), parse tolerante a cercas ```json/id, loader langchain auto-ativado + logado. 176 testes verdes, build limpo.
-Phase 06 (Cards Educativos Ricos): ENTREGUE — `card-html.ts` (layout seccionado índigo/verde/âmbar, escape + SVG inline sanitizado) wired em CSV + AnkiConnect; 216 testes; preview ✅ em /tmp/ankinator-card-preview.html.
-Status: Aguardando 1 teste de runtime humano (rodar PDF real → confirmar que mnemônicos/imagens voltam OU ver o erro agora visível; e ver os cards ricos no Anki). Restam: Phase 5 (wire o anki-orchestrator morto) + Phase 7 (qualidade das questões + decidir arquitetura de agentes/skills).
-Next: você roda 1 geração real (valida 4.1 + Phase 6). Depois eu sigo com Phase 5 e 7.
+Phase 06 (Cards Educativos Ricos): ✅ CONFIRMADO no Anki real — layout rico + alternativas renderizadas como lista ordenada.
+Phase 07 (parcial): mnemônico liberalizado (gera p/ maioria dos cards) + alternativas sempre capturadas (prompt) + 5 subagents reais em `.claude/agents/` (ankinator-mnemonic/image/deck-classifier/card-builder/orchestrator).
+Status: Falta o runner ORQUESTRADO (rodar `claude` da raiz do projeto + Task tool, opt-in com fallback determinístico). Incerteza real: claude headless `-p` + subagents só valida no runtime do usuário. O caminho determinístico atual já dá especialistas funcionando (mnemônico corrigido).
+Next: usuário roda 1 geração real → confirmar mnemônicos/imagens ao vivo (deterministic path). Depois: construir o runner orquestrado experimental + afrouxar fidelidade p/ `[CRIADA]` (qualidade das questões).
 Last activity: 2026-06-04
 
-Progress (rumo ao Destino): [██████░░░░] ~60%
+Progress (rumo ao Destino): [███████░░░] ~70%
 
 ## Performance Metrics
 
