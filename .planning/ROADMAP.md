@@ -106,7 +106,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-02-PLAN.md — Wave 2: enrichAll estágio mnemônico (batch por id) + estágio imagem (por-card, fail-closed) + parseMnemonicosJson + deveRodarEnrich + image-provider conectado (MNEM-01/02, IMG-01/02)
+- [x] 04-02-PLAN.md — Wave 2: enrichAll estágio mnemônico (batch por id) + estágio imagem (por-card, fail-closed) + parseMnemonicosJson + deveRodarEnrich + image-provider conectado (MNEM-01/02, IMG-01/02)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -139,5 +139,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 4/4 | Complete    | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete | 2026-06-03 |
-| 4. Mnemônicos + Imagem SVG | 2/4 | In Progress|  |
+| 4. Mnemônicos + Imagem SVG | 3/4 | In Progress|  |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
