@@ -19,7 +19,7 @@
 import { describe, it, expect } from 'vitest';
 import { toAnkiCsv } from './csv.js';
 import { versoHtml } from './ankiconnect.js';
-import { buildFrontHtml, buildBackHtml } from './card-html.js';
+import { buildFrontHtml, buildBackHtml, splitOpcoes, renderOpcoesList } from './card-html.js';
 import type { Questao } from '../types.js';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -115,13 +115,16 @@ describe('card-html.ts — buildBackHtml (RICH-02/03)', () => {
     expect(html).toContain('A');
   });
 
-  it('RICH-02: verso com alternativas → contém "Alternativas:" e cada alternativa', () => {
+  it('RICH-02: verso com alternativas → contém "Alternativas:" e cada alternativa como <li>', () => {
     const card: Questao = { ...cardBase, metadata: { alternativas: ['(A) Sim', '(B) Não'] } };
     const html = buildBackHtml(card);
     expect(html).toContain('Alternativas:');
     expect(html).toContain('(A) Sim');
     // escapeHtml só escapa &, <, >, " — caracteres acentuados passam literalmente
     expect(html).toContain('(B) Não');
+    // Novo: alternativas renderizadas como lista ordenada (não mais <br>-joined)
+    expect(html).toContain('<ol');
+    expect(html).toContain('<li');
   });
 
   it('RICH-03: verso SEM mnemônico → NÃO contém seção "💡 Mnemônico" (PIPE-03 gate)', () => {
@@ -248,6 +251,174 @@ describe('csv.ts — toAnkiCsv HTML rico (RICH-01/02/03 + PIPE-03)', () => {
     expect(csv).not.toContain('evil.com');
     expect(csv).not.toContain('url(http');
   });
+});
+
+// ── splitOpcoes ───────────────────────────────────────────────────────────────
+
+describe('card-html.ts — splitOpcoes', () => {
+
+  it('detecta opções A-C e separa o enunciado', () => {
+    const { stem, opcoes } = splitOpcoes('Pergunta? A) um B) dois C) três');
+    expect(stem).toBe('Pergunta?');
+    expect(opcoes).toHaveLength(3);
+    expect(opcoes[0]).toMatch(/^A\)/);
+    expect(opcoes[1]).toMatch(/^B\)/);
+    expect(opcoes[2]).toMatch(/^C\)/);
+  });
+
+  it('texto sem opções → opcoes vazio, stem é o texto completo', () => {
+    const { stem, opcoes } = splitOpcoes('Qual é o conceito de isolamento?');
+    expect(opcoes).toHaveLength(0);
+    expect(stem).toBe('Qual é o conceito de isolamento?');
+  });
+
+  it('opções sem "A)" no início → não detecta (sequência deve começar em A)', () => {
+    const { stem, opcoes } = splitOpcoes('Pergunta? B) dois C) três');
+    expect(opcoes).toHaveLength(0);
+    expect(stem).toBe('Pergunta? B) dois C) três');
+  });
+
+  it('apenas uma opção → não detecta (mínimo 2)', () => {
+    const { opcoes } = splitOpcoes('Pergunta? A) única opção aqui');
+    expect(opcoes).toHaveLength(0);
+  });
+
+  it('detecta opções A-E (cinco alternativas)', () => {
+    const { stem, opcoes } = splitOpcoes('Enunciado: A) alfa B) beta C) gama D) delta E) épsilon');
+    expect(stem).toBe('Enunciado:');
+    expect(opcoes).toHaveLength(5);
+    expect(opcoes[4]).toMatch(/^E\)/);
+  });
+
+});
+
+// ── renderOpcoesList ──────────────────────────────────────────────────────────
+
+describe('card-html.ts — renderOpcoesList', () => {
+
+  it('retorna string vazia quando lista vazia', () => {
+    expect(renderOpcoesList([])).toBe('');
+  });
+
+  it('produz <ol> com um <li> por opção', () => {
+    const html = renderOpcoesList(['A) sim', 'B) não']);
+    expect(html).toContain('<ol');
+    expect(html.match(/<li/g)).toHaveLength(2);
+  });
+
+  it('opções sem letra recebem prefixo A)/B)/...', () => {
+    const html = renderOpcoesList(['primeira', 'segunda']);
+    expect(html).toContain('A) primeira');
+    expect(html).toContain('B) segunda');
+  });
+
+  it('opções com letra mantêm o marcador original', () => {
+    const html = renderOpcoesList(['A) alfa', 'B) beta']);
+    expect(html).toContain('A) alfa');
+    expect(html).toContain('B) beta');
+    // Não deve duplicar o marcador
+    expect(html).not.toContain('A) A) alfa');
+  });
+
+  it('HTML no conteúdo da opção é escapado (segurança)', () => {
+    const html = renderOpcoesList(['<script>alert(1)</script>']);
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('caracteres especiais & e < são escapados', () => {
+    const html = renderOpcoesList(['A & B < C']);
+    expect(html).toContain('&amp;');
+    expect(html).toContain('&lt;');
+  });
+
+});
+
+// ── buildFrontHtml — alternativas como lista ──────────────────────────────────
+
+describe('card-html.ts — buildFrontHtml com alternativas (MC)', () => {
+
+  it('pergunta com opções embutidas → front contém <ol> e opções não juntadas no stem', () => {
+    const card: Questao = {
+      ...cardBase,
+      pergunta: 'Qual processamento? A) Natureza B) Isolamento C) Composição',
+    };
+    const html = buildFrontHtml(card);
+    expect(html).toContain('<ol');
+    expect(html).toContain('<li');
+    // O stem (sem as opções inline) deve aparecer
+    expect(html).toContain('Qual processamento?');
+    // As opções não devem estar juntadas com o stem no parágrafo
+    // (verificado pela presença do <ol> separado)
+    expect(html).toContain('A) Natureza');
+    expect(html).toContain('B) Isolamento');
+    expect(html).toContain('C) Composição');
+  });
+
+  it('metadata.alternativas presente (>=2) → usa metadata, não o texto inline', () => {
+    const card: Questao = {
+      ...cardBase,
+      pergunta: 'Questão MC com opções no metadata',
+      metadata: {
+        alternativas: ['A) Opção metadata 1', 'B) Opção metadata 2'],
+      },
+    };
+    const html = buildFrontHtml(card);
+    expect(html).toContain('<ol');
+    expect(html).toContain('A) Opção metadata 1');
+    expect(html).toContain('B) Opção metadata 2');
+  });
+
+  it('pergunta simples (sem MC) → sem <ol> na frente', () => {
+    const html = buildFrontHtml(cardBase);
+    expect(html).not.toContain('<ol');
+    expect(html).toContain('Pergunta de teste');
+  });
+
+  it('segurança: conteúdo das alternativas embutidas é escapado', () => {
+    const card: Questao = {
+      ...cardBase,
+      pergunta: 'Pergunta? A) alfa<script> B) beta',
+    };
+    const html = buildFrontHtml(card);
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+});
+
+// ── buildBackHtml — alternativas como lista ───────────────────────────────────
+
+describe('card-html.ts — buildBackHtml com alternativas como lista (MC)', () => {
+
+  it('metadata.alternativas → verso contém <ol> (não mais <br>-joined)', () => {
+    const card: Questao = {
+      ...cardBase,
+      metadata: { alternativas: ['A) Sim', 'B) Não', 'C) Talvez'] },
+    };
+    const html = buildBackHtml(card);
+    expect(html).toContain('<ol');
+    expect(html).toContain('<li');
+    expect(html).toContain('A) Sim');
+    expect(html).toContain('B) Não');
+    expect(html).toContain('C) Talvez');
+  });
+
+  it('pergunta com opções embutidas e sem metadata → back detecta e renderiza lista', () => {
+    const card: Questao = {
+      ...cardBase,
+      pergunta: 'Qual é? A) Alpha B) Beta C) Gamma',
+    };
+    const html = buildBackHtml(card);
+    expect(html).toContain('<ol');
+    expect(html).toContain('A) Alpha');
+  });
+
+  it('sem alternativas em nenhuma fonte → sem <ol> no verso', () => {
+    const html = buildBackHtml(cardBase);
+    expect(html).not.toContain('<ol');
+  });
+
 });
 
 // ── AnkiConnect (versoHtml) — IMG-03 ─────────────────────────────────────────
