@@ -7,6 +7,7 @@ import { StructurePanel } from './components/StructurePanel';
 import { ProgressPanel } from './components/ProgressPanel';
 import { CardTable } from './components/CardTable';
 import { ExportBar } from './components/ExportBar';
+import { IconRefresh } from './components/icons';
 
 export function App() {
   const [step, setStep] = useState<Step>('upload');
@@ -125,12 +126,12 @@ export function App() {
   const keptCards = useMemo(() => cards.filter((c) => !dropped.has(c.id)), [cards, dropped]);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-5xl flex-col px-4 py-8">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto flex min-h-full max-w-4xl flex-col px-4 py-6 sm:py-8">
+      <header className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">🎴</span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-2xl">🎴</span>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Ankinator</h1>
+            <h1 className="text-xl font-bold text-slate-900">Ankinator</h1>
             <p className="text-sm text-slate-500">PDF de estudo → flashcards do Anki</p>
           </div>
         </div>
@@ -138,9 +139,13 @@ export function App() {
       </header>
 
       {error && (
-        <div className="mb-6 flex items-start justify-between gap-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="font-medium text-rose-500 hover:text-rose-700">
+        <div className="mb-6 flex items-start justify-between gap-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+          <span className="min-w-0 flex-1 break-words">{error}</span>
+          <button
+            onClick={() => setError(null)}
+            aria-label="Fechar aviso"
+            className="-m-1 shrink-0 rounded p-1 font-medium text-rose-500 transition hover:bg-rose-100 hover:text-rose-700"
+          >
             ✕
           </button>
         </div>
@@ -178,12 +183,19 @@ export function App() {
 
         {step === 'review' && extract && (
           <>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-800">{cards.length} questões geradas</h2>
-                <p className="text-sm text-slate-500">Revise e edite antes de exportar. {extract.fileName}</p>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-slate-900">{cards.length} questões geradas</h2>
+                <p className="text-sm text-slate-500">Revise e edite antes de exportar.</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-slate-400" title={extract.fileName}>
+                  {extract.fileName}
+                </p>
               </div>
-              <button onClick={reset} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <button
+                onClick={reset}
+                className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 sm:self-auto"
+              >
+                <IconRefresh className="h-4 w-4" />
                 Novo PDF
               </button>
             </div>

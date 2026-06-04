@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ExtractResult, GenerateOptions } from '../types';
+import { IconBook, IconBulb, IconImage, IconLayers, IconSliders, IconSparkles, IconSpinner, IconTag } from './icons';
 
 interface Props {
   extract: ExtractResult;
@@ -28,7 +29,10 @@ export function StructurePanel(props: Props) {
       <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-800">Estrutura do documento</h2>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+              <IconLayers className="h-5 w-5 shrink-0 text-brand-600" />
+              Estrutura do documento
+            </h2>
             <p className="break-words text-sm text-slate-500">
               {extract.fileName} · {extract.numPages} página(s) · {extract.sections.length} seção(ões)
               {extract.usedOcr && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">OCR</span>}
@@ -64,7 +68,7 @@ export function StructurePanel(props: Props) {
                 />
                 <span className="min-w-0 flex-1" style={{ paddingLeft: `${Math.max(0, (s.level - 1) * 12)}px` }}>
                   <span className="block truncate text-sm font-medium text-slate-700">{s.title}</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500">
                     p.{s.pageStart}
                     {s.pageEnd !== s.pageStart ? `–${s.pageEnd}` : ''} · {(s.charCount / 1000).toFixed(1)}k car.
                   </span>
@@ -89,7 +93,10 @@ export function StructurePanel(props: Props) {
 
       {/* Opções de geração */}
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="text-base font-semibold text-slate-800">Opções de geração</h2>
+        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+          <IconSliders className="h-5 w-5 shrink-0 text-brand-600" />
+          Opções de geração
+        </h2>
 
         <label className="flex items-center justify-between text-sm text-slate-700">
           <span>Questões extraídas (provas)</span>
@@ -137,48 +144,75 @@ export function StructurePanel(props: Props) {
           {selected.size} seção(ões) · ~{(selectedChars / 1000).toFixed(1)}k caracteres selecionados
         </div>
 
-        {/* Bloco "Modo educativo" (D-14) — mesma estrutura dos checkboxes acima.
+        {/* Bloco "Modo educativo" (D-14) — toggles em formato de cartão (ícone + descrição).
             Phase 4 adiciona aqui: mnemônico e imagem. */}
         <div className="border-t border-slate-100 pt-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <IconSparkles className="h-4 w-4 text-violet-500" />
             Modo educativo
           </h3>
-          <label className="flex items-center justify-between text-sm text-slate-700">
-            <span>Classificar deck + tags</span>
-            <input
-              type="checkbox"
-              checked={options.classificar !== false}
-              onChange={(e) => setOptions({ ...options, classificar: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600"
-            />
-          </label>
-          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
-            <span>Card educativo</span>
-            <input
-              type="checkbox"
-              checked={options.cardBuilder === true}
-              onChange={(e) => setOptions({ ...options, cardBuilder: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600"
-            />
-          </label>
-          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
-            <span>Mnemônico</span>
-            <input
-              type="checkbox"
-              checked={options.mnemonico !== false}
-              onChange={(e) => setOptions({ ...options, mnemonico: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600"
-            />
-          </label>
-          <label className="mt-2 flex items-center justify-between text-sm text-slate-700">
-            <span>Imagem de mnemônico</span>
-            <input
-              type="checkbox"
-              checked={options.imagem === true}
-              onChange={(e) => setOptions({ ...options, imagem: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600"
-            />
-          </label>
+          <div className="space-y-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition hover:border-brand-400 hover:bg-slate-50">
+              <span className="mt-0.5 shrink-0 text-violet-500">
+                <IconTag className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-slate-700">Classificar deck + tags</span>
+                <span className="block text-xs text-slate-500">Organiza em deck hierárquico e adiciona tags.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={options.classificar !== false}
+                onChange={(e) => setOptions({ ...options, classificar: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600"
+              />
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition hover:border-brand-400 hover:bg-slate-50">
+              <span className="mt-0.5 shrink-0 text-emerald-500">
+                <IconBook className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-slate-700">Card educativo</span>
+                <span className="block text-xs text-slate-500">Reescreve a resposta de forma atômica e didática.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={options.cardBuilder === true}
+                onChange={(e) => setOptions({ ...options, cardBuilder: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600"
+              />
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition hover:border-brand-400 hover:bg-slate-50">
+              <span className="mt-0.5 shrink-0 text-amber-500">
+                <IconBulb className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-slate-700">Mnemônico</span>
+                <span className="block text-xs text-slate-500">Cria uma técnica de memorização para o card.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={options.mnemonico !== false}
+                onChange={(e) => setOptions({ ...options, mnemonico: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600"
+              />
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition hover:border-brand-400 hover:bg-slate-50">
+              <span className="mt-0.5 shrink-0 text-sky-500">
+                <IconImage className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-slate-700">Imagem de mnemônico</span>
+                <span className="block text-xs text-slate-500">Gera um SVG ilustrando o mnemônico.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={options.imagem === true}
+                onChange={(e) => setOptions({ ...options, imagem: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600"
+              />
+            </label>
+          </div>
         </div>
 
         <div className="rounded-lg bg-slate-50 p-2 text-center text-xs text-slate-500">
@@ -199,9 +233,16 @@ export function StructurePanel(props: Props) {
         <button
           onClick={onGenerate}
           disabled={!canGenerate || selected.size === 0 || busy}
-          className="mt-1 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          {busy ? 'Gerando…' : `Gerar questões (${selected.size} ${selected.size === 1 ? 'seção' : 'seções'})`}
+          {busy ? (
+            <>
+              <IconSpinner className="h-4 w-4 animate-spin" />
+              Gerando…
+            </>
+          ) : (
+            `Gerar questões (${selected.size} ${selected.size === 1 ? 'seção' : 'seções'})`
+          )}
         </button>
       </div>
     </div>

@@ -24,7 +24,7 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
   );
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-3">
         {(['all', 'extraida', 'criada'] as Filter[]).map((f) => (
           <button
@@ -38,7 +38,7 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
             {f === 'all' ? 'Todas' : f === 'extraida' ? 'Extraídas' : 'Criadas'} ({counts[f]})
           </button>
         ))}
-        <span className="ml-auto text-sm text-slate-500">
+        <span className="w-full text-right text-sm text-slate-500 sm:ml-auto sm:w-auto">
           {cards.length - dropped.size} selecionada{cards.length - dropped.size === 1 ? '' : 's'} para exportar
         </span>
       </div>
@@ -47,55 +47,62 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
         {visible.map((c, i) => {
           const isDropped = dropped.has(c.id);
           return (
-            <li key={c.id} className={`p-4 transition ${isDropped ? 'bg-slate-50 opacity-50' : ''}`}>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-400">#{i + 1}</span>
-                <span
-                  className={[
-                    'rounded px-1.5 py-0.5 text-xs font-medium',
-                    c.tipo === 'extraida' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700',
-                  ].join(' ')}
-                >
-                  {c.tipo === 'extraida' ? 'extraída' : 'criada'}
-                </span>
-                {c.pageStart && (
-                  <span className="text-xs text-slate-400">
-                    p.{c.pageStart}
-                    {c.pageEnd !== c.pageStart ? `–${c.pageEnd}` : ''}
-                  </span>
-                )}
-                {c.metadata?.banca && (
-                  <span className="text-xs text-slate-400">· {c.metadata.banca}{c.metadata.ano ? ` ${c.metadata.ano}` : ''}</span>
-                )}
-                {/* badges deck/tags read-only — só quando preenchidos (SPEC-05 campos opcionais — D-17) */}
-                {c.deck && (
-                  <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-700">
-                    {c.deck}
-                  </span>
-                )}
-                {c.tags?.length ? (
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
-                    {c.tags.slice(0, 3).join(' ')}
-                    {c.tags.length > 3 ? ` +${c.tags.length - 3}` : ''}
-                  </span>
-                ) : null}
-                {c.mnemonico && (
+            <li
+              key={c.id}
+              className={`p-4 transition sm:p-5 ${isDropped ? 'bg-slate-50 opacity-50' : 'hover:bg-slate-50/60'}`}
+            >
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 gap-y-1.5">
+                  <span className="text-xs font-semibold text-slate-500">#{i + 1}</span>
                   <span
-                    className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700"
-                    title={c.mnemonico.slice(0, 60)}
+                    className={[
+                      'rounded px-1.5 py-0.5 text-xs font-medium',
+                      c.tipo === 'extraida' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700',
+                    ].join(' ')}
                   >
-                    📝 mnemônico
+                    {c.tipo === 'extraida' ? 'extraída' : 'criada'}
                   </span>
-                )}
-                {c.mnemonicoSvg && (
-                  <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
-                    🖼️ SVG
-                  </span>
-                )}
+                  {c.pageStart && (
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                      p.{c.pageStart}
+                      {c.pageEnd !== c.pageStart ? `–${c.pageEnd}` : ''}
+                    </span>
+                  )}
+                  {c.metadata?.banca && (
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                      {c.metadata.banca}{c.metadata.ano ? ` ${c.metadata.ano}` : ''}
+                    </span>
+                  )}
+                  {/* badges deck/tags read-only — só quando preenchidos (SPEC-05 campos opcionais — D-17) */}
+                  {c.deck && (
+                    <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-medium text-violet-700">
+                      {c.deck}
+                    </span>
+                  )}
+                  {c.tags?.length ? (
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                      {c.tags.slice(0, 3).join(' ')}
+                      {c.tags.length > 3 ? ` +${c.tags.length - 3}` : ''}
+                    </span>
+                  ) : null}
+                  {c.mnemonico && (
+                    <span
+                      className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+                      title={c.mnemonico.slice(0, 60)}
+                    >
+                      📝 mnemônico
+                    </span>
+                  )}
+                  {c.mnemonicoSvg && (
+                    <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
+                      🖼️ SVG
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => onToggleDrop(c.id)}
                   className={[
-                    'ml-auto rounded-lg px-2.5 py-1 text-xs font-medium transition',
+                    'shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium transition',
                     isDropped
                       ? 'bg-brand-100 text-brand-700 hover:bg-brand-200'
                       : 'border border-slate-300 text-slate-500 hover:bg-slate-50',
