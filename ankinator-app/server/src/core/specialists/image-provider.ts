@@ -39,7 +39,8 @@ export class SvgClaudeImageProvider implements ImageProvider {
     // é o quê ilustrar, o contexto mantém a imagem fiel ao material do card.
     const userMessage = `Mnemônico:\n${mnemonic}\n\nContexto do card:\n${context}`;
     const svg = await runClaudeCli({ systemPrompt, userMessage });
-    // TODO(IMG-02 fase 4): sanitizar SVG (remover <script>/URLs externas) antes de embutir no card.
+    // Retorna o SVG cru. A sanitização acontece no estágio imagem do enrichAll (separação de
+    // responsabilidades — o provider apenas gera; o estágio decide o que fazer com o resultado).
     return { svg };
   }
 }

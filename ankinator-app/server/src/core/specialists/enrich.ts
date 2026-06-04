@@ -1,33 +1,42 @@
 /**
  * Módulo de enriquecimento de flashcards via especialistas LLM.
  *
- * Expõe `enrichAll()` (PIPE-01), os parsers tolerantes `parseClassificacoesJson` e
- * `parseSingleCard`, o gate `deveRodarEnrich` (PIPE-03) e os tipos `EnrichOpts` /
- * `EnrichProgress`.
+ * Expõe `enrichAll()` (PIPE-01), os parsers tolerantes `parseClassificacoesJson`,
+ * `parseSingleCard` e `parseMnemonicosJson`, o gate `deveRodarEnrich` (PIPE-03) e
+ * os tipos `EnrichOpts` / `EnrichProgress`.
  *
  * Decisões de design:
+ * - D-01: mnemônico usa 1 chamada batch para todos os cards.
+ * - D-02/D-03: merge por id via Map — nunca posicional (anti-Pitfall 3).
+ * - D-04: estágio imagem só processa cards com q.mnemonico (gate).
  * - D-05: classificador usa 1 chamada global para todos os cards.
  * - D-06: merge por id via Map — nunca posicional (anti-Pitfall 3).
+ * - D-08: fail-closed na sanitização SVG — grava mnemonicoSvg apenas quando não-null.
  * - D-09: split 1→N apenas para tipo 'criada'; 'extraida' nunca divide.
  * - D-10: card-builder em 'extraida' só ajusta q.resposta.
  * - D-12: card-builder com granularidade por-card (1 spawn/card).
  * - D-13: isolamento de erro por-card/estágio; falha mantém card original.
  * - T-03-02: payload do classificador serializado via JSON.stringify (sem interpolação cru).
+ * - T-04-09: payload do mnemônico serializado via JSON.stringify (anti-injection).
  */
 import crypto from 'node:crypto';
 import type { Questao } from '../types.js';
 import { runClaudeCli } from './runner.js';
 import { loadPrompt } from './prompt-loader.js';
+import { createImageProvider } from './image-provider.js';
+import { sanitizarSvg } from './sanitize-svg.js';
 
 // ── Tipos exportados ──────────────────────────────────────────────────────────
 
 export interface EnrichOpts {
   classificar?: boolean;
   cardBuilder?: boolean;
+  mnemonico?: boolean;  // Phase 4: estágio 3 — batch único de mnemônicos (D-01)
+  imagem?: boolean;     // Phase 4: estágio 4 — imagem SVG por-card, gated por q.mnemonico (D-04)
 }
 
 export interface EnrichProgress {
-  estagio: 'classificando' | 'reescrevendo';
+  estagio: 'classificando' | 'reescrevendo' | 'gerando-mnemonico' | 'gerando-imagem';
   index: number;
   total: number;
   erro?: string;
@@ -44,6 +53,13 @@ interface RawClassificacao {
 interface RawCard {
   pergunta?: string;
   resposta?: string;
+}
+
+/** Estrutura de cada item retornado pelo especialista de mnemônicos (D-01). */
+interface RawMnemonico {
+  id?: string;
+  mnemonico?: string;
+  tecnica?: string;
 }
 
 // ── Helper de parse tolerante ─────────────────────────────────────────────────
@@ -89,14 +105,25 @@ export function parseSingleCard(text: string): RawCard[] {
   return parseJsonBlock<RawCard>(text, 'cards');
 }
 
+/**
+ * Extrai mnemônicos do JSON batch do especialista de mnemônicos (D-01).
+ * Formato esperado: {"mnemonicos":[{"id":"...","mnemonico":"...","tecnica":"..."}]}
+ * Tolera cercas ```json e retorna [] para JSON inválido ou sem chave `mnemonicos`.
+ */
+export function parseMnemonicosJson(text: string): RawMnemonico[] {
+  return parseJsonBlock<RawMnemonico>(text, 'mnemonicos');
+}
+
 // ── Gate PIPE-03 ──────────────────────────────────────────────────────────────
 
 /**
  * Gate puro: retorna true somente se algum toggle de enriquecimento está ligado.
  * Se false, `enrichAll` NÃO deve ser chamado (PIPE-03 — não-regressão do fluxo padrão).
+ * Phase 4: ampliado para incluir mnemonico/imagem (Pitfall 6 — sem estes, o gate ficaria
+ * false quando só mnemônico/imagem fossem selecionados).
  */
 export function deveRodarEnrich(opts: EnrichOpts): boolean {
-  return !!(opts.classificar || opts.cardBuilder);
+  return !!(opts.classificar || opts.cardBuilder || opts.mnemonico || opts.imagem);
 }
 
 // ── Helpers internos de userMessage ──────────────────────────────────────────
@@ -140,6 +167,29 @@ function buildCardBuilderMessage(q: Questao): string {
     2
   );
   return `Reescreva o card a seguir.\nCard:\n${payload}`;
+}
+
+/**
+ * Monta o payload batch para o especialista de mnemônicos (D-01/T-04-09).
+ * Serializa via JSON.stringify — nunca interpolar q.pergunta/q.resposta cru (T-03-02).
+ */
+function buildMnemonicoMessage(questoes: Questao[]): string {
+  // Envia os campos necessários para o LLM decidir qual técnica usar por card (D-01)
+  const cards = questoes.map((q) => ({
+    id: q.id,
+    pergunta: q.pergunta,
+    resposta: q.resposta,
+    tipo: q.tipo,
+  }));
+  return [
+    'Gere mnemônicos para os cards a seguir. Retorne APENAS JSON no formato:',
+    '{"mnemonicos":[{"id":"<id-do-card>","mnemonico":"<texto>","tecnica":"<acrônimo|história|loci|rima>"}]}',
+    '',
+    'Para cards conceituais/de raciocínio, NÃO inclua o card na lista (omissão = sem mnemônico).',
+    '',
+    'Cards:',
+    JSON.stringify(cards, null, 2),
+  ].join('\n');
 }
 
 // ── enrichAll ─────────────────────────────────────────────────────────────────
@@ -240,6 +290,67 @@ export async function enrichAll(
     }
 
     resultado = novoResultado;
+  }
+
+  // ── ESTÁGIO 3: Mnemônico batch (D-01/D-02/D-03/T-04-09) ─────────────────
+  // Uma única chamada LLM para todos os cards; merge anti-posicional por id.
+  if (opts.mnemonico) {
+    onProgress?.({ estagio: 'gerando-mnemonico', index: 0, total: 1 });
+    try {
+      const userMessage = buildMnemonicoMessage(resultado);
+      const text = await runClaudeCli({
+        systemPrompt: loadPrompt('mnemonic'),
+        userMessage,
+        // model omitido → default 'sonnet' (D-04)
+      });
+      const parsed = parseMnemonicosJson(text);
+
+      // Merge por id via Map (D-02/D-03 / anti-Pitfall 3 — NUNCA posicional)
+      // Filtrar entradas sem id ou sem mnemonico antes de montar o Map (D-03)
+      const byId = new Map(
+        parsed.filter((m) => m.id && m.mnemonico).map((m) => [m.id!, m])
+      );
+      resultado = resultado.map((q) => {
+        const m = byId.get(q.id);
+        // Cards não presentes no JSON ficam sem mnemônico (fail-soft — D-01)
+        return m ? { ...q, mnemonico: m.mnemonico } : q;
+      });
+    } catch (err) {
+      const erro = err instanceof Error ? err.message : String(err);
+      onProgress?.({ estagio: 'gerando-mnemonico', index: 0, total: 1, erro });
+      // Segue sem mnemônicos — nunca derruba o job (D-08)
+    }
+  }
+
+  // ── ESTÁGIO 4: Imagem SVG por-card (D-04/D-05/D-08/T-04-06) ────────────
+  // Por-card, gated por q.mnemonico (D-04). Fail-closed na sanitização (D-08/T-04-06).
+  if (opts.imagem) {
+    const total = resultado.filter((q) => q.mnemonico).length;
+    const imageProvider = createImageProvider();
+
+    for (let i = 0; i < resultado.length; i++) {
+      const q = resultado[i];
+      if (!q.mnemonico) continue; // D-04: só cards com mnemônico recebem imagem
+
+      onProgress?.({ estagio: 'gerando-imagem', index: i, total });
+      try {
+        const { svg } = await imageProvider.generate(q.mnemonico, q.resposta);
+        const limpo = sanitizarSvg(svg);
+
+        if (limpo) {
+          // D-05/T-04-06: grava mnemonicoSvg SOMENTE quando sanitização retorna não-null
+          resultado[i] = { ...q, mnemonicoSvg: limpo };
+        } else {
+          // Fail-closed: SVG inválido/malicioso → não grava, reporta erro (D-08/T-04-06)
+          onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro: 'SVG inválido após sanitização' });
+        }
+      } catch (err) {
+        // D-13: isolamento por-card — erro na geração não aborta o lote
+        const erro = err instanceof Error ? err.message : String(err);
+        onProgress?.({ estagio: 'gerando-imagem', index: i, total, erro });
+        // card mantém q.mnemonico mas sem q.mnemonicoSvg — nunca perde o card
+      }
+    }
   }
 
   return resultado;
