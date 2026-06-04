@@ -2,11 +2,15 @@
  * Exportador CSV compatível com o Anki.
  * Formato: Frente;Verso;Tags;Fonte  (delimitador ';', UTF-8 com BOM).
  * Porta a lógica do antigo AnkiCsvFormatter para o novo tipo Questao.
+ *
+ * Phase 6: frente e verso agora usam buildFrontHtml/buildBackHtml (card-html.ts)
+ * para gerar HTML educacional rico autocontido com inline CSS. O Anki renderiza
+ * HTML em campos de notas importadas via CSV.
  */
 import { stringify } from 'csv-stringify/sync';
 import path from 'node:path';
 import type { Questao } from '../types.js';
-import { sanitizarSvg } from '../specialists/sanitize-svg.js';
+import { buildFrontHtml, buildBackHtml } from './card-html.js';
 
 export interface CsvOptions {
   /** Nome do arquivo PDF de origem (para o campo Fonte). */
@@ -35,34 +39,6 @@ export function tagsDaQuestao(q: Questao, padrao: string[]): string {
   return [...tags].filter(Boolean).join(' ');
 }
 
-function versoDaQuestao(q: Questao): string {
-  let verso = q.resposta;
-  const m = q.metadata;
-  if (m && Object.keys(m).length) {
-    const linhas: string[] = [];
-    if (m.gabarito) linhas.push(`Gabarito: ${m.gabarito}`);
-    if (m.alternativas?.length) linhas.push(`Alternativas:\n${m.alternativas.join('\n')}`);
-    if (m.banca) linhas.push(`Banca: ${m.banca}`);
-    if (m.ano) linhas.push(`Ano: ${m.ano}`);
-    if (linhas.length) verso += `\n\n${linhas.join('\n')}`;
-  }
-  // Phase 4: mnemônico-texto (gate: byte-idêntico quando ausente — PIPE-03/D-10)
-  if (q.mnemonico) {
-    verso += `\n\n💡 Mnemônico: ${q.mnemonico}`;
-  }
-  // SVG inline (gate: byte-idêntico quando ausente — PIPE-03/D-10)
-  // NUNCA chamar escapeHtml() no SVG — já sanitizado no Plano 02 (D-08);
-  // escaping quebraria a marcação SVG no Anki (Pitfall 2)
-  if (q.mnemonicoSvg) {
-    // CR-01: re-sanitizar no boundary de export — sanitizarSvg só roda na geração
-    // (enrich), então payloads vindos direto do req.body burlariam a sanitização.
-    // Fail-closed (D-08): descarta o SVG se inválido. Idempotente p/ SVG já-limpo.
-    const svgLimpo = sanitizarSvg(q.mnemonicoSvg);
-    if (svgLimpo) verso += `\n\n${svgLimpo}`;
-  }
-  return verso;
-}
-
 /** Gera o conteúdo CSV (string com BOM) para um conjunto de questões. */
 export function toAnkiCsv(questoes: Questao[], opts: CsvOptions = {}): string {
   const baseFonte = opts.fonte ? path.basename(opts.fonte, path.extname(opts.fonte)) : 'material';
@@ -72,9 +48,11 @@ export function toAnkiCsv(questoes: Questao[], opts: CsvOptions = {}): string {
   // gate: coluna Deck só quando algum card tem q.deck preenchido (D-08 / PIPE-03 byte-identidade)
   const temDeck = questoes.some((q) => q.deck);
 
+  // Phase 6: frente = HTML rico, verso = HTML rico com fonte opcional
+  // buildBackHtml recebe o baseFonte para o rodapé (📎 linha)
   const rows = questoes.map((q) => ({
-    frente: q.pergunta,
-    verso: versoDaQuestao(q),
+    frente: buildFrontHtml(q),
+    verso: buildBackHtml(q, opts.fonte ? baseFonte : undefined),
     tags: tagsDaQuestao(q, padrao),
     fonte: fonteDaQuestao(q, baseFonte),
     ...(temDeck ? { deck: q.deck ?? deckFallback } : {}),

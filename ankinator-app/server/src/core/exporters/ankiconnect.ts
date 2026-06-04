@@ -6,9 +6,12 @@
  * adiciona notas do tipo "Basic" (Front/Back), com tags.
  *
  * Requer: Anki aberto + add-on AnkiConnect (código 2055492159) instalado.
+ *
+ * Phase 6: Front/Back agora usam buildFrontHtml/buildBackHtml (card-html.ts)
+ * para gerar HTML educacional rico autocontido com inline CSS.
  */
 import type { Questao } from '../types.js';
-import { sanitizarSvg } from '../specialists/sanitize-svg.js';
+import { buildFrontHtml, buildBackHtml, escapeHtml } from './card-html.js';
 
 const ANKICONNECT_URL = process.env.ANKICONNECT_URL?.trim() || 'http://127.0.0.1:8765';
 
@@ -75,34 +78,12 @@ export function tagsDaQuestao(q: Questao, padrao: string[]): string[] {
   return [...tags].filter(Boolean);
 }
 
+/**
+ * Monta o HTML do verso (Back) de um card para AnkiConnect.
+ * Delega para buildBackHtml (card-html.ts) — mantida por compatibilidade de interface.
+ */
 export function versoHtml(q: Questao, fonte?: string): string {
-  let back = escapeHtml(q.resposta).replace(/\n/g, '<br>');
-  const m = q.metadata;
-  if (m?.alternativas?.length) {
-    back += `<br><br><i>Alternativas:</i><br>${m.alternativas.map(escapeHtml).join('<br>')}`;
-  }
-  if (m?.gabarito) back += `<br><b>Gabarito:</b> ${escapeHtml(m.gabarito)}`;
-  const src = fonte ? `${fonte}` : '';
-  const pg = q.pageStart ? (q.pageStart === q.pageEnd ? ` (p.${q.pageStart})` : ` (p.${q.pageStart}-${q.pageEnd})`) : '';
-  if (src || pg) back += `<br><br><span style="color:#888;font-size:0.8em">Fonte: ${escapeHtml(src)}${pg}</span>`;
-  // Phase 4: mnemônico-texto (gate: byte-idêntico quando ausente — PIPE-03/D-10)
-  // Texto escapado via escapeHtml — < e & são perigosos em HTML (D-11)
-  if (q.mnemonico) {
-    back += `<br><br><b>💡 Mnemônico:</b> ${escapeHtml(q.mnemonico)}`;
-  }
-  // SVG inline — NÃO usar escapeHtml() no SVG (D-08/Pitfall 2/T-04-11)
-  // SVG já sanitizado fail-closed no Plano 02; escaping quebraria o render no Anki
-  if (q.mnemonicoSvg) {
-    // CR-01: re-sanitizar no boundary de export (sanitizarSvg só roda na geração).
-    // Fail-closed (D-08): descarta o SVG se inválido. Idempotente p/ SVG já-limpo.
-    const svgLimpo = sanitizarSvg(q.mnemonicoSvg);
-    if (svgLimpo) back += `<br><br>${svgLimpo}`;
-  }
-  return back;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return buildBackHtml(q, fonte);
 }
 
 /** Envia as questões para o Anki, criando o deck se necessário. */
@@ -128,8 +109,8 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
     deckName: (!failedDecks.has(q.deck ?? '') ? q.deck : undefined) ?? opts.deck,
     modelName: 'Basic',
     fields: {
-      Front: escapeHtml(q.pergunta).replace(/\n/g, '<br>'),
-      Back: versoHtml(q, fonteBase),
+      Front: buildFrontHtml(q),
+      Back: buildBackHtml(q, fonteBase),
     },
     tags: tagsDaQuestao(q, padrao),
     options: { allowDuplicate: opts.allowDuplicate ?? false },
@@ -147,3 +128,6 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
     ids,
   };
 }
+
+// Re-export for backward compat with any consumers that imported escapeHtml from ankiconnect
+export { escapeHtml };
