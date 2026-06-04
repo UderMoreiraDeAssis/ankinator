@@ -540,3 +540,84 @@ describe('enrichAll estágio imagem', () => {
     expect(mockGenerate).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── RT-01: parse tolerante com cercas + fallback posicional ───────────────────
+
+describe('parseMnemonicosJson RT-01', () => {
+  it('remove cercas ```json``` e parseia (RT-01)', () => {
+    const text = '```json\n{"mnemonicos":[{"id":"x","mnemonico":"Mnem X","tecnica":"história"}]}\n```';
+    const result = parseMnemonicosJson(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].mnemonico).toBe('Mnem X');
+  });
+
+  it('remove cerca ``` sem tipo e parseia (RT-01)', () => {
+    const text = '```\n{"mnemonicos":[{"id":"y","mnemonico":"Mnem Y"}]}\n```';
+    const result = parseMnemonicosJson(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].mnemonico).toBe('Mnem Y');
+  });
+
+  it('retorna [] para JSON inválido e não lança (RT-01 — parse failure tolerante)', () => {
+    expect(() => parseMnemonicosJson('isso { nao e json')).not.toThrow();
+    expect(parseMnemonicosJson('isso { nao e json')).toEqual([]);
+  });
+});
+
+describe('enrichAll mnemônico fallback posicional (RT-01)', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('ids ausentes mas contagem bate → fallback posicional aplica mnemônicos (RT-01)', async () => {
+    // LLM retorna mnemônicos sem campo id, mas conta bate com o lote
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"mnemonico":"Mnem 1"},{"mnemonico":"Mnem 2"}]}'
+    );
+
+    const result = await enrichAll(
+      [
+        { id: 'a', tipo: 'extraida', pergunta: 'PA', resposta: 'RA' } as import('../types.js').Questao,
+        { id: 'b', tipo: 'extraida', pergunta: 'PB', resposta: 'RB' } as import('../types.js').Questao,
+      ],
+      { mnemonico: true }
+    );
+
+    // fallback posicional: card 'a' recebe Mnem 1, card 'b' recebe Mnem 2
+    expect(result.find(q => q.id === 'a')?.mnemonico).toBe('Mnem 1');
+    expect(result.find(q => q.id === 'b')?.mnemonico).toBe('Mnem 2');
+  });
+
+  it('ids errados + contagem diverge → nenhum mnemônico aplicado, job continua (RT-01)', async () => {
+    // LLM retorna mais entradas do que cards — divergência: nenhum fallback
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"mnemonico":"M1"},{"mnemonico":"M2"},{"mnemonico":"M3"}]}'
+    );
+
+    const result = await enrichAll(
+      [{ id: 'a', tipo: 'extraida', pergunta: 'PA', resposta: 'RA' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+
+    // job não abortou, mas nenhum mnemônico aplicado (contagem diverge)
+    expect(result).toHaveLength(1);
+    expect(result[0].mnemonico).toBeUndefined();
+  });
+
+  it('runner lança → erro é surfaced no progress com prefixo (RT-01)', async () => {
+    vi.mocked(runClaudeCli).mockRejectedValue(new Error('ENOENT: claude not found'));
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true },
+      (e) => progressos.push(e)
+    );
+
+    // job não abortou
+    expect(result).toHaveLength(1);
+    // erro surfaced no progress com o prefixo "Estágio mnemônico falhou:"
+    const erroEvt = progressos.find(p => p.erro);
+    expect(erroEvt).toBeDefined();
+    expect(erroEvt!.erro).toContain('Estágio mnemônico falhou:');
+    expect(erroEvt!.erro).toContain('ENOENT');
+  });
+});
