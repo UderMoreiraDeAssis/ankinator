@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-last_updated: "2026-06-04T02:32:17.116Z"
-last_activity: 2026-06-04
+status: executing
+last_updated: "2026-06-04T03:32:03Z"
+last_activity: 2026-06-04 -- Phase 4 UAT FALHOU; rota corrigida; Phase 4.1 (unblock runtime) aplicada
 progress:
-  total_phases: 5
-  completed_phases: 4
+  total_phases: 8
+  completed_phases: 3
   total_plans: 16
   completed_plans: 16
-  percent: 80
+  percent: 45
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Flashcards que maximizam retenção a partir de qualquer texto de concurso, via assinatura Claude (sem custo por token).
-**Current focus:** Phase 04 — mnem-nicos-imagem-svg
+**Current focus:** Phase 4.1 — Estabilização de Runtime (rumo ao Destino: cards ricos + mnemônicos/imagens reais via agentes especialistas — ver ROADMAP "🎯 Destino")
 
 ## Current Position
 
-Phase: 04 (mnem-nicos-imagem-svg) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Next: Phase 04 (Mnemônicos + Imagem SVG) — `/clear` then `/gsd:plan-phase 4`.
+Phase 04 (Mnemônicos + Imagem SVG): código OK + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** — zero mnemônicos/imagens ao vivo, cards crus (ver 04-HUMAN-UAT.md).
+Phase 04.1 (Estabilização de Runtime): fixes RT-01/02/05 aplicados — erro do CLI agora VISÍVEL (log + SSE), parse tolerante a cercas ```json/id, loader langchain auto-ativado + logado. 176 testes verdes, build limpo.
+Status: Aguardando 1 teste de runtime humano do 4.1 (rodar PDF real → mnemônicos voltam OU o erro fica visível). Depois: Phase 5 (wire orquestrador) → 6 (cards ricos estilo Ankimon) → 7 (qualidade das questões + agentes especialistas).
+Next: rodar uma geração real para validar o 4.1; em seguida iniciar Phase 6 (cards educativos ricos).
 Last activity: 2026-06-04
 
-Progress: [██████████] 100%
+Progress (rumo ao Destino): [████░░░░░░] ~45%
 
 ## Performance Metrics
 
