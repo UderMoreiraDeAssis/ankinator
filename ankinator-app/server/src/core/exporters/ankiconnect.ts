@@ -74,7 +74,7 @@ export function tagsDaQuestao(q: Questao, padrao: string[]): string[] {
   return [...tags].filter(Boolean);
 }
 
-function versoHtml(q: Questao, fonte?: string): string {
+export function versoHtml(q: Questao, fonte?: string): string {
   let back = escapeHtml(q.resposta).replace(/\n/g, '<br>');
   const m = q.metadata;
   if (m?.alternativas?.length) {
@@ -84,6 +84,16 @@ function versoHtml(q: Questao, fonte?: string): string {
   const src = fonte ? `${fonte}` : '';
   const pg = q.pageStart ? (q.pageStart === q.pageEnd ? ` (p.${q.pageStart})` : ` (p.${q.pageStart}-${q.pageEnd})`) : '';
   if (src || pg) back += `<br><br><span style="color:#888;font-size:0.8em">Fonte: ${escapeHtml(src)}${pg}</span>`;
+  // Phase 4: mnemônico-texto (gate: byte-idêntico quando ausente — PIPE-03/D-10)
+  // Texto escapado via escapeHtml — < e & são perigosos em HTML (D-11)
+  if (q.mnemonico) {
+    back += `<br><br><b>💡 Mnemônico:</b> ${escapeHtml(q.mnemonico)}`;
+  }
+  // SVG inline — NÃO usar escapeHtml() no SVG (D-08/Pitfall 2/T-04-11)
+  // SVG já sanitizado fail-closed no Plano 02; escaping quebraria o render no Anki
+  if (q.mnemonicoSvg) {
+    back += `<br><br>${q.mnemonicoSvg}`;
+  }
   return back;
 }
 

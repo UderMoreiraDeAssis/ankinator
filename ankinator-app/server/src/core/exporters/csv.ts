@@ -45,6 +45,16 @@ function versoDaQuestao(q: Questao): string {
     if (m.ano) linhas.push(`Ano: ${m.ano}`);
     if (linhas.length) verso += `\n\n${linhas.join('\n')}`;
   }
+  // Phase 4: mnemônico-texto (gate: byte-idêntico quando ausente — PIPE-03/D-10)
+  if (q.mnemonico) {
+    verso += `\n\n💡 Mnemônico: ${q.mnemonico}`;
+  }
+  // SVG inline (gate: byte-idêntico quando ausente — PIPE-03/D-10)
+  // NUNCA chamar escapeHtml() no SVG — já sanitizado no Plano 02 (D-08);
+  // escaping quebraria a marcação SVG no Anki (Pitfall 2)
+  if (q.mnemonicoSvg) {
+    verso += `\n\n${q.mnemonicoSvg}`;
+  }
   return verso;
 }
 
