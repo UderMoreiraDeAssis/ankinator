@@ -39,7 +39,7 @@ export function CardTable({ cards, dropped, onEdit, onToggleDrop }: Props) {
           </button>
         ))}
         <span className="ml-auto text-sm text-slate-500">
-          {cards.length - dropped.size} selecionadas para exportar
+          {cards.length - dropped.size} selecionada{cards.length - dropped.size === 1 ? '' : 's'} para exportar
         </span>
       </div>
 

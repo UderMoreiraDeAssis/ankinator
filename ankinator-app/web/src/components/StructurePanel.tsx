@@ -25,21 +25,31 @@ export function StructurePanel(props: Props) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       {/* Seções */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
+      <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-base font-semibold text-slate-800">Estrutura do documento</h2>
-            <p className="text-sm text-slate-500">
+            <p className="break-words text-sm text-slate-500">
               {extract.fileName} · {extract.numPages} página(s) · {extract.sections.length} seção(ões)
               {extract.usedOcr && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">OCR</span>}
             </p>
           </div>
-          <button
-            onClick={() => onSelectAll(!allSelected)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            {allSelected ? 'Limpar' : 'Selecionar tudo'}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => onSelectAll(true)}
+              disabled={allSelected}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Selecionar tudo
+            </button>
+            <button
+              onClick={() => onSelectAll(false)}
+              disabled={selected.size === 0}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Desmarcar tudo
+            </button>
+          </div>
         </div>
 
         <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-100">
@@ -191,7 +201,7 @@ export function StructurePanel(props: Props) {
           disabled={!canGenerate || selected.size === 0 || busy}
           className="mt-1 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          {busy ? 'Gerando…' : `Gerar questões (${selected.size} seção${selected.size === 1 ? '' : 'ões'})`}
+          {busy ? 'Gerando…' : `Gerar questões (${selected.size} ${selected.size === 1 ? 'seção' : 'seções'})`}
         </button>
       </div>
     </div>
