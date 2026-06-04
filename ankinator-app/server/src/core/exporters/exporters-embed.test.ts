@@ -1,15 +1,25 @@
 /**
- * Testes de embed mnemônico + SVG nos exporters (04-03).
+ * Testes de embed mnemônico + SVG nos exporters (04-03 / Phase 6).
  *
- * Verifica:
- *  - D-09/D-10: gate por campo opcional — byte-idêntico quando ausente (PIPE-03)
- *  - D-11: SVG embutido cru (NÃO escapado) — Pitfall 2
- *  - D-11: mnemônico-texto escapado em versoHtml (escapeHtml aplicado só ao texto)
- *  - IMG-03: teste positivo determinístico do embed SVG no versoHtml
+ * Phase 6: frente e verso agora emitem HTML rico (card-html.ts).
+ * As asserções foram atualizadas para o novo formato; os invariantes de
+ * segurança CR-01/WR-01 e os gates de campo opcional (PIPE-03) são preservados.
+ *
+ * Invariantes mantidos:
+ *  - PIPE-03: gate por campo opcional — byte-idêntico quando ausente
+ *  - Pitfall 2 / D-11: SVG embutido cru (NÃO escapado)
+ *  - D-11: mnemônico-texto escapado (escapeHtml aplicado)
+ *  - IMG-03: embed SVG inline no verso (não data-URI)
+ *  - CR-01: SVG malicioso re-sanitizado no boundary de export
+ *  - WR-01: url() externo descartado (fail-closed)
+ *  - RICH-01: frente contém barra deck (📘) e pergunta escapada
+ *  - RICH-02: verso contém seção "✅ Resposta" com resposta escapada
+ *  - RICH-03: verso contém seção "💡 Mnemônico" apenas quando presente
  */
 import { describe, it, expect } from 'vitest';
 import { toAnkiCsv } from './csv.js';
 import { versoHtml } from './ankiconnect.js';
+import { buildFrontHtml, buildBackHtml } from './card-html.js';
 import type { Questao } from '../types.js';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -49,55 +59,191 @@ const cardSvgExterno: Questao = {
   mnemonicoSvg: '<svg xmlns="http://www.w3.org/2000/svg"><rect fill="url(http://evil.com/leak)" width="10" height="10"/></svg>',
 };
 
-// ── CSV (versoDaQuestao) ───────────────────────────────────────────────────────
+// ── card-html.ts — buildFrontHtml ─────────────────────────────────────────────
 
-describe('csv.ts — versoDaQuestao embed (D-09/D-10/PIPE-03)', () => {
+describe('card-html.ts — buildFrontHtml (RICH-01)', () => {
 
-  it('D-10: card sem mnemonico/mnemonicoSvg → byte-idêntico ao baseline (PIPE-03)', () => {
-    // Captura baseline sem os campos de mnemônico
-    const baseline = toAnkiCsv([cardBase]);
-    // Garantir que o campo não existe no baseline
-    expect(baseline).not.toContain('Mnemônico:');
-    expect(baseline).not.toContain('<svg');
-
-    // Roda novamente — deve ser idêntico (determinístico)
-    const resultado = toAnkiCsv([cardBase]);
-    expect(resultado).toBe(baseline);
+  it('RICH-01: frente contém barra deck (📘) e pergunta escapada', () => {
+    const html = buildFrontHtml(cardBase);
+    expect(html).toContain('📘');
+    expect(html).toContain('Pergunta de teste');
+    // sem deck → usa "Card"
+    expect(html).toContain('Card');
   });
 
-  it('D-09: card com mnemonico → verso contém "Mnemônico:" + texto', () => {
+  it('RICH-01: frente com q.deck → label com :: substituído por · ', () => {
+    const card: Questao = { ...cardBase, deck: 'Matéria::Assunto::Sub' };
+    const html = buildFrontHtml(card);
+    expect(html).toContain('Matéria · Assunto · Sub');
+    expect(html).not.toContain('Matéria::Assunto');
+  });
+
+  it('RICH-01: frente sem deck mas com tags → usa primeira tag', () => {
+    const card: Questao = { ...cardBase, tags: ['direito-constitucional'] };
+    const html = buildFrontHtml(card);
+    expect(html).toContain('direito-constitucional');
+  });
+
+  it('RICH-01: pergunta com < e & é escapada na frente', () => {
+    const card: Questao = { ...cardBase, pergunta: 'A < B & C' };
+    const html = buildFrontHtml(card);
+    expect(html).toContain('A &lt; B &amp; C');
+    expect(html).not.toContain('A < B');
+  });
+
+  it('RICH-01: frente é determinística (byte-idêntica em chamadas repetidas)', () => {
+    const h1 = buildFrontHtml(cardBase);
+    const h2 = buildFrontHtml(cardBase);
+    expect(h1).toBe(h2);
+  });
+});
+
+// ── card-html.ts — buildBackHtml ──────────────────────────────────────────────
+
+describe('card-html.ts — buildBackHtml (RICH-02/03)', () => {
+
+  it('RICH-02: verso contém seção "✅ Resposta" com texto da resposta', () => {
+    const html = buildBackHtml(cardBase);
+    expect(html).toContain('✅ Resposta');
+    expect(html).toContain('Resposta de teste');
+  });
+
+  it('RICH-02: verso com gabarito → contém "Gabarito:"', () => {
+    const card: Questao = { ...cardBase, metadata: { gabarito: 'A' } };
+    const html = buildBackHtml(card);
+    expect(html).toContain('Gabarito:');
+    expect(html).toContain('A');
+  });
+
+  it('RICH-02: verso com alternativas → contém "Alternativas:" e cada alternativa', () => {
+    const card: Questao = { ...cardBase, metadata: { alternativas: ['(A) Sim', '(B) Não'] } };
+    const html = buildBackHtml(card);
+    expect(html).toContain('Alternativas:');
+    expect(html).toContain('(A) Sim');
+    // escapeHtml só escapa &, <, >, " — caracteres acentuados passam literalmente
+    expect(html).toContain('(B) Não');
+  });
+
+  it('RICH-03: verso SEM mnemônico → NÃO contém seção "💡 Mnemônico" (PIPE-03 gate)', () => {
+    const html = buildBackHtml(cardBase);
+    expect(html).not.toContain('💡');
+    expect(html).not.toContain('Mnemônico');
+  });
+
+  it('RICH-03: verso COM mnemônico → contém seção "💡 Mnemônico" + texto', () => {
+    const html = buildBackHtml(cardComMnemonico);
+    expect(html).toContain('💡');
+    expect(html).toContain('Mnemônico de exemplo');
+  });
+
+  it('IMG-03: verso com mnemonicoSvg → contém <svg literal (NÃO &lt;svg)', () => {
+    const html = buildBackHtml(cardComSvg);
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('&lt;svg');
+  });
+
+  it('RICH-02: verso com fonte → contém 📎 e o nome da fonte', () => {
+    const html = buildBackHtml(cardBase, 'livro-direito');
+    expect(html).toContain('📎');
+    expect(html).toContain('livro-direito');
+  });
+
+  it('RICH-02: verso sem fonte/pageStart → sem rodapé 📎', () => {
+    const cardSemPagina: Questao = { id: 'x', tipo: 'criada', pergunta: 'Q', resposta: 'R' };
+    const html = buildBackHtml(cardSemPagina);
+    expect(html).not.toContain('📎');
+  });
+
+  it('D-11: mnemônico com < e & é escapado (texto não passa cru)', () => {
+    const html = buildBackHtml(cardMnemonicoBadChars);
+    expect(html).toContain('a &lt; b &amp; c &gt; d');
+    // texto cru NÃO deve aparecer fora dos atributos style
+    expect(html).not.toMatch(/[^;]a < b/);
+  });
+
+  it('D-11 (Pitfall 2): mnemonicoSvg cru (não escapado) mesmo quando mnemônico tem chars especiais', () => {
+    const html = buildBackHtml(cardMnemonicoBadChars);
+    // SVG deve aparecer sem escaping
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('&lt;svg');
+  });
+
+  it('CR-01: SVG malicioso re-sanitizado no boundary — sem onload/script/alert', () => {
+    const html = buildBackHtml(cardSvgMalicioso);
+    expect(html).not.toContain('onload');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('alert');
+  });
+
+  it('WR-01: SVG com url() externo descartado (fail-closed, sem evil.com)', () => {
+    const html = buildBackHtml(cardSvgExterno);
+    expect(html).not.toContain('evil.com');
+    expect(html).not.toContain('url(http');
+  });
+
+  it('PIPE-03: verso sem mnemonicoSvg é byte-idêntico ao baseline', () => {
+    const baseline = buildBackHtml(cardBase);
+    const resultado = buildBackHtml(cardBase);
+    expect(resultado).toBe(baseline);
+    expect(resultado).not.toContain('<svg');
+  });
+});
+
+// ── CSV (toAnkiCsv) ───────────────────────────────────────────────────────────
+
+describe('csv.ts — toAnkiCsv HTML rico (RICH-01/02/03 + PIPE-03)', () => {
+
+  it('RICH-01: frente do CSV contém 📘 e a pergunta', () => {
+    const csv = toAnkiCsv([cardBase]);
+    expect(csv).toContain('📘');
+    expect(csv).toContain('Pergunta de teste');
+  });
+
+  it('RICH-02: verso do CSV contém "✅ Resposta"', () => {
+    const csv = toAnkiCsv([cardBase]);
+    expect(csv).toContain('✅ Resposta');
+    expect(csv).toContain('Resposta de teste');
+  });
+
+  it('PIPE-03: card sem mnemônico → CSV não contém seção mnemônico', () => {
+    const csv = toAnkiCsv([cardBase]);
+    expect(csv).not.toContain('💡');
+    // Baseline determinístico
+    const resultado = toAnkiCsv([cardBase]);
+    expect(resultado).toBe(csv);
+  });
+
+  it('RICH-03: card com mnemônico → CSV contém "💡" e texto do mnemônico', () => {
     const csv = toAnkiCsv([cardComMnemonico]);
-    expect(csv).toContain('Mnemônico:');
+    expect(csv).toContain('💡');
     expect(csv).toContain('Mnemônico de exemplo');
   });
 
-  it('D-09 (Pitfall 2): card com mnemonicoSvg → verso contém <svg literal (não escapado)', () => {
+  it('D-11 (Pitfall 2): card com mnemonicoSvg → verso contém <svg literal (não escapado)', () => {
     const csv = toAnkiCsv([cardComSvg]);
-    // SVG deve estar presente cru — NUNCA escapado (D-11/Pitfall 2)
     expect(csv).toContain('<svg');
-    // Garantir que NÃO foi escapado
     expect(csv).not.toContain('&lt;svg');
   });
 
-  it('D-10: array de cards — só cards com svg têm <svg no output', () => {
+  it('PIPE-03: array de cards — só cards com svg têm <svg no output', () => {
     const csv = toAnkiCsv([cardBase, cardComSvg]);
     expect(csv).toContain('<svg');
-    // Garante que a linha do cardBase não adicionou svg
+    // A linha do cardBase não deve conter <svg
     const linhas = csv.split('\n');
-    const linhaBase = linhas.find(l => l.includes('Resposta de teste') && !l.includes('Mnemônico visual'));
-    // A linha do card base não deve conter <svg (presente apenas na linha com SVG)
+    const linhaBase = linhas.find(l => l.includes('Pergunta de teste') && !l.includes('Mnemônico visual'));
     if (linhaBase) {
       expect(linhaBase).not.toContain('<svg');
     }
   });
 
-  it('CR-01: SVG malicioso do req.body é re-sanitizado no boundary (sem onload/script/alert)', () => {
+  it('CR-01: SVG malicioso re-sanitizado no boundary (sem onload/script/alert)', () => {
     const csv = toAnkiCsv([cardSvgMalicioso]);
     expect(csv).not.toContain('onload');
     expect(csv).not.toContain('<script');
     expect(csv).not.toContain('alert');
   });
-  it('CR-01/WR-01: SVG com url() externo é descartado no boundary (fail-closed, sem evil.com)', () => {
+
+  it('CR-01/WR-01: SVG com url() externo descartado (fail-closed, sem evil.com)', () => {
     const csv = toAnkiCsv([cardSvgExterno]);
     expect(csv).not.toContain('evil.com');
     expect(csv).not.toContain('url(http');
@@ -106,52 +252,40 @@ describe('csv.ts — versoDaQuestao embed (D-09/D-10/PIPE-03)', () => {
 
 // ── AnkiConnect (versoHtml) — IMG-03 ─────────────────────────────────────────
 
-describe('ankiconnect.ts — versoHtml embed (D-09/D-10/D-11/IMG-03/Pitfall-2)', () => {
+describe('ankiconnect.ts — versoHtml HTML rico (RICH-02/03 + IMG-03 + CR-01/WR-01)', () => {
 
-  it('D-10: card sem campos → versoHtml byte-idêntico ao baseline (PIPE-03)', () => {
-    const baseline = versoHtml(cardBase);
-    // Sem mnemônico nem SVG
-    expect(baseline).not.toContain('Mnemônico');
-    expect(baseline).not.toContain('<svg');
-
-    // Determinístico
-    const resultado = versoHtml(cardBase);
-    expect(resultado).toBe(baseline);
+  it('RICH-02: versoHtml contém "✅ Resposta" e a resposta', () => {
+    const html = versoHtml(cardBase);
+    expect(html).toContain('✅ Resposta');
+    expect(html).toContain('Resposta de teste');
   });
 
-  it('D-09: card com mnemonico → versoHtml contém texto do mnemônico', () => {
+  it('PIPE-03: versoHtml sem mnemônico → sem seção mnemônico (byte-idêntico)', () => {
+    const baseline = versoHtml(cardBase);
+    expect(baseline).not.toContain('💡');
+    expect(baseline).not.toContain('Mnemônico');
+    expect(baseline).not.toContain('<svg');
+    // Determinístico
+    expect(versoHtml(cardBase)).toBe(baseline);
+  });
+
+  it('RICH-03: versoHtml com mnemônico → contém "💡" e texto do mnemônico', () => {
     const html = versoHtml(cardComMnemonico);
-    expect(html).toContain('Mnemônico');
+    expect(html).toContain('💡');
     expect(html).toContain('Mnemônico de exemplo');
   });
 
-  it('IMG-03 (Pitfall 2): card com mnemonicoSvg → versoHtml contém <svg literal (NÃO &lt;svg)', () => {
-    // Este é o teste positivo central de IMG-03
-    // O SVG deve aparecer CRUDAMENTE no HTML — escapeHtml NUNCA deve ser aplicado ao SVG
+  it('IMG-03 (Pitfall 2): versoHtml com mnemonicoSvg → <svg literal (NÃO &lt;svg)', () => {
     const html = versoHtml(cardComSvg);
     expect(html).toContain('<svg');
     expect(html).not.toContain('&lt;svg');
   });
 
-  it('D-11 (escape texto): mnemônico com < → back contém &lt; (texto escapado) mas NÃO < cru do mnemônico', () => {
+  it('D-11: mnemônico com < e & escapado no versoHtml', () => {
     const html = versoHtml(cardMnemonicoBadChars);
-    // O texto do mnemônico deve ser escapado via escapeHtml
-    expect(html).toContain('a &lt; b');
-    expect(html).toContain('&amp;');
-    // O SVG raw ainda deve estar presente SEM escaping
+    expect(html).toContain('a &lt; b &amp; c &gt; d');
     expect(html).toContain('<svg');
     expect(html).not.toContain('&lt;svg');
-    // Verificar que o texto do mnemônico não passou cru
-    // 'a < b' cru NÃO deve aparecer na parte do mnemônico
-    // (mas pode aparecer em outros campos — checamos a forma escapada)
-    expect(html).toContain('a &lt; b &amp; c &gt; d');
-  });
-
-  it('D-09: card com mnemonico e svg → ambos presentes no retorno', () => {
-    const html = versoHtml(cardComSvg);
-    expect(html).toContain('Mnemônico');
-    expect(html).toContain('Mnemônico visual');
-    expect(html).toContain('<svg');
   });
 
   it('CR-01: versoHtml re-sanitiza SVG malicioso no boundary (sem onload/script/alert)', () => {
@@ -160,7 +294,8 @@ describe('ankiconnect.ts — versoHtml embed (D-09/D-10/D-11/IMG-03/Pitfall-2)',
     expect(html).not.toContain('<script');
     expect(html).not.toContain('alert');
   });
-  it('CR-01/WR-01: versoHtml descarta SVG com url() externo (sem evil.com)', () => {
+
+  it('WR-01: versoHtml descarta SVG com url() externo (sem evil.com)', () => {
     const html = versoHtml(cardSvgExterno);
     expect(html).not.toContain('evil.com');
   });
