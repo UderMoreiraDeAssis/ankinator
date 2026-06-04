@@ -31,9 +31,9 @@ Phases 1–4 entregaram **código que passa em 144 testes determinísticos**, ma
 - [x] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf` (⚠ entregue mas NUNCA ativado por default — corrigido na Phase 4.1)
 - [x] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico (⚠ card-builder só reescreve TEXTO e vem OFF; aparência rica fica na Phase 6)
 - [~] **Phase 4: Mnemônicos + Imagem SVG** - Código entregue + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** (zero mnemônicos/imagens ao vivo) → estabilização na Phase 4.1
-- [ ] **Phase 4.1: Estabilização de Runtime (INSERTED)** - Tornar o pipeline EXISTENTE visível: surfacing de erro do CLI + parse tolerante (mnemônicos voltam), imagem habilitável/funcional, loader langchain ativo de fato
+- [~] **Phase 4.1: Estabilização de Runtime (INSERTED)** - Código entregue (RT-01 erro visível + parse tolerante/fallback, RT-02 imagem, RT-05 loader langchain auto). ⏳ Falta validação de runtime humano (rodar PDF real)
 - [ ] **Phase 5: Orquestrador Anki por-card** - Conectar o `anki-orchestrator` (hoje andaime morto, nunca carregado), decisão por-card, batching p/ poupar quota
-- [ ] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - Card-builder que emite HTML/CSS rico + campo HTML no `Questao` + exporters estilizados + template de card
+- [~] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - Código entregue: `card-html.ts` (layout seccionado índigo/verde/âmbar, escape + SVG inline sanitizado), wired em CSV + AnkiConnect. Preview ✅ (`/tmp/ankinator-card-preview.html`). ⏳ Falta validação visual no Anki real
 - [ ] **Phase 7: Qualidade das Questões + Agentes Especialistas** - Questões boas (criadas/atomizadas, não coladas) + formalizar os especialistas como agentes/skills Claude
 
 ## Phase Details
@@ -198,7 +198,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6 → 7
 | 2. Loader PDF LangChain | 4/4 | Complete (loader inativo) | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete (sem aparência rica) | 2026-06-03 |
 | 4. Mnemônicos + Imagem SVG | 4/4 | Código OK, **UAT runtime FALHOU** | 2026-06-04 |
-| 4.1 Estabilização de Runtime | 0/TBD | Em andamento | - |
+| 4.1 Estabilização de Runtime | — | Código OK (⏳ validar runtime) | 2026-06-04 |
 | 5. Orquestrador Anki por-card | 0/TBD | Not started | - |
-| 6. Cards Educativos Ricos | 0/TBD | Not started | - |
+| 6. Cards Educativos Ricos | — | Código OK + preview ✅ (⏳ validar Anki) | 2026-06-04 |
 | 7. Qualidade das Questões + Agentes | 0/TBD | Not started | - |

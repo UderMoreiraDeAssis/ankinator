@@ -26,11 +26,12 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase 04 (Mnemônicos + Imagem SVG): código OK + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** — zero mnemônicos/imagens ao vivo, cards crus (ver 04-HUMAN-UAT.md).
 Phase 04.1 (Estabilização de Runtime): fixes RT-01/02/05 aplicados — erro do CLI agora VISÍVEL (log + SSE), parse tolerante a cercas ```json/id, loader langchain auto-ativado + logado. 176 testes verdes, build limpo.
-Status: Aguardando 1 teste de runtime humano do 4.1 (rodar PDF real → mnemônicos voltam OU o erro fica visível). Depois: Phase 5 (wire orquestrador) → 6 (cards ricos estilo Ankimon) → 7 (qualidade das questões + agentes especialistas).
-Next: rodar uma geração real para validar o 4.1; em seguida iniciar Phase 6 (cards educativos ricos).
+Phase 06 (Cards Educativos Ricos): ENTREGUE — `card-html.ts` (layout seccionado índigo/verde/âmbar, escape + SVG inline sanitizado) wired em CSV + AnkiConnect; 216 testes; preview ✅ em /tmp/ankinator-card-preview.html.
+Status: Aguardando 1 teste de runtime humano (rodar PDF real → confirmar que mnemônicos/imagens voltam OU ver o erro agora visível; e ver os cards ricos no Anki). Restam: Phase 5 (wire o anki-orchestrator morto) + Phase 7 (qualidade das questões + decidir arquitetura de agentes/skills).
+Next: você roda 1 geração real (valida 4.1 + Phase 6). Depois eu sigo com Phase 5 e 7.
 Last activity: 2026-06-04
 
-Progress (rumo ao Destino): [████░░░░░░] ~45%
+Progress (rumo ao Destino): [██████░░░░] ~60%
 
 ## Performance Metrics
 
