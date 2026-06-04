@@ -97,11 +97,20 @@ Plans:
   2. É gerado um SVG autocontido ilustrando o mnemônico, sanitizado (sem script/URLs externas).
   3. O SVG aparece corretamente nos cards exportados via CSV e AnkiConnect.
 
-**Plans**: TBD
-
+**Plans**: 4 plans (3 waves)
 Plans:
+**Wave 1**
 
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Wave 1: isomorphic-dompurify + sanitize-svg.ts (allowlist geométrica D-06/D-07) + fixtures adversariais F-01..F-12 + refino mnemonic.md (JSON batch) / mnemonic-image.md (MNEM-02, IMG-02)
+- [ ] 04-04-PLAN.md — Wave 1: UI modo educativo (toggles mnemônico ON / imagem OFF, badges 📝/🖼️ read-only, progresso) + tipos web espelhados (MNEM-01, IMG-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — Wave 2: enrichAll estágio mnemônico (batch por id) + estágio imagem (por-card, fail-closed) + parseMnemonicosJson + deveRodarEnrich + image-provider conectado (MNEM-01/02, IMG-01/02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Wave 3: embed <svg> inline no verso (csv + ankiconnect, mesmo mecanismo, sem escapeHtml) + wiring /generate defaults D-12 + guard/smoke estendidos + checkpoint render Anki (IMG-03)
 
 ### Phase 5: Orquestrador Anki
 
@@ -130,5 +139,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 4/4 | Complete    | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete | 2026-06-03 |
-| 4. Mnemônicos + Imagem SVG | 0/TBD | Not started | - |
+| 4. Mnemônicos + Imagem SVG | 0/4 | Planned | - |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |
