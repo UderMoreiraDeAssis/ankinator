@@ -40,12 +40,36 @@ if (!deveRodarEnrich(optsClassificar)) {
 }
 console.log('   ✓ Cenário 2: classificar=true → deveRodarEnrich=true OK (enrichAll será chamado).');
 
+// ── CENÁRIO 3: mnemonico=true → enrichAll DEVE ser chamado (Phase 4 — D-12) ──
+// Garante que mnemonico sozinho aciona o pipeline de enriquecimento
+const optsMnemonico = { classificar: false, cardBuilder: false, mnemonico: true, imagem: false };
+if (!deveRodarEnrich(optsMnemonico)) {
+  fail('enrichAll NÃO seria chamado com mnemonico=true — violação de PIPE-03');
+}
+console.log('   ✓ Cenário 3: mnemonico=true → deveRodarEnrich=true OK (enrichAll será chamado).');
+
+// ── CENÁRIO 4: imagem=true → enrichAll DEVE ser chamado (Phase 4 — D-12) ─────
+// Garante que imagem sozinha aciona o pipeline de enriquecimento
+const optsImagem = { classificar: false, cardBuilder: false, mnemonico: false, imagem: true };
+if (!deveRodarEnrich(optsImagem)) {
+  fail('enrichAll NÃO seria chamado com imagem=true — violação de PIPE-03');
+}
+console.log('   ✓ Cenário 4: imagem=true → deveRodarEnrich=true OK (enrichAll será chamado).');
+
+// ── CENÁRIO 5: 4 toggles off → enrichAll NÃO deve ser chamado (PIPE-03) ──────
+// Prova byte-identidade: com todos os 4 toggles desligados, o pipeline NÃO roda
+const optsAllOff = { classificar: false, cardBuilder: false, mnemonico: false, imagem: false };
+if (deveRodarEnrich(optsAllOff) !== false) {
+  fail('enrichAll seria chamado com todos os 4 toggles off — violação de PIPE-03 (byte-identidade)');
+}
+console.log('   ✓ Cenário 5: 4 toggles off → deveRodarEnrich=false OK (byte-identidade PIPE-03).');
+
 // ── Modo explícito --assert (espelha smoke-runner --assert-args) ──────────────
 if (process.argv.includes('--assert')) {
-  console.log('\n--assert: guard PIPE-03 CLI-free OK; toggles controlam enrichAll corretamente.');
+  console.log('\n--assert: guard PIPE-03 CLI-free OK; 4 toggles (classificar/cardBuilder/mnemonico/imagem) controlam enrichAll corretamente.');
   process.exit(0);
 }
 
 // Sem flag, ainda sai 0 (asserções já rodaram acima)
-console.log('\nGuard PIPE-03 OK — enrichAll não chamado com toggles off; chamado com classificar=true.');
+console.log('\nGuard PIPE-03 OK — enrichAll não chamado com toggles off; chamado com qualquer toggle on.');
 process.exit(0);

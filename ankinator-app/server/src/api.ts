@@ -135,6 +135,8 @@ api.post('/generate', async (req: Request, res: Response) => {
     model: options?.model, // undefined → modelo padrão do provedor
     classificar: options?.classificar,
     cardBuilder: options?.cardBuilder,
+    mnemonico: options?.mnemonico,   // D-12: propagado ao enrichOpts
+    imagem: options?.imagem,         // D-12: propagado ao enrichOpts
   };
 
   const provider = createProvider({
@@ -156,6 +158,8 @@ api.post('/generate', async (req: Request, res: Response) => {
       const enrichOpts = {
         classificar: options?.classificar ?? true,   // documented default (WR-01)
         cardBuilder: options?.cardBuilder ?? false,  // documented default
+        mnemonico: options?.mnemonico ?? true,        // D-12: default ON (mnemônico ativo por padrão)
+        imagem: options?.imagem ?? false,             // D-12: default OFF (imagem requer quota extra)
       };
       if (deveRodarEnrich(enrichOpts)) {
         questoes = await enrichAll(questoes, enrichOpts, (e) => {
