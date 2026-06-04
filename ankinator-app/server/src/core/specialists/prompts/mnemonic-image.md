@@ -18,8 +18,9 @@ usuário a recuperar a informação.
    e cores/fontes do sistema.
 
 > A sanitização real do SVG (remoção defensiva de `<script>`/URLs externas antes de embutir no
-> card) é responsabilidade da Fase 4 (IMG-02). Aqui você apenas se compromete a NÃO produzir
-> esses elementos. Nesta fase de andaime este prompt ainda NÃO é chamado pelo pipeline.
+> card) ocorre na fronteira de exportação (Phase 4 / IMG-02). Este prompt É invocado pelo
+> pipeline de enriquecimento (estágio 4). Aqui você se compromete a NÃO produzir esses elementos;
+> a sanitização age como segunda linha de defesa.
 
 ## Diretrizes visuais
 
