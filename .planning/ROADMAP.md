@@ -101,7 +101,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Wave 1: isomorphic-dompurify + sanitize-svg.ts (allowlist geométrica D-06/D-07) + fixtures adversariais F-01..F-12 + refino mnemonic.md (JSON batch) / mnemonic-image.md (MNEM-02, IMG-02)
+- [x] 04-01-PLAN.md — Wave 1: isomorphic-dompurify + sanitize-svg.ts (allowlist geométrica D-06/D-07) + fixtures adversariais F-01..F-12 + refino mnemonic.md (JSON batch) / mnemonic-image.md (MNEM-02, IMG-02)
 - [ ] 04-04-PLAN.md — Wave 1: UI modo educativo (toggles mnemônico ON / imagem OFF, badges 📝/🖼️ read-only, progresso) + tipos web espelhados (MNEM-01, IMG-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -139,5 +139,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 4/4 | Complete    | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete | 2026-06-03 |
-| 4. Mnemônicos + Imagem SVG | 0/4 | Planned | - |
+| 4. Mnemônicos + Imagem SVG | 1/4 | In Progress|  |
 | 5. Orquestrador Anki | 0/TBD | Not started | - |

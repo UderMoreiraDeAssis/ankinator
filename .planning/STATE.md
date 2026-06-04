@@ -3,14 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-04T01:28:51.171Z"
-last_activity: 2026-06-04 -- Phase 04 planning complete
+last_updated: "2026-06-04T02:07:10.005Z"
+last_activity: 2026-06-04
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 16
-  completed_plans: 12
-  percent: 60
+  completed_plans: 13
+  notes: "13 plans completed (Phase 04 Plan 01 done)"
+  percent: 81
 ---
 
 # Project State
@@ -20,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Flashcards que maximizam retenção a partir de qualquer texto de concurso, via assinatura Claude (sem custo por token).
-**Current focus:** Phase 04 — Mnemônicos + Imagem SVG
+**Current focus:** Phase 04 — mnem-nicos-imagem-svg
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
+Phase: 04 (mnem-nicos-imagem-svg) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
 Next: Phase 04 (Mnemônicos + Imagem SVG) — `/clear` then `/gsd:plan-phase 4`.
-Last activity: 2026-06-04 -- Phase 04 planning complete
+Last activity: 2026-06-04
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -64,6 +65,7 @@ Progress: [██████░░░░] 60%
 | Phase 03 P01 | 10min | 3 tasks | 6 files |
 | Phase 03 P02 | 8min | 3 tasks | 4 files |
 | Phase 03 P03 | 5min | 4 tasks | 4 files |
+| Phase 04 P01 | 5 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -87,6 +89,10 @@ Decisões completas em PROJECT.md (Key Decisions). Recentes:
 - [Phase ?]: Phase 03 P02: CSV temDeck gate — byte-identity when no q.deck; #deck column:5 only when some card has q.deck (DECK-01)
 - [Phase ?]: Phase 03 P02: ankiconnect subdeck routing — createDeck per distinct q.deck; deckName q.deck ?? opts.deck per-nota (DECK-01/DECK-02)
 - [Phase ?]: Phase 03 P03: Enrich progress renderizado DENTRO do passo generating sem 5o step (D-16); defaults via !== false / === true para toggles ON/OFF
+- [Phase 04 P01]: sanitizarSvg fail-closed returns null if output not starting with <svg — D-08/Pitfall 4; isomorphic-dompurify@3.15.0 installed
+- [Phase 04 P01]: ALLOWED_TAGS geometric-only allowlist (15 tags); style absent from ALLOWED_ATTR (F-09 depends on this) — D-06/D-07; 13 adversarial fixtures pass
+- [Phase 04 P01]: mnemonic.md ## Saída rewritten to JSON batch format — prerequisite for Plan 02 parser — Pitfall 5 closed
+- [Phase 04 P01]: mnemonic-image.md: no id/version on <svg> root (Anki 25.02.x strips them — A1); SVG must start with <svg and end with </svg>
 
 ### Pending Todos
 
@@ -105,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-04T00:25:50.740Z
+Last session: 2026-06-04T02:07:09.993Z
 Stopped at: Phase 04 context gathered (power finalize — 14/14)
-Resume file: .planning/phases/04-mnem-nicos-imagem-svg/04-CONTEXT.md
+Resume file: None
