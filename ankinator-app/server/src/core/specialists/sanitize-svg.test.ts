@@ -104,4 +104,24 @@ describe('sanitizarSvg — cobertura adversarial (D-07/D-14)', () => {
     const comCerca = '```svg\n<svg><circle cx="50" cy="50" r="40"/></svg>\n```';
     expect(sanitizarSvg(comCerca)).toBeNull();
   });
+
+  // WR-01: url() externo em atributos de apresentação (fill/stroke/clip-path/mask) → null
+  it('WR-01: rejeita fill="url(http://...)" externo (fail-closed)', () => {
+    expect(sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><rect fill="url(http://evil.com/leak)" width="10" height="10"/></svg>')).toBeNull();
+  });
+  it('WR-01: rejeita stroke="url(https://...)" externo', () => {
+    expect(sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><rect stroke="url(https://evil.com/y)" width="10" height="10"/></svg>')).toBeNull();
+  });
+  it('WR-01: rejeita clip-path/mask com url() externo', () => {
+    expect(sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><rect clip-path="url(http://evil.com/z)" width="10" height="10"/></svg>')).toBeNull();
+    expect(sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><rect mask="url(//evil.com/w)" width="10" height="10"/></svg>')).toBeNull();
+  });
+  it('WR-01: rejeita fill="url(data:...)"', () => {
+    expect(sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><rect fill="url(data:image/svg+xml;base64,AAA)" width="10" height="10"/></svg>')).toBeNull();
+  });
+  it('WR-01: PRESERVA gradiente interno url(#id) (não é null e mantém a ref interna)', () => {
+    const out = sanitizarSvg('<svg xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs><rect fill="url(#g)" width="10" height="10"/></svg>');
+    expect(out).not.toBeNull();
+    expect(out).toContain('url(#g)');
+  });
 });

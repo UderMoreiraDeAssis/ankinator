@@ -40,6 +40,15 @@ const cardMnemonicoBadChars: Questao = {
   mnemonicoSvg: '<svg xmlns="http://www.w3.org/2000/svg"><rect width="50" height="50"/></svg>',
 };
 
+const cardSvgMalicioso: Questao = {
+  ...cardBase,
+  mnemonicoSvg: '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script><rect width="10" height="10"/></svg>',
+};
+const cardSvgExterno: Questao = {
+  ...cardBase,
+  mnemonicoSvg: '<svg xmlns="http://www.w3.org/2000/svg"><rect fill="url(http://evil.com/leak)" width="10" height="10"/></svg>',
+};
+
 // ── CSV (versoDaQuestao) ───────────────────────────────────────────────────────
 
 describe('csv.ts — versoDaQuestao embed (D-09/D-10/PIPE-03)', () => {
@@ -80,6 +89,18 @@ describe('csv.ts — versoDaQuestao embed (D-09/D-10/PIPE-03)', () => {
     if (linhaBase) {
       expect(linhaBase).not.toContain('<svg');
     }
+  });
+
+  it('CR-01: SVG malicioso do req.body é re-sanitizado no boundary (sem onload/script/alert)', () => {
+    const csv = toAnkiCsv([cardSvgMalicioso]);
+    expect(csv).not.toContain('onload');
+    expect(csv).not.toContain('<script');
+    expect(csv).not.toContain('alert');
+  });
+  it('CR-01/WR-01: SVG com url() externo é descartado no boundary (fail-closed, sem evil.com)', () => {
+    const csv = toAnkiCsv([cardSvgExterno]);
+    expect(csv).not.toContain('evil.com');
+    expect(csv).not.toContain('url(http');
   });
 });
 
@@ -131,5 +152,16 @@ describe('ankiconnect.ts — versoHtml embed (D-09/D-10/D-11/IMG-03/Pitfall-2)',
     expect(html).toContain('Mnemônico');
     expect(html).toContain('Mnemônico visual');
     expect(html).toContain('<svg');
+  });
+
+  it('CR-01: versoHtml re-sanitiza SVG malicioso no boundary (sem onload/script/alert)', () => {
+    const html = versoHtml(cardSvgMalicioso);
+    expect(html).not.toContain('onload');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('alert');
+  });
+  it('CR-01/WR-01: versoHtml descarta SVG com url() externo (sem evil.com)', () => {
+    const html = versoHtml(cardSvgExterno);
+    expect(html).not.toContain('evil.com');
   });
 });
