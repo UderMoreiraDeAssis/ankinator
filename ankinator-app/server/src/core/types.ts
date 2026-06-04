@@ -116,4 +116,8 @@ export interface GenerateOptions {
   classificar?: boolean;
   /** Rodar especialista card-builder após a classificação. Default: false. */
   cardBuilder?: boolean;
+  /** Rodar especialista de mnemônico (batch). Default: true. */
+  mnemonico?: boolean;
+  /** Rodar especialista de imagem SVG (por-card). Default: false. */
+  imagem?: boolean;
 }
