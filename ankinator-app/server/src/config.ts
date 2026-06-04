@@ -52,6 +52,12 @@ export const config = {
    * ANKINATOR_LANGCHAIN_PYTHON — interpretador do venv langchain dedicado (requer Java 11+ no PATH).
    * Fallback: ODL_PYTHON (compatibilidade com sidecar OCR da Phase 1).
    * Vazio ('') quando nenhuma var está definida — isLangchainAvailable() retornará false.
+   *
+   * Setup do sidecar LangChain (RT-05):
+   *   1. Criar venv: python3 -m venv ~/.venvs/odl
+   *   2. Instalar:   ~/.venvs/odl/bin/pip install langchain-opendataloader-pdf
+   *   3. Definir:    ODL_PYTHON=~/.venvs/odl/bin/python3  (no .env ou shell)
+   *   Requer também Java 11+ no PATH.
    */
   langchainPython: process.env.ANKINATOR_LANGCHAIN_PYTHON?.trim() || process.env.ODL_PYTHON?.trim() || '',
   hasApiKey(): boolean {

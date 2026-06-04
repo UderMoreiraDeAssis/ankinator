@@ -9,8 +9,14 @@
  * Requer Java 11+ no PATH (o pacote npm é um wrapper sobre um CLI Java).
  * OCR de PDFs escaneados é opcional, via backend híbrido Python (ver ocr-loader).
  *
- * Branch LangChain (D-03): ativo APENAS quando ANKINATOR_PDF_LOADER=langchain.
- * O default (env unset) NÃO entra no branch — Pitfall 3 / D-15.
+ * Seleção de loader (RT-05):
+ *   - ANKINATOR_PDF_LOADER=langchain → força LangChain; erro se indisponível.
+ *   - ANKINATOR_PDF_LOADER=node     → força Node (@opendataloader/pdf via Java).
+ *   - ANKINATOR_PDF_LOADER unset    → auto: usa LangChain se disponível, senão Node.
+ *
+ * Pré-requisitos para LangChain: Python com `langchain_opendataloader_pdf` instalado
+ * e variável ODL_PYTHON (ou ANKINATOR_LANGCHAIN_PYTHON) apontando para o interpretador.
+ * Exemplo: ODL_PYTHON=/home/user/.venv/bin/python3
  */
 import { convert, type ConvertOptions } from '@opendataloader/pdf';
 import { promises as fs } from 'node:fs';
@@ -56,6 +62,56 @@ export function buildConvertOptions(outDir: string, opts: LoadOptions): ConvertO
   };
 }
 
+/** Resultado de `chooseLoader()` — loader escolhido e motivo (para testes e logging). */
+export interface LoaderChoice {
+  loader: 'langchain' | 'node';
+  reason: string;
+}
+
+/**
+ * Determina qual loader de PDF usar, de forma testável (RT-05).
+ *
+ * Lógica de seleção:
+ *   - ANKINATOR_PDF_LOADER=langchain → força LangChain; se indisponível lança erro.
+ *   - ANKINATOR_PDF_LOADER=node     → força Node; sempre disponível.
+ *   - ANKINATOR_PDF_LOADER unset    → auto: usa LangChain se disponível, senão Node.
+ *
+ * @param langchainAvailable  resultado de `isLangchainAvailable()` (injetado para testabilidade).
+ */
+export function chooseLoader(
+  envValue: string | undefined,
+  langchainAvailable: boolean
+): LoaderChoice {
+  const env = envValue?.trim().toLowerCase();
+
+  if (env === 'langchain') {
+    if (langchainAvailable) {
+      return { loader: 'langchain', reason: 'ANKINATOR_PDF_LOADER=langchain (explícito)' };
+    }
+    throw new Error(
+      'ANKINATOR_PDF_LOADER=langchain definido mas o sidecar Python não está disponível. ' +
+      'Defina ODL_PYTHON (ou ANKINATOR_LANGCHAIN_PYTHON) apontando para um interpretador com ' +
+      'langchain_opendataloader_pdf instalado. Exemplo: ODL_PYTHON=/home/user/.venv/bin/python3'
+    );
+  }
+
+  if (env === 'node') {
+    return { loader: 'node', reason: 'ANKINATOR_PDF_LOADER=node (explícito)' };
+  }
+
+  // unset / qualquer outro valor → auto
+  if (langchainAvailable) {
+    return { loader: 'langchain', reason: 'auto (ANKINATOR_PDF_LOADER unset, langchain disponível)' };
+  }
+  const noPython = !process.env.ANKINATOR_LANGCHAIN_PYTHON?.trim() && !process.env.ODL_PYTHON?.trim();
+  return {
+    loader: 'node',
+    reason: noPython
+      ? 'auto (ANKINATOR_PDF_LOADER unset, ODL_PYTHON/ANKINATOR_LANGCHAIN_PYTHON não definidos)'
+      : 'auto (ANKINATOR_PDF_LOADER unset, langchain indisponível — pacote não importável)',
+  };
+}
+
 /**
  * Carrega e estrutura um PDF.
  * @param pdfPath caminho absoluto do PDF
@@ -73,20 +129,18 @@ export async function loadDocument(pdfPath: string, opts: LoadOptions = {}): Pro
     return runOcrLoader(pdfPath, opts);
   }
 
-  // D-03: branch LangChain — PURAMENTE ADITIVO (Pitfall 3 / D-15).
-  // Quando ANKINATOR_PDF_LOADER está unset, a condição é false e NADA do langchain roda
-  // (nem isLangchainAvailable()). O fluxo default abaixo permanece byte-idêntico.
-  if ((process.env.ANKINATOR_PDF_LOADER?.trim().toLowerCase()) === 'langchain') {
-    if (await isLangchainAvailable()) {
-      // D-05: loga o loader selecionado em stderr (não polui stdout com o conteúdo do PDF)
-      console.error('[ankinator] loader: langchain');
-      return runLangchainLoader(pdfPath, opts);
-    }
-    // D-04: fallback silencioso — langchain selecionado mas indisponível; cai no default Node.
-    console.error('[ankinator] loader: langchain indisponível (fallback→node)');
+  // RT-05: seleção de loader com logging e auto-prefer langchain.
+  const langchainAvail = await isLangchainAvailable();
+  const { loader, reason } = chooseLoader(process.env.ANKINATOR_PDF_LOADER, langchainAvail);
+  // chooseLoader lança se =langchain e indisponível (nenhum fallback silencioso neste caso).
+
+  if (loader === 'langchain') {
+    console.info(`[ankinator] PDF loader: langchain (${reason})`);
+    return runLangchainLoader(pdfPath, opts);
   }
 
-  // Caminho default (@opendataloader/pdf / Node / Java) — byte-idêntico ao original (D-15).
+  // loader === 'node'
+  console.info(`[ankinator] PDF loader: node (${reason})`);
   const outDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ankinator-odl-'));
   try {
     const options = buildConvertOptions(outDir, opts);
