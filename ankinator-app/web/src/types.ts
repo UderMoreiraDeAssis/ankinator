@@ -57,11 +57,15 @@ export interface GenerateOptions {
   classificar?: boolean;
   /** Rodar especialista card-builder após a classificação. Default: false. */
   cardBuilder?: boolean;
+  /** Rodar especialista de mnemônicos após a geração. Phase 4: default true no App.tsx — D-12. */
+  mnemonico?: boolean;
+  /** Rodar especialista de imagem de mnemônico (SVG). Phase 4: default false no App.tsx — D-12. */
+  imagem?: boolean;
 }
 
 /** Espelho do EnrichProgress do server — consumido por App.tsx e ProgressPanel. */
 export interface EnrichProgress {
-  estagio: 'classificando' | 'reescrevendo';
+  estagio: 'classificando' | 'reescrevendo' | 'gerando-mnemonico' | 'gerando-imagem';
   index: number;
   total: number;
   erro?: string;

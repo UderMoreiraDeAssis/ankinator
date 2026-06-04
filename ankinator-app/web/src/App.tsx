@@ -23,6 +23,8 @@ export function App() {
     incluirCriadas: true,
     classificar: true,   // default ON (D-15)
     cardBuilder: false,  // default OFF (D-15)
+    mnemonico: true,     // Phase 4: default ON (D-12)
+    imagem: false,       // Phase 4: default OFF (D-12)
   });
   const [tagsInput, setTagsInput] = useState('concurso');
 
