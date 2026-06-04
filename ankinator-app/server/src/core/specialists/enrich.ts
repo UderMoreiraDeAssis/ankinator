@@ -199,7 +199,7 @@ function buildMnemonicoMessage(questoes: Questao[]): string {
     'Gere mnemônicos para os cards a seguir. Retorne APENAS JSON no formato:',
     '{"mnemonicos":[{"id":"<id-do-card>","mnemonico":"<texto>","tecnica":"<acrônimo|história|loci|rima>"}]}',
     '',
-    'Para cards conceituais/de raciocínio, NÃO inclua o card na lista (omissão = sem mnemônico).',
+    'Gere um mnemônico para a MAIORIA dos cards (siglas, listas, classificações, distinções, termos-chave, exceções). Só omita os raros cards sem nada concreto a fixar — na dúvida, gere.',
     '',
     'Cards:',
     JSON.stringify(cards, null, 2),
