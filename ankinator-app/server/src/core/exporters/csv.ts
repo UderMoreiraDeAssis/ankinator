@@ -6,6 +6,7 @@
 import { stringify } from 'csv-stringify/sync';
 import path from 'node:path';
 import type { Questao } from '../types.js';
+import { sanitizarSvg } from '../specialists/sanitize-svg.js';
 
 export interface CsvOptions {
   /** Nome do arquivo PDF de origem (para o campo Fonte). */
@@ -53,7 +54,11 @@ function versoDaQuestao(q: Questao): string {
   // NUNCA chamar escapeHtml() no SVG — já sanitizado no Plano 02 (D-08);
   // escaping quebraria a marcação SVG no Anki (Pitfall 2)
   if (q.mnemonicoSvg) {
-    verso += `\n\n${q.mnemonicoSvg}`;
+    // CR-01: re-sanitizar no boundary de export — sanitizarSvg só roda na geração
+    // (enrich), então payloads vindos direto do req.body burlariam a sanitização.
+    // Fail-closed (D-08): descarta o SVG se inválido. Idempotente p/ SVG já-limpo.
+    const svgLimpo = sanitizarSvg(q.mnemonicoSvg);
+    if (svgLimpo) verso += `\n\n${svgLimpo}`;
   }
   return verso;
 }

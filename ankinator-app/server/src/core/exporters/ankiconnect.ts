@@ -8,6 +8,7 @@
  * Requer: Anki aberto + add-on AnkiConnect (código 2055492159) instalado.
  */
 import type { Questao } from '../types.js';
+import { sanitizarSvg } from '../specialists/sanitize-svg.js';
 
 const ANKICONNECT_URL = process.env.ANKICONNECT_URL?.trim() || 'http://127.0.0.1:8765';
 
@@ -92,7 +93,10 @@ export function versoHtml(q: Questao, fonte?: string): string {
   // SVG inline — NÃO usar escapeHtml() no SVG (D-08/Pitfall 2/T-04-11)
   // SVG já sanitizado fail-closed no Plano 02; escaping quebraria o render no Anki
   if (q.mnemonicoSvg) {
-    back += `<br><br>${q.mnemonicoSvg}`;
+    // CR-01: re-sanitizar no boundary de export (sanitizarSvg só roda na geração).
+    // Fail-closed (D-08): descarta o SVG se inválido. Idempotente p/ SVG já-limpo.
+    const svgLimpo = sanitizarSvg(q.mnemonicoSvg);
+    if (svgLimpo) back += `<br><br>${svgLimpo}`;
   }
   return back;
 }

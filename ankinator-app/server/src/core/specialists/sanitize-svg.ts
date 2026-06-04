@@ -91,6 +91,19 @@ export function sanitizarSvg(svgRaw: string): string | null {
     const trimmed = limpo.trim();
     if (!trimmed.startsWith('<svg')) return null;
 
+    // WR-01: o ALLOWED_ATTR do DOMPurify allowlista o NOME do atributo (fill, stroke,
+    // clip-path, mask, ...) mas NÃO valida o VALOR — url() externo sobrevive nesses
+    // atributos de apresentação (vetor de exfiltração/SSRF que o F-09 só cobre via 'style').
+    // Só url(#fragmento) interno (gradientes/clip internos) é seguro. Fail-closed (D-08):
+    // qualquer url() não-interno descarta o SVG inteiro.
+    const urlRefs = trimmed.match(/url\(\s*['"]?\s*[^)]*/gi);
+    if (urlRefs) {
+      for (const ref of urlRefs) {
+        const alvo = ref.replace(/^url\(\s*['"]?\s*/i, '');
+        if (!alvo.startsWith('#')) return null;
+      }
+    }
+
     return trimmed;
   } catch {
     // D-08: qualquer erro interno do DOMPurify → descarta silenciosamente
