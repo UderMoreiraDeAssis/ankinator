@@ -34,12 +34,12 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 ### Mnemônicos
 
 - [ ] **MNEM-01**: O especialista de mnemônicos gera mnemônicos para cards marcados como difíceis/memorização (listas, datas, classificações).
-- [ ] **MNEM-02**: Suporta técnicas variadas (acrônimo, história/associação absurda, palácio da memória) escolhidas conforme o conteúdo.
+- [x] **MNEM-02**: Suporta técnicas variadas (acrônimo, história/associação absurda, palácio da memória) escolhidas conforme o conteúdo.
 
 ### Imagem de Mnemônico
 
 - [ ] **IMG-01**: O especialista de imagem gera um SVG autocontido (sem refs externas) que ilustra o mnemônico, via assinatura Claude.
-- [ ] **IMG-02**: O SVG é sanitizado (sem `<script>`, sem URLs externas) antes de ser embutido.
+- [x] **IMG-02**: O SVG é sanitizado (sem `<script>`, sem URLs externas) antes de ser embutido.
 - [ ] **IMG-03**: O SVG é embutido nos cards exportados (CSV e AnkiConnect) de forma que o Anki renderize.
 
 ### Orquestração & Pipeline
@@ -92,9 +92,9 @@ Reconhecidos, fora do roadmap atual.
 | PIPE-02 | Phase 3 | Complete |
 | PIPE-03 | Phase 3 | Complete |
 | MNEM-01 | Phase 4 | Pending |
-| MNEM-02 | Phase 4 | Pending |
+| MNEM-02 | Phase 4 | Complete |
 | IMG-01 | Phase 4 | Pending |
-| IMG-02 | Phase 4 | Pending |
+| IMG-02 | Phase 4 | Complete |
 | IMG-03 | Phase 4 | Pending |
 | ORCH-01 | Phase 5 | Pending |
 | ORCH-02 | Phase 5 | Pending |
