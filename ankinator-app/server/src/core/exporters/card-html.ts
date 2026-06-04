@@ -23,6 +23,42 @@ export function escapeHtml(s: string): string {
 }
 
 /**
+ * Separa o enunciado das alternativas de múltipla escolha embutidas no texto.
+ * Detecta marcadores "A)" "B)" ... (A-E, maiúsc/minúsc) em sequência iniciando em A.
+ */
+export function splitOpcoes(pergunta: string): { stem: string; opcoes: string[] } {
+  const re = /(^|\s)([A-Ea-e])\)\s/g;
+  const marks: { idx: number; letter: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(pergunta)) !== null) {
+    marks.push({ idx: m.index + m[1].length, letter: m[2].toUpperCase() });
+  }
+  if (marks.length < 2 || marks[0].letter !== 'A') return { stem: pergunta.trim(), opcoes: [] };
+  const stem = pergunta.slice(0, marks[0].idx).trim();
+  const opcoes: string[] = [];
+  for (let i = 0; i < marks.length; i++) {
+    const end = i + 1 < marks.length ? marks[i + 1].idx : pergunta.length;
+    opcoes.push(pergunta.slice(marks[i].idx, end).trim());
+  }
+  return { stem, opcoes };
+}
+
+/**
+ * Renderiza alternativas como lista estilizada (cada uma em sua linha, com letra).
+ * Aceita opções já com marcador ("A) ...") ou sem (prefixa "A)" pelo índice). Tudo escapado.
+ */
+export function renderOpcoesList(opcoes: string[]): string {
+  if (!opcoes.length) return '';
+  const itens = opcoes.map((op, i) => {
+    const raw = op.trim();
+    const temLetra = /^[A-Ea-e][\).]/.test(raw) || /^\([A-Ea-e]\)/.test(raw);
+    const txt = temLetra ? raw : `${String.fromCharCode(65 + i)}) ${raw}`;
+    return `<li style="padding:7px 11px;margin:5px 0;background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;font-size:15px;line-height:1.45;color:#374151;">${escapeHtml(txt)}</li>`;
+  }).join('');
+  return `<ol style="margin:12px 0 0;padding:0;list-style:none;">${itens}</ol>`;
+}
+
+/**
  * Retorna o label do deck para exibição no cabeçalho do card.
  * Substitui '::' por ' · '. Se não houver deck, usa a primeira tag ou 'Card'.
  */
@@ -41,11 +77,18 @@ function deckLabel(q: Questao): string {
  *
  * Estrutura:
  * - Barra deck/tag com gradiente índigo
- * - Bloco branco com a pergunta
+ * - Bloco branco com a pergunta (enunciado separado das alternativas)
+ * - Lista estilizada de alternativas (quando presentes — MC questions)
  */
 export function buildFrontHtml(q: Questao): string {
   const label = deckLabel(q);
-  const pergunta = escapeHtml(q.pergunta);
+  const parsed = splitOpcoes(q.pergunta);
+  const opcoes = (q.metadata?.alternativas?.length ?? 0) >= 2
+    ? q.metadata!.alternativas!
+    : parsed.opcoes;
+  const stem = parsed.opcoes.length ? parsed.stem : q.pergunta;
+  const stemHtml = escapeHtml(stem);
+  const listHtml = renderOpcoesList(opcoes);
 
   return (
     `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:680px;margin:0 auto;text-align:left;">` +
@@ -53,7 +96,8 @@ export function buildFrontHtml(q: Questao): string {
     `\u{1F4D8} <span>${label}</span>` +
     `</div>` +
     `<div style="padding:18px 16px;font-size:19px;line-height:1.5;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px;">` +
-    `${pergunta}` +
+    `${stemHtml}` +
+    `${listHtml}` +
     `</div>` +
     `</div>`
   );
@@ -85,10 +129,13 @@ export function buildBackHtml(q: Questao, fonte?: string): string {
       `<div style="margin-top:8px;font-size:14px;color:#374151;"><b>Gabarito:</b> ${escapeHtml(m.gabarito)}</div>`;
   }
 
-  if (m?.alternativas?.length) {
-    const alts = m.alternativas.map(escapeHtml).join('<br>');
+  const backOpcoes = (m?.alternativas?.length ?? 0) >= 1
+    ? m!.alternativas!
+    : splitOpcoes(q.pergunta).opcoes;
+  if (backOpcoes.length) {
     respostaSection +=
-      `<div style="margin-top:8px;font-size:14px;color:#374151;"><i>Alternativas:</i><br>${alts}</div>`;
+      `<div style="margin-top:8px;font-size:14px;color:#374151;font-weight:600;">Alternativas:</div>` +
+      renderOpcoesList(backOpcoes);
   }
 
   respostaSection += `</div>`;
