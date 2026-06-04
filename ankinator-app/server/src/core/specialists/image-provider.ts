@@ -1,13 +1,12 @@
 /**
  * Interface `ImageProvider` + implementação `svg-claude` (SPEC-04).
  *
- * ANDAIME (D-08/D-09/D-10): esta fase só DEFINE a fundação. A impl
- * `SvgClaudeImageProvider` existe e é funcional (usa o runner da assinatura +
- * o prompt canônico `mnemonic-image`), mas NÃO é plugada no pipeline
- * (`generation.ts`/exporters intactos). A lógica que a invoca é da Fase 4.
+ * `SvgClaudeImageProvider` é funcional e está plugada no pipeline de enriquecimento
+ * via `enrichAll()` (estágio 4). Invocada quando `opts.imagem=true` e o card possui
+ * `q.mnemonico` (gate D-04). Usa o runner compartilhado e o prompt `mnemonic-image`.
  *
- * NÃO há provider raster nesta fase (D-09): apenas a interface fica pronta para
- * que o IMGR-01 (v2) registre um provider de raster atrás dela no futuro.
+ * NÃO há provider raster (D-09): apenas SVG. A interface está pronta para que um
+ * provider raster futuro (IMGR-01 v2) seja registrado atrás dela.
  *
  * Vive 100% no server (D-08): geração de SVG = chamada de LLM via assinatura,
  * exclusivamente no backend (o browser não tem credenciais nem FS).
