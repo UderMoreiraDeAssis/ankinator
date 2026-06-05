@@ -34,7 +34,7 @@ Phases 1–4 entregaram **código que passa em 144 testes determinísticos**, ma
 - [~] **Phase 4.1: Estabilização de Runtime (INSERTED)** - Código entregue (RT-01 erro visível + parse tolerante/fallback, RT-02 imagem, RT-05 loader langchain auto). ⏳ Falta validação de runtime humano (rodar PDF real)
 - [~] **Phase 5: Orquestrador Anki por-card** - Agente `ankinator-orchestrator` criado em `.claude/agents/` (regra de mnemônico solta, delega via Task). ⏳ Falta wire-ar o runner orquestrado (rodar `claude` da raiz + Task tool, opt-in com fallback)
 - [~] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - ENTREGUE: `card-html.ts` (layout seccionado, escape + SVG inline sanitizado, alternativas como lista ordenada), wired em CSV + AnkiConnect. ✅ Confirmado no Anki real pelo usuário
-- [~] **Phase 7: Qualidade das Questões + Agentes Especialistas** - 5 subagents reais em `.claude/agents/` ✓ + mnemônico liberalizado (gera p/ maioria) ✓ + alternativas sempre capturadas (prompt) ✓. ⏳ Falta runner orquestrado + afrouxar fidelidade p/ `[CRIADA]`
+- [~] **Phase 7: Qualidade das Questões + Agentes Especialistas** - 5 subagents reais em `.claude/agents/` ✓ + mnemônico liberalizado (gera p/ maioria) ✓ + alternativas sempre capturadas (prompt) ✓ + fidelidade `[CRIADA]` afrouxada (knob `ANKINATOR_CRIADA_FIDELITY=livre`, default OFF byte-idêntico; sessão n) ✓ + **VALIDADA AO VIVO 2026-06-05 (o): PASS** — 47 `[CRIADA]` lidas do Anki, atomicidade forte (discriminação/atomização progressiva, zero enunciado colado) e âncora verificada contra o PDF-fonte (46–47/47 ancorados; único leak *mild* não-perigoso #45 "write-ahead log"). **ADOTADO como DEFAULT ON 2026-06-05 (o)** + reforço anti-leak no prompt (mecanismos/siglas externos proibidos mesmo se corretos), escape estrito `ANKINATOR_CRIADA_FIDELITY=estrita`. ⏳ A/B p/ isolar do cardBuilder (não-bloqueante). ⏳ Falta runner orquestrado
 
 ## Phase Details
 
@@ -197,8 +197,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6 → 7
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
 | 2. Loader PDF LangChain | 4/4 | Complete (loader inativo) | 2026-06-03 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete (sem aparência rica) | 2026-06-03 |
-| 4. Mnemônicos + Imagem SVG | 4/4 | Código OK, **UAT runtime FALHOU** | 2026-06-04 |
-| 4.1 Estabilização de Runtime | — | Código OK (⏳ validar runtime) | 2026-06-04 |
-| 5. Orquestrador Anki por-card | — | Agente criado (⏳ wire runner orq.) | 2026-06-04 |
+| 4. Mnemônicos + Imagem SVG | 4/4 | ✅ Validado AO VIVO (mnem.+SVG no Anki; gate de qualidade ativo) | 2026-06-05 |
+| 4.1 Estabilização de Runtime | — | ✅ Validado AO VIVO (erro visível, parse tolerante) | 2026-06-05 |
+| 5. Orquestrador Anki por-card | — | Agente criado (⏳ wire runner orq. — opcional) | 2026-06-04 |
 | 6. Cards Educativos Ricos | — | ✅ Confirmado no Anki | 2026-06-04 |
-| 7. Qualidade das Questões + Agentes | — | Subagents + mnemônico OK (⏳ runner orq.) | 2026-06-04 |
+| 7. Qualidade das Questões + Agentes | — | Subagents + mnemônico OK + fidelidade `[CRIADA]` **VALIDADA AO VIVO (PASS, 47 criadas) + DEFAULT ON adotado** (⏳ A/B opcional; ⏳ runner orq.) | 2026-06-05 |

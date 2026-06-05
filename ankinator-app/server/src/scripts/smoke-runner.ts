@@ -69,7 +69,22 @@ if (plan.bin !== (process.env.ANKINATOR_CLAUDE_BIN?.trim() || 'claude')) {
 if (plan.env.PATH !== process.env.PATH) fail('env não deriva de process.env (PATH divergente)');
 // userMessage NÃO pode aparecer em args (vai por stdin — mitigação de injection)
 if (plan.args.includes(USER_MESSAGE_FIXO)) fail('userMessage VAZOU para args (deveria ir por stdin)');
-console.log('   ✓ args na ordem canônica exata; cwd = os.tmpdir(); env deriva de process.env; userMessage NÃO vaza para args (vai por stdin).');
+// NÃO-REGRESSÃO (geração de questões): sem `disableThinking` o env NÃO injeta MAX_THINKING_TOKENS
+// → o CliProvider continua com thinking preservado, comportamento idêntico ao pré-flag.
+if (plan.env.MAX_THINKING_TOKENS !== undefined) {
+  fail(`env.MAX_THINKING_TOKENS = ${JSON.stringify(plan.env.MAX_THINKING_TOKENS)} sem disableThinking (esperado: ausente — geração inalterada)`);
+}
+console.log('   ✓ args na ordem canônica exata; cwd = os.tmpdir(); env deriva de process.env; userMessage NÃO vaza para args (vai por stdin); MAX_THINKING_TOKENS ausente por default.');
+
+// ── GUARD do corte de thinking (bug RT): disableThinking injeta MAX_THINKING_TOKENS=0 SEM mexer nos args ──
+const planNoThink = buildSpawnArgs({ systemPrompt: SYSTEM_FIDELITY, userMessage: USER_MESSAGE_FIXO, model: 'sonnet', disableThinking: true });
+if (planNoThink.env.MAX_THINKING_TOKENS !== '0') {
+  fail(`disableThinking não injetou MAX_THINKING_TOKENS=0 (got ${JSON.stringify(planNoThink.env.MAX_THINKING_TOKENS)})`);
+}
+if (JSON.stringify(planNoThink.args) !== JSON.stringify(ARGS_ESPERADOS)) {
+  fail('disableThinking alterou os args do CLI (deveria mexer só no env — guard SPEC-01)');
+}
+console.log('   ✓ disableThinking=true: env.MAX_THINKING_TOKENS=0 e args canônicos INALTERADOS.');
 
 // ── Modo CLI-free (guard SPEC-01): `--assert-args` encerra antes do passo 3 ──
 if (process.argv.includes('--assert-args')) {

@@ -25,10 +25,25 @@ usuário a recuperar a informação.
 ## Diretrizes visuais
 
 - `viewBox` definido (ex.: `0 0 400 300`); SVG escalável, sem dimensões fixas em px no atributo raiz.
-- Poucos elementos, alto contraste, texto curto e legível em PT.
 - A imagem deve refletir FIELMENTE o mnemônico (mesmos itens, mesma ordem quando relevante);
   não introduza elementos que sugiram fatos fora do material.
 - Prefira simbologia clara (ícones simples, setas de ordem) a ilustrações complexas.
+
+## Controle de qualidade (REGRAS DURAS — o SVG é REJEITADO automaticamente se violar)
+
+A imagem é ICONOGRÁFICA, **não** uma nuvem de palavras. Um avaliador automático reprova o SVG
+(e ele é descartado) quando o texto vira lixo visual. Para passar, obedeça:
+
+1. **No máximo 6 rótulos de `<text>`.** Menos é melhor. Não escreva frases — apenas
+   **palavras-chave curtas, siglas ou números** (ex.: "ACID", "1º", "BD"). Nunca transcreva o
+   enunciado nem o mnemônico inteiro como texto.
+2. **Fonte pequena o suficiente para caber.** Para um `viewBox` de altura `H`, use `font-size`
+   ≤ `H/6` nos rótulos (o título, se houver, ≤ `H/5`). Texto que estoura a moldura é rejeitado.
+3. **Sem sobreposição.** Cada rótulo em sua própria região; espace verticalmente (um por linha).
+   Dois textos por cima um do outro = rejeição.
+4. **Todo o texto DENTRO da moldura.** Posicione `x`/`y` com folga das bordas do `viewBox`;
+   prefira `text-anchor="middle"` e centralize. Nada de texto saindo da área visível.
+5. Deixe o **desenho** (ícones, formas, setas, cores) carregar o significado; o texto só rotula.
 
 ## Saída
 

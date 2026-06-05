@@ -8,6 +8,7 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { cleanMarkdown } from './odl-parse.js';
+import { groupSections } from './section-grouping.js';
 import type { DocElement, LoadedDocument, Section } from './types.js';
 
 /**
@@ -187,7 +188,8 @@ export function normalize(docs: RawDoc[], pdfPath: string): LoadedDocument {
   const markdown = cleanMarkdown(rawMarkdown);
 
   // D-07: sections reparseando headings ATX do markdown bruto de cada Document.
-  const sections = buildSectionsFromMarkdown(docs, fallbackTitle);
+  // Mesmo pós-processador do loader node (odl-parse): agrupamento hierárquico + revisor.
+  const sections = groupSections(buildSectionsFromMarkdown(docs, fallbackTitle));
 
   // D-10: campos-topo derivados.
   // Pitfall 1 — page é 1-indexed → numPages = max(page) SEM +1.

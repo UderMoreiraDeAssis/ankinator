@@ -29,18 +29,41 @@ export interface Job {
   result?: GenerateResult;
   questoes: Questao[];
   error?: string;
+  /** Metadados da geração incremental (deck base), quando houver deck. */
+  incremental?: IncrementalInfo;
   /** Assinantes SSE. */
   subscribers: Set<(event: JobEvent) => void>;
+}
+
+/** Resultado da geração incremental contra um deck base. */
+export interface IncrementalInfo {
+  /** true = o PDF (seções selecionadas) já está totalmente coberto pelo deck. */
+  deckCompleto: boolean;
+  /** Questões NOVAS (após anti-duplicata) que entraram no resultado. */
+  novas: number;
+  /** Questões geradas descartadas por serem duplicatas do deck base. */
+  duplicadasRemovidas: number;
+  /** Total de questões já existentes lidas do deck base. */
+  existentes: number;
 }
 
 export type JobEvent =
   | { type: 'progress'; data: ChunkProgress }
   | { type: 'enrich-progress'; data: EnrichProgress }
-  | { type: 'done'; data: { total: number; erros: GenerateResult['erros'] } }
+  | { type: 'done'; data: { total: number; erros: GenerateResult['erros']; incremental?: IncrementalInfo } }
   | { type: 'error'; data: { message: string } };
+
+/** Arquivo de deck base enviado (geração incremental) — .txt/.csv/.apkg no disco. */
+export interface DeckFileEntry {
+  id: string;
+  fileName: string;
+  filePath: string;
+  createdAt: number;
+}
 
 const docs = new Map<string, DocEntry>();
 const jobs = new Map<string, Job>();
+const deckFiles = new Map<string, DeckFileEntry>();
 
 export const documentStore = {
   create(fileName: string, pdfPath: string): DocEntry {
@@ -56,6 +79,17 @@ export const documentStore = {
     if (!entry) return undefined;
     Object.assign(entry, patch);
     return entry;
+  },
+};
+
+export const deckFileStore = {
+  create(fileName: string, filePath: string): DeckFileEntry {
+    const entry: DeckFileEntry = { id: crypto.randomUUID(), fileName, filePath, createdAt: Date.now() };
+    deckFiles.set(entry.id, entry);
+    return entry;
+  },
+  get(id: string): DeckFileEntry | undefined {
+    return deckFiles.get(id);
   },
 };
 

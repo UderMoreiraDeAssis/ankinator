@@ -128,3 +128,10 @@ export const IconImage = ({ className }: IconProps) => (
     <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
   </Svg>
 );
+
+export const IconEye = ({ className }: IconProps) => (
+  <Svg className={className}>
+    <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+    <circle cx="12" cy="12" r="3" />
+  </Svg>
+);

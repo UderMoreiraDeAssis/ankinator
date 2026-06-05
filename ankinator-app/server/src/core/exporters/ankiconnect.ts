@@ -54,6 +54,100 @@ export async function listDecks(url = ANKICONNECT_URL): Promise<string[]> {
   return invoke<string[]>('deckNames', {}, url);
 }
 
+interface NoteInfo {
+  noteId: number;
+  fields: Record<string, { value: string; order: number }>;
+  tags?: string[];
+}
+
+/**
+ * Lê as PERGUNTAS (primeiro campo de cada nota, normalmente "Front") de um deck
+ * aberto no Anki — base da geração incremental (deck existente). Inclui subdecks
+ * (`deck:"X"` casa X e filhos). Retorna o HTML cru do 1º campo; a limpeza/normalização
+ * fica a cargo do chamador (existing-deck.ts) para não acoplar dedup ao exportador.
+ */
+export async function notesInfoDoDeck(deck: string, url = ANKICONNECT_URL): Promise<string[]> {
+  const query = `deck:"${deck.replace(/"/g, '\\"')}"`;
+  const ids = await invoke<number[]>('findNotes', { query }, url);
+  if (!ids.length) return [];
+  const notas = await invoke<NoteInfo[]>('notesInfo', { notes: ids }, url);
+  return notas
+    .map((n) => {
+      const campos = Object.values(n.fields ?? {});
+      if (!campos.length) return '';
+      // 1º campo = ordem 0 (a "frente"); fallback ao primeiro disponível.
+      const front = campos.find((f) => f.order === 0) ?? campos[0];
+      return front?.value ?? '';
+    })
+    .filter(Boolean);
+}
+
+// ── Reorganizador de decks (Parte B) — leitura rica + escrita ──────────────────
+// Operações usadas pelo deck-organizer.ts. Todas via o `invoke` compartilhado.
+
+/** Nota lida de um deck para reorganização: id + front (1º campo, HTML cru) + tags. */
+export interface DeckNote {
+  noteId: number;
+  front: string;
+  tags: string[];
+}
+
+const deckQuery = (deck: string): string => `deck:"${deck.replace(/"/g, '\\"')}"`;
+
+/**
+ * Lê as notas (id + front + tags) de um deck (inclui subdecks via `deck:"X"`).
+ * Base do reorganizador (dedup + tags). A limpeza do HTML do front fica com o
+ * chamador (deck-organizer) — não acopla normalização ao exportador.
+ */
+export async function notesDoDeck(deck: string, url = ANKICONNECT_URL): Promise<DeckNote[]> {
+  const ids = await invoke<number[]>('findNotes', { query: deckQuery(deck) }, url);
+  if (!ids.length) return [];
+  const notas = await invoke<NoteInfo[]>('notesInfo', { notes: ids }, url);
+  return notas.map((n) => {
+    const campos = Object.values(n.fields ?? {});
+    const front = (campos.find((f) => f.order === 0) ?? campos[0])?.value ?? '';
+    return { noteId: n.noteId, front, tags: n.tags ?? [] };
+  });
+}
+
+/** Ids dos CARDS de um deck (INCLUI subdecks) — usado no check de "deck vazio". */
+export async function cardIdsDoDeck(deck: string, url = ANKICONNECT_URL): Promise<number[]> {
+  return invoke<number[]>('findCards', { query: deckQuery(deck) }, url);
+}
+
+/**
+ * Ids dos cards DIRETOS de um deck (EXCLUI subdecks) — query `deck:"X" -deck:"X::*"`.
+ * Usado no MERGE para mover SÓ os cards do próprio deck, preservando a sub-hierarquia
+ * (evita achatar/apagar subdecks silenciosamente — achado da revisão de segurança).
+ */
+export async function cardIdsDiretosDoDeck(deck: string, url = ANKICONNECT_URL): Promise<number[]> {
+  const esc = deck.replace(/"/g, '\\"');
+  return invoke<number[]>('findCards', { query: `deck:"${esc}" -deck:"${esc}::*"` }, url);
+}
+
+/** Move cards para um deck-alvo. Cria o alvo antes (changeDeck exige deck existente). */
+export async function moverCards(cards: number[], deck: string, url = ANKICONNECT_URL): Promise<void> {
+  if (!cards.length) return;
+  await invoke('createDeck', { deck }, url);
+  await invoke('changeDeck', { cards, deck }, url);
+}
+
+/**
+ * Apaga decks. SEGURANÇA: o chamador só deve passar decks JÁ VAZIOS (cards movidos).
+ * `cardsToo=true` é exigido pelo AnkiConnect ≥ moderno; como os decks estão vazios,
+ * nada é perdido. NUNCA chame com um deck que ainda tem cards a preservar.
+ */
+export async function apagarDecks(decks: string[], url = ANKICONNECT_URL, cardsToo = true): Promise<void> {
+  if (!decks.length) return;
+  await invoke('deleteDecks', { decks, cardsToo }, url);
+}
+
+/** Adiciona tags a um conjunto de notas (a API espera as tags separadas por espaço). */
+export async function adicionarTags(notes: number[], tags: string[], url = ANKICONNECT_URL): Promise<void> {
+  if (!notes.length || !tags.length) return;
+  await invoke('addTags', { notes, tags: tags.join(' ') }, url);
+}
+
 export interface PushOptions {
   deck: string;
   fonte?: string;

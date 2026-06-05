@@ -59,15 +59,17 @@ Gerar flashcards que **maximizam a retenção** a partir de um texto qualquer de
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Loader LangChain como **sidecar Python opt-in** (reusa padrão `ODL_PYTHON`); Node segue default | Pacote é Python-only (Java 11+); substituir/forçar Python regrediria setup | — Pending |
-| Especialistas em **fonte única `.md`** → Skill + estágio no app (híbrido) | `claude -p` headless (`--strict-mcp-config`, system-prompt podado) não garante auto-discovery de subagent; evita duplicação tipo-`Questao` | — Pending |
-| Imagem de mnemônico = **SVG gerado pelo Claude** + interface `ImageProvider` | Claude não gera raster; SVG é a única saída visual nativa sem API/billing | — Pending |
-| Cadeia de especialistas = **modo "educativo" opcional** (toggles + defaults), fase `enrichAll()` pós-`generateAll()` | Rodar tudo sempre estoura quota/lentidão; orquestrador escolhe por-card | — Pending |
-| **5 especialistas**: anki-orchestrator, deck-classifier, card-builder, mnemonic, mnemonic-image | Cobre o pedido do usuário com separação de responsabilidades | — Pending |
+| Loader LangChain como **sidecar Python opt-in** (reusa padrão `ODL_PYTHON`); Node segue default | Pacote é Python-only (Java 11+); substituir/forçar Python regrediria setup | ✓ Entregue (Phase 02; loader ativável, fallback Node default; ativação ao vivo = RT-05, opcional) |
+| Especialistas em **fonte única `.md`** → Skill + estágio no app (híbrido) | `claude -p` headless (`--strict-mcp-config`, system-prompt podado) não garante auto-discovery de subagent; evita duplicação tipo-`Questao` | ✓ Entregue (Phase 01; 5 `.md` canônicos + Skills espelho) |
+| Imagem de mnemônico = **SVG gerado pelo Claude** + interface `ImageProvider` | Claude não gera raster; SVG é a única saída visual nativa sem API/billing | ✓ Validado AO VIVO (Phase 04; SVGs no Anki + gate de qualidade barra lixo) |
+| Cadeia de especialistas = **modo "educativo" opcional** (toggles + defaults), fase `enrichAll()` pós-`generateAll()` | Rodar tudo sempre estoura quota/lentidão; orquestrador escolhe por-card | ✓ Validado AO VIVO (Phase 03/04; pipeline 58 cards no Anki, 0 erros) |
+| **5 especialistas**: anki-orchestrator, deck-classifier, card-builder, mnemonic, mnemonic-image | Cobre o pedido do usuário com separação de responsabilidades | ✓ Entregue como `.claude/agents/` (wire do orquestrador em runtime = Phase 5, pendente/opcional) |
+| **[DEC-m 2026-06-05] Manter o env knob `ANKINATOR_IMAGE_SKIP_TECNICAS`** (não enxugar) | Consistência com ~10 env-knobs de custo (Karpathy #3 "match existing style" > #2, pois remover criaria assimetria) + reversibilidade assimétrica (manter-e-errar é invisível: env vazio = idêntico; remover-e-errar gera re-trabalho) + o usuário tuna knobs após medir | ✓ Concluída (sessão m; nenhuma mudança de código — a impl. já é a recomendada) |
+| **[DEC-n 2026-06-05] Qualidade `[CRIADA]`: nível Moderado + rollout knob opt-in** | (1) Nível **Moderado** (afrouxa `[CRIADA]` p/ reformular/atomizar/discriminar/aplicar por inferência DIRETA; `[EXTRAÍDA]` estrita; âncora dura p/ ambas: zero conhecimento externo) sobre Conservador — alinhado ao Destino #1. (2) Rollout **knob opt-in `ANKINATOR_CRIADA_FIDELITY` default-OFF** (byte-idêntico, reversível p/ o risco crítico) sobre novo-default-direto. Rejeitada "2 chamadas separadas" (dobraria custo). Desenho exposto antes de codar (lição DEC-m) | ⏳ Entregue em código (sessão n; 220 testes + guards verdes); pendente medir AO VIVO (melhora sem alucinar) antes de virar default |
 
 ## Evolution
 
 **After each phase transition:** atualizar Validated/Active/Out of Scope e a tabela de decisões (✓ Good / ⚠️ Revisit).
 
 ---
-*Last updated: 2026-06-03 after Phase 03 complete (classificador de deck + card educativo + modo educativo na UI via enrichAll gated)*
+*Last updated: 2026-06-05 (sessão n) — **Key Decisions** formalizadas até DEC-n (esta tabela é o lar canônico das decisões). As seções **Validated/Active/Out of Scope** acima refletem o BOOTSTRAP da milestone (2026-06-03); o status corrente das fases vive em `.planning/ROADMAP.md` + `.planning/STATE.md`, e o diário de bordo por-sessão em `.planning/TAREFAS.md` (topo) + `.planning/STATE.md` (Accumulated Context → Decisions, espelha esta tabela).*

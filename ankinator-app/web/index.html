@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ankinator — PDF → Flashcards Anki</title>
+    <script>
+      // Anti-flash (FOUC): aplica o tema escolhido ANTES do render do React.
+      // Preferência salva > preferência do SO. O ThemeToggle persiste em localStorage.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          var dark = t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

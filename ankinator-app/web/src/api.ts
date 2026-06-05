@@ -1,11 +1,17 @@
 import type {
   AnkiStatus,
+  DeckPreview,
   ExtractResult,
   GenerateOptions,
   JobState,
+  OrganizeApplyResult,
+  OrganizePlan,
   PushResult,
   Questao,
 } from './types';
+
+/** Descrição do deck base enviada ao servidor (geração incremental). */
+export type DeckRef = { ankiDeck?: string; deckFileId?: string };
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));
@@ -37,13 +43,32 @@ export const api = {
   async generate(
     docId: string,
     selectedSectionIds: string[],
-    options: GenerateOptions
+    options: GenerateOptions,
+    deck?: DeckRef
   ): Promise<{ jobId: string; totalChunks: number }> {
     return jsonOrThrow(
       await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ docId, selectedSectionIds, options }),
+        body: JSON.stringify({ docId, selectedSectionIds, options, ...deck }),
+      })
+    );
+  },
+
+  /** Upload de um deck base (.txt/.csv/.apkg) para incrementar. */
+  async uploadDeck(file: File): Promise<{ deckFileId: string; fileName: string }> {
+    const form = new FormData();
+    form.append('deck', file);
+    return jsonOrThrow(await fetch('/api/deck/upload', { method: 'POST', body: form }));
+  },
+
+  /** Prévia do deck base: quantas questões já existem (+ amostra). */
+  async deckPreview(deck: DeckRef): Promise<DeckPreview> {
+    return jsonOrThrow(
+      await fetch('/api/deck/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deck),
       })
     );
   },
@@ -74,6 +99,37 @@ export const api = {
   async ankiDecks(): Promise<string[]> {
     const data = await jsonOrThrow<{ decks: string[] }>(await fetch('/api/anki/decks'));
     return data.decks;
+  },
+
+  /** Reorganizador — FASE 1 (prévia, só leitura): monta o plano (merge + repetidos). */
+  async organizePreview(body: {
+    decks: string[];
+    merge?: { target: string };
+    dedup?: boolean;
+    dedupThreshold?: number;
+  }): Promise<OrganizePlan> {
+    return jsonOrThrow(
+      await fetch('/api/deck/organize/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    );
+  },
+
+  /** Reorganizador — FASE 2 (aplicar): executa só o aprovado. Merge é destrutivo. */
+  async organizeApply(body: {
+    plan: OrganizePlan;
+    applyMerge?: boolean;
+    applyDedup?: boolean;
+  }): Promise<OrganizeApplyResult> {
+    return jsonOrThrow(
+      await fetch('/api/deck/organize/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    );
   },
 
   async pushToAnki(

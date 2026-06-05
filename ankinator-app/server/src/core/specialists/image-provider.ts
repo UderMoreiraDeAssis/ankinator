@@ -20,8 +20,13 @@ export interface ImageProvider {
   /**
    * Gera uma imagem (SVG) que reforça visualmente `mnemonic`, usando `context`
    * (o conteúdo do card) para manter fidelidade ao material.
+   *
+   * @param feedback  Motivos pelos quais o SVG ANTERIOR foi reprovado no controle de
+   *                  qualidade (svg-quality). Quando presente, são injetados no prompt
+   *                  para a re-tentativa corrigir os defeitos (texto sobreposto, fonte
+   *                  estourando, etc.). Ausente/vazio na primeira tentativa.
    */
-  generate(mnemonic: string, context: string): Promise<{ svg: string }>;
+  generate(mnemonic: string, context: string, feedback?: string[]): Promise<{ svg: string }>;
 }
 
 /**
@@ -32,12 +37,22 @@ export interface ImageProvider {
 export class SvgClaudeImageProvider implements ImageProvider {
   readonly nome = 'svg-claude';
 
-  async generate(mnemonic: string, context: string): Promise<{ svg: string }> {
+  async generate(mnemonic: string, context: string, feedback?: string[]): Promise<{ svg: string }> {
     const systemPrompt = loadPrompt('mnemonic-image');
     // Usa AMBOS os parâmetros (Pitfall 5: sem parâmetro não usado) — o mnemônico
     // é o quê ilustrar, o contexto mantém a imagem fiel ao material do card.
-    const userMessage = `Mnemônico:\n${mnemonic}\n\nContexto do card:\n${context}`;
-    const svg = await runClaudeCli({ systemPrompt, userMessage });
+    let userMessage = `Mnemônico:\n${mnemonic}\n\nContexto do card:\n${context}`;
+    // Re-tentativa guiada: o SVG anterior reprovou no controle de qualidade. Injeta os
+    // motivos para o modelo corrigir os defeitos concretos (sobreposição/fonte/overflow).
+    if (feedback && feedback.length > 0) {
+      userMessage +=
+        `\n\nATENÇÃO: o SVG que você gerou antes foi REPROVADO no controle de qualidade ` +
+        `pelos motivos abaixo. Gere um SVG NOVO que corrija TODOS eles:\n- ${feedback.join('\n- ')}`;
+    }
+    // disableThinking: gerar SVG é tarefa criativa aberta que dispara extended thinking —
+    // o modelo ruminava >180s e estourava o timeout (bug RT 2026-06-04). O SVG é saída
+    // estruturada e não precisa de thinking; com ele off a chamada completa em ~27s.
+    const svg = await runClaudeCli({ systemPrompt, userMessage, disableThinking: true, stage: 'imagem' });
     // Retorna o SVG cru. A sanitização acontece no estágio imagem do enrichAll (separação de
     // responsabilidades — o provider apenas gera; o estágio decide o que fazer com o resultado).
     return { svg };

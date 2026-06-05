@@ -5,6 +5,10 @@ export interface SectionInfo {
   pageStart: number;
   pageEnd: number;
   charCount: number;
+  /** Markdown completo do bloco — usado na prévia por-bloco da tela "Estrutura". */
+  markdown: string;
+  /** Aviso do revisor determinístico (bloco suspeito de fragmentação). Ausente = OK. */
+  aviso?: string;
 }
 
 export interface ExtractResult {
@@ -37,6 +41,7 @@ export interface Questao {
   deck?: string;          // hierarquia Anki "Matéria::Assunto::Subtópico"
   tags?: string[];        // banca, ano, nível, tema
   mnemonico?: string;     // texto do mnemônico
+  mnemonicoTecnica?: string; // técnica do mnemônico (acrônimo|história|loci|rima) — gate da imagem seletiva
   mnemonicoSvg?: string;  // SVG autocontido do mnemônico
 }
 
@@ -71,6 +76,23 @@ export interface EnrichProgress {
   erro?: string;
 }
 
+/** Deck base (opcional) para geração incremental: deck do Anki ao vivo OU arquivo enviado. */
+export type DeckSourceInput = { ankiDeck: string } | { deckFileId: string; fileName: string };
+
+/** Prévia do deck base — quantas questões já existem (+ amostra). */
+export interface DeckPreview {
+  count: number;
+  sample: string[];
+}
+
+/** Resultado da geração incremental contra o deck base. Espelha o server. */
+export interface IncrementalInfo {
+  deckCompleto: boolean;
+  novas: number;
+  duplicadasRemovidas: number;
+  existentes: number;
+}
+
 export interface JobState {
   id: string;
   status: 'running' | 'done' | 'error';
@@ -78,6 +100,7 @@ export interface JobState {
   progress: ChunkProgress[];
   questoes: Questao[];
   erros: { chunkIndex: number; mensagem: string }[];
+  incremental?: IncrementalInfo;
   error?: string;
 }
 
@@ -92,4 +115,41 @@ export interface PushResult {
   enviadas: number;
   ignoradas: number;
   total: number;
+}
+
+// ── Reorganizador de decks (Parte B, Fatia 1) — espelha o server (deck-organizer.ts) ──
+
+export interface OrganizeMergePlan {
+  target: string;
+  /** Origens (≠ target) e quantos cards DIRETOS seriam movidos de cada uma. */
+  moves: { deck: string; cardCount: number }[];
+  /** Origens que ficariam vazias e seriam apagadas. */
+  decksToDelete: string[];
+  /** Origens PRESERVADAS por terem subdecks com cards (não apagadas). */
+  preservedWithSubdecks: string[];
+  totalMoved: number;
+}
+
+export interface OrganizeDupGroup {
+  keepNoteId: number;
+  dupNoteIds: number[];
+  sampleFront: string;
+  size: number;
+}
+
+export interface OrganizeDedupPlan {
+  groups: OrganizeDupGroup[];
+  totalDuplicates: number;
+  tag: string;
+}
+
+export interface OrganizePlan {
+  decks: string[];
+  merge?: OrganizeMergePlan;
+  dedup?: OrganizeDedupPlan;
+}
+
+export interface OrganizeApplyResult {
+  merge?: { movedCards: number; deletedDecks: string[]; erros: string[] };
+  dedup?: { taggedNotes: number; tag: string; erros: string[] };
 }

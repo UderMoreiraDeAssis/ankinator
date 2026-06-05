@@ -6,8 +6,10 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { DocElement, LoadedDocument, Section } from './types.js';
+import { groupSections } from './section-grouping.js';
+import { log } from '../logger.js';
 
-interface RawNode {
+export interface RawNode {
   type?: string;
   id?: number;
   'page number'?: number;
@@ -16,6 +18,8 @@ interface RawNode {
   source?: string;
   rows?: RawTableRow[];
   kids?: RawNode[];
+  /** Itens de um nó `list` — o OpenDataLoader os guarda AQUI, não em `content`/`kids`. */
+  'list items'?: RawNode[];
 }
 interface RawTableRow {
   cells?: { content?: string; kids?: RawNode[] }[];
@@ -47,12 +51,44 @@ function renderTable(node: RawNode): string | null {
   return hasText ? lines.join('\n') : null;
 }
 
+/**
+ * Renderiza um nó `list` do OpenDataLoader em markdown.
+ *
+ * Bug histórico (RT-fidelidade): a lista guarda os itens no campo `"list items"`
+ * (cada item com seu `content`), NÃO em `content`/`kids`. O `flatten` antigo só
+ * lia `content`/`kids` → descartava 100% das listas (alternativas A-E de questões,
+ * róis taxativos, bullets) dos chunks vistos pelo modelo, fazendo-o relatar que
+ * "as alternativas não estavam no trecho".
+ */
+function renderList(node: RawNode): string | null {
+  const items = node['list items'] ?? [];
+  const parts: string[] = [];
+  for (const item of items) {
+    const txt = (item.content ?? '').trim();
+    if (txt) parts.push(txt);
+    // conteúdo aninhado (sublistas/parágrafos dentro do item)
+    if (item.kids?.length) {
+      const sub: DocElement[] = [];
+      flatten(item.kids, sub);
+      const subMd = sub.map(elementToMarkdown).join('\n').trim();
+      if (subMd) parts.push(subMd);
+    }
+  }
+  const out = parts.join('\n').trim();
+  return out || null;
+}
+
 function flatten(nodes: RawNode[], acc: DocElement[]): void {
   for (const n of nodes) {
     const page = n['page number'] ?? acc.at(-1)?.page ?? 1;
     if (n.type === 'table') {
       const md = renderTable(n);
       if (md) acc.push({ type: 'table', id: n.id, page, content: md });
+      continue;
+    }
+    if (n.type === 'list') {
+      const md = renderList(n);
+      if (md) acc.push({ type: 'list', id: n.id, page, content: md });
       continue;
     }
     if (n.type && TEXT_TYPES.has(n.type) && n.content) {
@@ -66,6 +102,13 @@ function flatten(nodes: RawNode[], acc: DocElement[]): void {
     }
     if (n.kids && n.kids.length) flatten(n.kids, acc);
   }
+}
+
+/** Wrapper puro p/ teste: achata a árvore JSON do OpenDataLoader em DocElement[]. */
+export function flattenNodes(nodes: RawNode[]): DocElement[] {
+  const acc: DocElement[] = [];
+  flatten(nodes, acc);
+  return acc;
 }
 
 /**
@@ -160,8 +203,24 @@ export async function parseOdlOutput(outDir: string, pdfPath: string): Promise<L
   const elements: DocElement[] = [];
   flatten(json.kids ?? [], elements);
 
+  log.info('odl-parse', `loader=node: ${elements.length} elemento(s) achatado(s)`, {
+    loader: 'node',
+    elementos: elements.length,
+    numPages: (json['number of pages'] as number) ?? 1,
+  });
+
   const fallbackTitle = (json.title as string) || base;
-  const sections = buildSections(elements, fallbackTitle);
+  // Agrupamento hierárquico + revisor determinístico: sub-headings profundos (rótulos
+  // de lista mal-detectados como heading) dobram no bloco pai; órfãos minúsculos fundem.
+  // Logamos ANTES e DEPOIS de groupSections para o usuário ver o reagrupamento acontecer.
+  const secoesBrutas = buildSections(elements, fallbackTitle);
+  log.debug('odl-parse', `buildSections: ${secoesBrutas.length} bloco(s) bruto(s)`, { blocos: secoesBrutas.length });
+  const sections = groupSections(secoesBrutas);
+  const sinalizadas = sections.filter((s) => s.aviso).length;
+  log.info('odl-parse',
+    `buildSections: ${secoesBrutas.length} → groupSections: ${sections.length} bloco(s) (${sinalizadas} sinalizado(s))`,
+    { antes: secoesBrutas.length, depois: sections.length, sinalizados: sinalizadas }
+  );
 
   return {
     fileName: (json['file name'] as string) ?? path.basename(pdfPath),

@@ -11,6 +11,7 @@
  */
 import crypto from 'node:crypto';
 import type { GenerateOptions, Questao, SemanticChunk } from './types.js';
+import { log, timer } from '../logger.js';
 
 export interface ChunkProgress {
   index: number;
@@ -81,17 +82,38 @@ export async function generateAll(
   const questoes: Questao[] = [];
   const erros: GenerateResult['erros'] = [];
 
+  log.info('generateAll', `gerando questões em ${chunks.length} bloco(s) via provedor "${provider.nome}"`, {
+    blocos: chunks.length,
+    model: opts.model ?? '(default do provedor)',
+  });
+  const fimTotal = timer('generateAll', 'geração de todos os blocos');
+
   for (const chunk of chunks) {
+    log.debug('generateAll', `bloco ${chunk.index + 1}/${chunks.length} START`, {
+      index: chunk.index,
+      sectionTitles: chunk.sectionTitles,
+      charCount: chunk.charCount,
+      temOverlap: !!chunk.contextoAnterior,
+      model: opts.model ?? '(default)',
+    });
+    const fimBloco = timer('generateAll', `bloco ${chunk.index + 1}/${chunks.length}`);
     try {
       const qs = await provider.generateForChunk(chunk, opts);
       questoes.push(...qs);
+      log.info('generateAll', `bloco ${chunk.index + 1}/${chunks.length} END`, { questoes: qs.length });
+      fimBloco({ questoes: qs.length });
       onProgress?.({ index: chunk.index, total: chunks.length, sectionTitles: chunk.sectionTitles, questoesNoBloco: qs.length });
     } catch (err) {
       const mensagem = err instanceof Error ? err.message : String(err);
       erros.push({ chunkIndex: chunk.index, mensagem });
+      log.error('generateAll', `bloco ${chunk.index + 1}/${chunks.length} FALHOU`, { erro: mensagem });
+      fimBloco({ erro: true });
       onProgress?.({ index: chunk.index, total: chunks.length, sectionTitles: chunk.sectionTitles, questoesNoBloco: 0, erro: mensagem });
     }
   }
+
+  log.info('generateAll', 'geração concluída', { questoes: questoes.length, blocos: chunks.length, erros: erros.length });
+  fimTotal({ questoes: questoes.length, erros: erros.length });
 
   return { questoes, erros };
 }

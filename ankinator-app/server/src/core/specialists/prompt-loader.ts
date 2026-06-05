@@ -31,8 +31,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Allowlist dos 5 nomes canônicos (D-07). Bloqueia path traversal. */
-const NOMES = ['anki-orchestrator', 'deck-classifier', 'card-builder', 'mnemonic', 'mnemonic-image'] as const;
+/** Allowlist dos nomes canônicos (D-07). Bloqueia path traversal. */
+const NOMES = ['anki-orchestrator', 'deck-classifier', 'card-builder', 'mnemonic', 'mnemonic-image', 'learning-scientist'] as const;
 type NomeCanonico = (typeof NOMES)[number];
 
 const cache = new Map<string, string>();

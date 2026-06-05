@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from './api';
-import type { ChunkProgress, EnrichProgress, ExtractResult, GenerateOptions, Questao } from './types';
+import { api, type DeckRef } from './api';
+import type { ChunkProgress, EnrichProgress, ExtractResult, GenerateOptions, IncrementalInfo, Questao } from './types';
 import { Stepper, type Step } from './components/Stepper';
 import { FileDrop } from './components/FileDrop';
 import { StructurePanel } from './components/StructurePanel';
 import { ProgressPanel } from './components/ProgressPanel';
 import { CardTable } from './components/CardTable';
 import { ExportBar } from './components/ExportBar';
-import { IconRefresh } from './components/icons';
+import { ThemeToggle } from './components/ThemeToggle';
+import { DeckOrganizer } from './components/DeckOrganizer';
+import { IconLayers, IconRefresh } from './components/icons';
 
 export function App() {
   const [step, setStep] = useState<Step>('upload');
@@ -15,6 +17,7 @@ export function App() {
   const [provider, setProvider] = useState<'cli' | 'api'>('cli');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showOrganizer, setShowOrganizer] = useState(false);
 
   const [extract, setExtract] = useState<ExtractResult | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -28,6 +31,9 @@ export function App() {
     imagem: false,       // Phase 4: default OFF (D-12)
   });
   const [tagsInput, setTagsInput] = useState('concurso');
+
+  const [deckSource, setDeckSource] = useState<DeckRef | null>(null);
+  const [incremental, setIncremental] = useState<IncrementalInfo | null>(null);
 
   const [progress, setProgress] = useState<ChunkProgress[]>([]);
   const [totalChunks, setTotalChunks] = useState(0);
@@ -75,8 +81,9 @@ export function App() {
     setCards([]);
     setDropped(new Set());
     setEnrichProgress(null);
+    setIncremental(null);
     try {
-      const { jobId, totalChunks } = await api.generate(extract.docId, [...selected], { ...options, tags });
+      const { jobId, totalChunks } = await api.generate(extract.docId, [...selected], { ...options, tags }, deckSource ?? undefined);
       setTotalChunks(totalChunks);
       setStep('generating');
 
@@ -94,6 +101,7 @@ export function App() {
         es.close();
         const job = await api.job(jobId);
         setCards(job.questoes);
+        setIncremental(job.incremental ?? null);
         setStep('review');
         setBusy(false);
       });
@@ -120,6 +128,8 @@ export function App() {
     setCards([]);
     setDropped(new Set());
     setEnrichProgress(null);   // WR-02: clear stale enrich progress on "Novo PDF"
+    setDeckSource(null);
+    setIncremental(null);
     setError(null);
   };
 
@@ -127,24 +137,35 @@ export function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-4xl flex-col px-4 py-6 sm:py-8">
-      <header className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <header className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-slate-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-2xl">🎴</span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-2xl dark:bg-brand-500/20">🎴</span>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Ankinator</h1>
-            <p className="text-sm text-slate-500">PDF de estudo → flashcards do Anki</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Ankinator</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">PDF de estudo → flashcards do Anki</p>
           </div>
         </div>
-        <Stepper current={step} />
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Stepper current={step} />
+          <button
+            onClick={() => setShowOrganizer(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800/60"
+            title="Reorganizar decks do Anki (unir, achar repetidos)"
+          >
+            <IconLayers className="h-4 w-4 text-teal-500" />
+            <span className="hidden sm:inline">Organizar decks</span>
+          </button>
+          <ThemeToggle />
+        </div>
       </header>
 
       {error && (
-        <div className="mb-6 flex items-start justify-between gap-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+        <div className="mb-6 flex items-start justify-between gap-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-900/30 dark:text-rose-300" role="alert">
           <span className="min-w-0 flex-1 break-words">{error}</span>
           <button
             onClick={() => setError(null)}
             aria-label="Fechar aviso"
-            className="-m-1 shrink-0 rounded p-1 font-medium text-rose-500 transition hover:bg-rose-100 hover:text-rose-700"
+            className="-m-1 shrink-0 rounded p-1 font-medium text-rose-500 transition hover:bg-rose-100 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
           >
             ✕
           </button>
@@ -170,6 +191,7 @@ export function App() {
             setOptions={setOptions}
             tagsInput={tagsInput}
             setTagsInput={setTagsInput}
+            setDeckSource={setDeckSource}
             onGenerate={handleGenerate}
             canGenerate={canGenerate}
             provider={provider}
@@ -185,20 +207,36 @@ export function App() {
           <>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900">{cards.length} questões geradas</h2>
-                <p className="text-sm text-slate-500">Revise e edite antes de exportar.</p>
-                <p className="mt-0.5 truncate text-xs font-medium text-slate-400" title={extract.fileName}>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{cards.length} questões geradas</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Revise e edite antes de exportar.</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-slate-400 dark:text-slate-500" title={extract.fileName}>
                   {extract.fileName}
                 </p>
               </div>
               <button
                 onClick={reset}
-                className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 sm:self-auto"
+                className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800/60 sm:self-auto"
               >
                 <IconRefresh className="h-4 w-4" />
                 Novo PDF
               </button>
             </div>
+            {incremental?.deckCompleto && (
+              <div className="mb-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200" role="status">
+                <span className="text-lg leading-none">✓</span>
+                <span>
+                  <strong>Deck já completo.</strong> Nenhuma questão nova a partir do PDF que ainda não esteja coberta
+                  pelo deck base ({incremental.existentes} questão(ões) existente(s)).
+                </span>
+              </div>
+            )}
+            {incremental && !incremental.deckCompleto && (
+              <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-200" role="status">
+                Incremental: <strong>{incremental.novas}</strong> nova(s)
+                {incremental.duplicadasRemovidas > 0 && ` · ${incremental.duplicadasRemovidas} duplicada(s) descartada(s)`}
+                {` · ${incremental.existentes} já no deck`}
+              </div>
+            )}
             <CardTable
               cards={cards}
               dropped={dropped}
@@ -216,9 +254,11 @@ export function App() {
         )}
       </main>
 
-      <footer className="mt-10 text-center text-xs text-slate-400">
+      <footer className="mt-10 text-center text-xs text-slate-400 dark:text-slate-500">
         Ankinator · extração com OpenDataLoader · geração com Claude
       </footer>
+
+      {showOrganizer && <DeckOrganizer onClose={() => setShowOrganizer(false)} />}
     </div>
   );
 }

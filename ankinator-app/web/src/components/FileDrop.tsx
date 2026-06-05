@@ -46,8 +46,8 @@ export function FileDrop({ onFile, busy }: { onFile: (file: File) => void; busy:
       className={[
         'mx-auto flex w-full max-w-xl cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-6 py-10 text-center shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:px-8 sm:py-16',
         dragging
-          ? 'scale-[1.01] border-brand-500 bg-brand-50'
-          : 'border-slate-300 bg-white hover:border-brand-400 hover:bg-slate-50',
+          ? 'scale-[1.01] border-brand-500 bg-brand-50 dark:bg-brand-500/15'
+          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-brand-400 hover:bg-slate-50 dark:hover:bg-slate-800/60',
         busy && 'pointer-events-none opacity-70',
       ]
         .filter(Boolean)
@@ -60,13 +60,13 @@ export function FileDrop({ onFile, busy }: { onFile: (file: File) => void; busy:
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
-      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-500">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/15 text-brand-500">
         {busy ? <IconSpinner className="h-8 w-8 animate-spin" /> : <IconFileUp className="h-8 w-8" />}
       </span>
-      <div className="text-lg font-semibold text-slate-800 sm:text-xl">
+      <div className="text-lg font-semibold text-slate-800 dark:text-slate-100 sm:text-xl">
         {busy ? 'Processando…' : dragging ? 'Solte o PDF para enviar' : 'Arraste um PDF aqui ou clique para selecionar'}
       </div>
-      <p className="max-w-md text-sm text-slate-500">
+      <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">
         Apostilas, aulas e materiais de concurso. O conteúdo é estruturado com o OpenDataLoader e
         transformado em flashcards do Anki.
       </p>

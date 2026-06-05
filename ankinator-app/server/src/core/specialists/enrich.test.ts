@@ -125,6 +125,83 @@ describe('card-builder extraida verso', () => {
   });
 });
 
+// ── card-builder EM PARALELO (pool + ordem) ──────────────────────────────────
+
+describe('enrichAll card-builder paralelo', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('roda em paralelo (pool) com concorrência limitada e preserva a ordem', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    vi.mocked(runClaudeCli).mockImplementation(async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 10));
+      inFlight--;
+      return '{"cards":[{"pergunta":"PX","resposta":"RX"}]}';
+    });
+
+    const cards = Array.from(
+      { length: 6 },
+      (_, i) => ({ id: String(i), tipo: 'extraida', pergunta: `P${i}`, resposta: `R${i}` }) as import('../types.js').Questao
+    );
+
+    const result = await enrichAll(cards, { cardBuilder: true, cardBuilderConcurrency: 2 });
+
+    expect(result).toHaveLength(6);
+    // extraída preserva a pergunta → ordem deve ser exatamente P0..P5
+    expect(result.map((q) => q.pergunta)).toEqual(['P0', 'P1', 'P2', 'P3', 'P4', 'P5']);
+    // houve paralelismo, limitado ao teto (2)
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect(maxInFlight).toBeLessThanOrEqual(2);
+  });
+
+  it('preserva a ordem mesmo com split 1→N de cards criada', async () => {
+    // o card "1" (criada) divide em 2; os demais em 1 — o split deve manter a POSIÇÃO
+    vi.mocked(runClaudeCli).mockImplementation(async ({ userMessage }) => {
+      if ((userMessage as string).includes('"P1"')) {
+        return '{"cards":[{"pergunta":"P1a","resposta":"R1a"},{"pergunta":"P1b","resposta":"R1b"}]}';
+      }
+      return '{"cards":[{"pergunta":"X","resposta":"Y"}]}';
+    });
+
+    const result = await enrichAll(
+      [
+        { id: '0', tipo: 'criada', pergunta: 'P0', resposta: 'R0' } as import('../types.js').Questao,
+        { id: '1', tipo: 'criada', pergunta: 'P1', resposta: 'R1' } as import('../types.js').Questao,
+        { id: '2', tipo: 'criada', pergunta: 'P2', resposta: 'R2' } as import('../types.js').Questao,
+      ],
+      { cardBuilder: true, cardBuilderConcurrency: 3 }
+    );
+
+    // posição preservada: [card0→X], [card1→P1a,P1b], [card2→X]
+    expect(result.map((q) => q.pergunta)).toEqual(['X', 'P1a', 'P1b', 'X']);
+  });
+
+  it('isolamento de erro no pool: falha de um card mantém o original e não aborta o lote', async () => {
+    let n = 0;
+    vi.mocked(runClaudeCli).mockImplementation(async () => {
+      n++;
+      if (n === 2) throw new Error('Falha simulada no card 2');
+      return '{"cards":[{"pergunta":"PX","resposta":"RX"}]}';
+    });
+
+    const result = await enrichAll(
+      [
+        { id: '1', tipo: 'extraida', pergunta: 'P1', resposta: 'R1' } as import('../types.js').Questao,
+        { id: '2', tipo: 'extraida', pergunta: 'P2', resposta: 'R2' } as import('../types.js').Questao,
+        { id: '3', tipo: 'extraida', pergunta: 'P3', resposta: 'R3' } as import('../types.js').Questao,
+      ],
+      { cardBuilder: true, cardBuilderConcurrency: 3 }
+    );
+
+    expect(result).toHaveLength(3);
+    // card 2 (2ª chamada) falhou → mantém original (D-13), na posição certa
+    const card2 = result.find((q) => q.id === '2');
+    expect(card2?.resposta).toBe('R2');
+  });
+});
+
 // ── enrichAll sequência (PIPE-01) ─────────────────────────────────────────────
 
 describe('enrichAll sequência', () => {
@@ -393,6 +470,20 @@ describe('enrichAll mnemônico batch', () => {
     expect(vi.mocked(loadPrompt)).toHaveBeenCalledWith('mnemonic');
   });
 
+  it('desativa extended thinking (disableThinking: true) — bug RT 2026-06-04', async () => {
+    vi.mocked(runClaudeCli).mockResolvedValue('{"mnemonicos":[]}');
+
+    await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+
+    // O estágio mnemônico produz JSON estruturado → não deve ruminar; thinking off evita timeout.
+    expect(vi.mocked(runClaudeCli)).toHaveBeenCalledWith(
+      expect.objectContaining({ disableThinking: true })
+    );
+  });
+
   it('erro no estágio mnemônico não derruba o job (D-08)', async () => {
     vi.mocked(runClaudeCli).mockRejectedValue(new Error('CLI falhou'));
 
@@ -538,6 +629,303 @@ describe('enrichAll estágio imagem', () => {
     expect(result[0].mnemonicoSvg).toBeDefined();
     // generate chamado 1 vez (card recebeu mnemônico do estágio 3)
     expect(mockGenerate).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Paralelismo do estágio imagem (pool de concorrência) ──────────────────
+
+  const cardsComMnemonico = (n: number) =>
+    Array.from(
+      { length: n },
+      (_, i) =>
+        ({ id: String(i), tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: `M${i}` }) as import('../types.js').Questao
+    );
+
+  it('roda em paralelo com concorrência limitada (várias chamadas in-flight, ≤ teto)', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const mockGenerate = vi.fn().mockImplementation(async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 10));
+      inFlight--;
+      return { svg: '<svg><rect/></svg>' };
+    });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(cardsComMnemonico(6), { imagem: true, imageConcurrency: 2 });
+
+    // todas as 6 imagens foram geradas
+    expect(mockGenerate).toHaveBeenCalledTimes(6);
+    // houve paralelismo (mais de uma simultânea)...
+    expect(maxInFlight).toBeGreaterThan(1);
+    // ...mas limitado ao teto configurado (2) — não satura a quota da assinatura
+    expect(maxInFlight).toBeLessThanOrEqual(2);
+  });
+
+  it('imageConcurrency=1 → estágio imagem roda em sequência (sem sobreposição)', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const mockGenerate = vi.fn().mockImplementation(async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight--;
+      return { svg: '<svg><rect/></svg>' };
+    });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(cardsComMnemonico(4), { imagem: true, imageConcurrency: 1 });
+
+    expect(mockGenerate).toHaveBeenCalledTimes(4);
+    expect(maxInFlight).toBe(1);
+  });
+
+  it('progresso usa contador de concluídas: total = cards com mnemônico (D-04) e index < total', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    // 3 cards, só 2 com mnemônico → total do progresso deve ser 2 (gate D-04), nunca 3
+    await enrichAll(
+      [
+        { id: 'a', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao,
+        { id: 'b', tipo: 'extraida', pergunta: 'P', resposta: 'R' /* sem mnemônico */ } as import('../types.js').Questao,
+        { id: 'c', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao,
+      ],
+      { imagem: true, imageConcurrency: 2 },
+      (e) => progressos.push(e)
+    );
+
+    const imgEvts = progressos.filter((p) => p.estagio === 'gerando-imagem');
+    expect(imgEvts.length).toBeGreaterThan(0);
+    expect(imgEvts.every((p) => p.total === 2)).toBe(true);
+    // index (contador de concluídas) nunca ultrapassa total — corrige o bug do index posicional
+    expect(imgEvts.every((p) => p.index < p.total)).toBe(true);
+  });
+
+  // ── Gestor de qualidade do SVG (svg-quality) ──────────────────────────────
+  // SVG-lixo = fonte gigante estourando o viewBox (reprova em avaliarQualidadeSvg).
+  const SVG_LIXO = '<svg viewBox="0 0 400 300"><text x="10" y="280" font-size="160">LIXO</text></svg>';
+  const SVG_BOM = '<svg viewBox="0 0 400 300"><text x="200" y="150" font-size="20" text-anchor="middle">OK</text></svg>';
+
+  it('SVG reprovado na qualidade e que não melhora → descartado (sem mnemonicoSvg) após retry', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: SVG_LIXO });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const progressos: import('./enrich.js').EnrichProgress[] = [];
+    const result = await enrichAll(
+      [{ id: 'q', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao],
+      { imagem: true, imageMaxRetry: 1 },
+      (e) => progressos.push(e)
+    );
+
+    // fail-closed: imagem descartada, card mantém o mnemônico em texto
+    expect(result[0].mnemonicoSvg).toBeUndefined();
+    expect(result[0].mnemonico).toBe('M');
+    // tentou maxRetry+1 = 2 vezes (1 inicial + 1 retry guiado)
+    expect(mockGenerate).toHaveBeenCalledTimes(2);
+    // progresso reporta o descarte
+    expect(progressos.some((p) => p.erro?.includes('Imagem descartada'))).toBe(true);
+  });
+
+  it('retry guiado: SVG-lixo na 1ª, SVG bom na 2ª → mantém o bom', async () => {
+    const mockGenerate = vi.fn()
+      .mockResolvedValueOnce({ svg: SVG_LIXO })
+      .mockResolvedValueOnce({ svg: SVG_BOM });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const result = await enrichAll(
+      [{ id: 'q', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao],
+      { imagem: true, imageMaxRetry: 1 }
+    );
+
+    expect(result[0].mnemonicoSvg).toBeDefined();
+    expect(result[0].mnemonicoSvg).toContain('OK');
+    expect(mockGenerate).toHaveBeenCalledTimes(2);
+  });
+
+  it('o feedback da reprovação é injetado no prompt do retry (2ª chamada de generate)', async () => {
+    const mockGenerate = vi.fn()
+      .mockResolvedValueOnce({ svg: SVG_LIXO })
+      .mockResolvedValueOnce({ svg: SVG_BOM });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [{ id: 'q', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao],
+      { imagem: true, imageMaxRetry: 1 }
+    );
+
+    // 3º argumento (feedback) ausente na 1ª chamada, presente e não-vazio na 2ª
+    expect(mockGenerate.mock.calls[0][2]).toBeUndefined();
+    const feedback = mockGenerate.mock.calls[1][2];
+    expect(Array.isArray(feedback)).toBe(true);
+    expect(feedback.length).toBeGreaterThan(0);
+  });
+
+  it('imageQuality=false → comportamento legado: SVG-lixo é mantido (só sanitização de segurança)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: SVG_LIXO });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const result = await enrichAll(
+      [{ id: 'q', tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: 'M' } as import('../types.js').Questao],
+      { imagem: true, imageQuality: false }
+    );
+
+    // gate desligado: não barra; grava o SVG (passou só na sanitização mockada)
+    expect(result[0].mnemonicoSvg).toBeDefined();
+    expect(mockGenerate).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Custo/perf: técnica capturada + imagem seletiva (estágio 3+4) ─────────────
+
+describe('mnemônico: captura da técnica (q.mnemonicoTecnica)', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('grava q.mnemonicoTecnica a partir do campo tecnica (merge por id)', async () => {
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"a","mnemonico":"Mnem A","tecnica":"loci"}]}'
+    );
+    const result = await enrichAll(
+      [{ id: 'a', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+    expect(result[0].mnemonico).toBe('Mnem A');
+    expect(result[0].mnemonicoTecnica).toBe('loci');
+  });
+
+  it('sem tecnica no JSON → q.mnemonicoTecnica fica undefined (não sobrescreve com vazio)', async () => {
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      '{"mnemonicos":[{"id":"a","mnemonico":"Mnem A"}]}'
+    );
+    const result = await enrichAll(
+      [{ id: 'a', tipo: 'extraida', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { mnemonico: true }
+    );
+    expect(result[0].mnemonico).toBe('Mnem A');
+    expect(result[0].mnemonicoTecnica).toBeUndefined();
+  });
+});
+
+describe('enrichAll estágio imagem SELETIVA (custo)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(sanitizarSvg).mockImplementation((svg: string) =>
+      svg.trim().startsWith('<svg') ? svg : null
+    );
+  });
+
+  const card = (id: string, tecnica?: string) =>
+    ({ id, tipo: 'extraida', pergunta: 'P', resposta: 'R', mnemonico: `M${id}`, mnemonicoTecnica: tecnica }) as import('../types.js').Questao;
+
+  it('default (sem imageSelective): gera SVG para TODOS com mnemônico (byte-idêntico)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [card('1', 'história'), card('2', 'loci'), card('3', 'rima')],
+      { imagem: true }
+    );
+    // sem seletividade → 3 imagens, mesmo as verbais
+    expect(mockGenerate).toHaveBeenCalledTimes(3);
+  });
+
+  it('imageSelective: pula técnicas verbais (história/rima), mantém visuais (loci/acrônimo)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    const result = await enrichAll(
+      [card('1', 'história'), card('2', 'loci'), card('3', 'rima'), card('4', 'acrônimo')],
+      { imagem: true, imageSelective: true }
+    );
+    // só loci + acrônimo recebem SVG
+    expect(mockGenerate).toHaveBeenCalledTimes(2);
+    expect(result.find((q) => q.id === '1')?.mnemonicoSvg).toBeUndefined();
+    expect(result.find((q) => q.id === '2')?.mnemonicoSvg).toBeDefined();
+    expect(result.find((q) => q.id === '3')?.mnemonicoSvg).toBeUndefined();
+    expect(result.find((q) => q.id === '4')?.mnemonicoSvg).toBeDefined();
+  });
+
+  it('imageSelective: técnica ausente/desconhecida MANTÉM a imagem (lado seguro)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [card('1' /* sem técnica */), card('2', 'mnemônico-qualquer')],
+      { imagem: true, imageSelective: true }
+    );
+    expect(mockGenerate).toHaveBeenCalledTimes(2);
+  });
+
+  it('imageSelective: comparação acento/caixa-insensível (HISTÓRIA == historia)', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [card('1', 'HISTÓRIA'), card('2', 'Historia')],
+      { imagem: true, imageSelective: true }
+    );
+    // ambas normalizam para 'historia' → puladas
+    expect(mockGenerate).toHaveBeenCalledTimes(0);
+  });
+
+  it('imageSkipTecnicas customizado substitui o default', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({ svg: '<svg><rect/></svg>' });
+    vi.mocked(createImageProvider).mockReturnValue({ nome: 'mock', generate: mockGenerate });
+
+    await enrichAll(
+      [card('1', 'história'), card('2', 'loci')],
+      { imagem: true, imageSelective: true, imageSkipTecnicas: ['loci'] }
+    );
+    // skip-set agora é só 'loci' → história passa, loci pula
+    expect(mockGenerate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('enrichAll cardBuilder: teto do split (cardBuilderMaxSplit)', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  const splitEm = (n: number) =>
+    vi.mocked(runClaudeCli).mockResolvedValue(
+      JSON.stringify({ cards: Array.from({ length: n }, (_, i) => ({ pergunta: `P${i}`, resposta: `R${i}` })) })
+    );
+
+  it('default (cardBuilderMaxSplit ausente): split ilimitado (4→4, byte-idêntico)', async () => {
+    splitEm(4);
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'criada', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { cardBuilder: true }
+    );
+    expect(result).toHaveLength(4);
+  });
+
+  it('cardBuilderMaxSplit=2: trunca o split de uma criada (4→2)', async () => {
+    splitEm(4);
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'criada', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { cardBuilder: true, cardBuilderMaxSplit: 2 }
+    );
+    expect(result).toHaveLength(2);
+    expect(result.map((q) => q.pergunta)).toEqual(['P0', 'P1']);
+  });
+
+  it('cardBuilderMaxSplit não afeta splits abaixo do teto (2 cards, teto 3 → 2)', async () => {
+    splitEm(2);
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'criada', pergunta: 'P', resposta: 'R' } as import('../types.js').Questao],
+      { cardBuilder: true, cardBuilderMaxSplit: 3 }
+    );
+    expect(result).toHaveLength(2);
+  });
+
+  it('teto não se aplica a extraida (extraida nunca divide, D-10)', async () => {
+    splitEm(5);
+    const result = await enrichAll(
+      [{ id: '1', tipo: 'extraida', pergunta: 'Porig', resposta: 'Rorig' } as import('../types.js').Questao],
+      { cardBuilder: true, cardBuilderMaxSplit: 2 }
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].pergunta).toBe('Porig');
   });
 });
 

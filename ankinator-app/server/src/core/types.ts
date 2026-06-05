@@ -42,6 +42,8 @@ export interface Section {
   /** Markdown da seção (inclui o título e o texto até o próximo título de mesmo nível ou superior). */
   markdown: string;
   charCount: number;
+  /** Aviso do revisor determinístico (ex.: bloco suspeito de fragmentação). Ausente = OK. */
+  aviso?: string;
 }
 
 /** Documento carregado e estruturado pelo OpenDataLoader. */
@@ -69,6 +71,11 @@ export interface SemanticChunk {
   markdown: string;
   charCount: number;
   estimatedTokens: number;
+  /**
+   * Sobreposição: cauda do bloco anterior, fornecida como CONTEXTO (não como fonte
+   * de questões) para o modelo entender fronteiras sem fragmentar o entendimento.
+   */
+  contextoAnterior?: string;
 }
 
 /** Metadados opcionais de uma questão extraída de prova. */
@@ -97,6 +104,7 @@ export interface Questao {
   deck?: string;          // hierarquia Anki "Matéria::Assunto::Subtópico"
   tags?: string[];        // banca, ano, nível, tema
   mnemonico?: string;     // texto do mnemônico
+  mnemonicoTecnica?: string; // técnica do mnemônico (acrônimo|história|loci|rima) — gate da imagem seletiva
   mnemonicoSvg?: string;  // SVG autocontido do mnemônico
 }
 
@@ -120,4 +128,10 @@ export interface GenerateOptions {
   mnemonico?: boolean;
   /** Rodar especialista de imagem SVG (por-card). Default: false. */
   imagem?: boolean;
+  /**
+   * Geração INCREMENTAL: perguntas já existentes no deck base. Quando presente, o
+   * modelo recebe a lista como contexto anti-duplicata e deve gerar APENAS o que ainda
+   * não está coberto (fiel ao trecho, sem extrapolar). Ausente → geração normal.
+   */
+  existingQuestions?: string[];
 }

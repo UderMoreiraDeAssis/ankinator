@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Dark mode acionado pela classe `.dark` no <html> (toggle do usuário),
+   não por prefers-color-scheme — assim o toggle tem a palavra final. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-50: #eef2ff;
   --color-brand-100: #e0e7ff;
@@ -17,7 +21,7 @@ body,
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100;
 }
 
 /* scrollbar discreto */
@@ -26,8 +30,8 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 rounded-full;
+  @apply bg-slate-300 rounded-full dark:bg-slate-700;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-400;
+  @apply bg-slate-400 dark:bg-slate-600;
 }
