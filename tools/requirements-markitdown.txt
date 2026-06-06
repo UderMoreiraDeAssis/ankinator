@@ -1,0 +1,23 @@
+# ─── Sidecar markitdown — venv DEDICADO (Python >=3.10, SEM Java) ───────────
+#
+# Loader de PDF opt-in (ANKINATOR_PDF_LOADER=markitdown).
+# Este loader NÃO exige Java (ao contrário do langchain-opendataloader-pdf).
+#
+# Setup (venv dedicado — NÃO instalar no venv langchain/OCR):
+#   python3 -m venv ~/.venvs/markitdown
+#   ~/.venvs/markitdown/bin/pip install -r tools/requirements-markitdown.txt
+#   # Depois, no .env:
+#   # ANKINATOR_MARKITDOWN_PYTHON=~/.venvs/markitdown/bin/python3
+#   # ANKINATOR_PDF_LOADER=markitdown
+#
+# NOTA: a validação ao vivo (pip install em venv real + extrair PDF real via
+# markitdown) é um PASSO HUMANO PENDENTE — checkpoint T-k3b-SC. O executor
+# automático NÃO instala pacotes Python.
+#
+# Versão: markitdown[pdf]==0.1.6 (pure-python; só extra PDF: pdfminer-six +
+# pdfplumber; sem ffmpeg/áudio/Azure do extra [all]).
+# Pin estrito: stable release 2026-05-26, mantido pela Microsoft.
+# [all] é follow-up futuro (Office/imagem/áudio requerem deps de sistema extras).
+# ─────────────────────────────────────────────────────────────────────────────
+
+markitdown[pdf]==0.1.6

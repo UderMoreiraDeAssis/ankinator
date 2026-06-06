@@ -10,9 +10,11 @@
  * OCR de PDFs escaneados é opcional, via backend híbrido Python (ver ocr-loader).
  *
  * Seleção de loader (RT-05):
- *   - ANKINATOR_PDF_LOADER=langchain → força LangChain; erro se indisponível.
- *   - ANKINATOR_PDF_LOADER=node     → força Node (@opendataloader/pdf via Java).
- *   - ANKINATOR_PDF_LOADER unset    → auto: usa LangChain se disponível, senão Node.
+ *   - ANKINATOR_PDF_LOADER=langchain   → força LangChain; erro se indisponível.
+ *   - ANKINATOR_PDF_LOADER=node        → força Node (@opendataloader/pdf via Java).
+ *   - ANKINATOR_PDF_LOADER=markitdown  → força markitdown (opt-in, SEM Java); erro se indisponível.
+ *   - ANKINATOR_PDF_LOADER unset       → auto: usa LangChain se disponível, senão Node.
+ *                                        (markitdown NUNCA é auto-selecionado — só sob env explícito)
  *
  * Pré-requisitos para LangChain: Python com `langchain_opendataloader_pdf` instalado
  * e variável ODL_PYTHON (ou ANKINATOR_LANGCHAIN_PYTHON) apontando para o interpretador.
@@ -26,6 +28,7 @@ import type { LoadedDocument } from './types.js';
 import { parseOdlOutput } from './odl-parse.js';
 import { runOcrLoader, isOcrAvailable } from './ocr-loader.js';
 import { runLangchainLoader, isLangchainAvailable } from './langchain-loader.js';
+import { runMarkitdownLoader, isMarkitdownAvailable } from './markitdown-loader.js';
 
 export interface LoadOptions {
   /** Tentar OCR (backend Python híbrido) — para PDFs escaneados/imagem. */
@@ -64,7 +67,7 @@ export function buildConvertOptions(outDir: string, opts: LoadOptions): ConvertO
 
 /** Resultado de `chooseLoader()` — loader escolhido e motivo (para testes e logging). */
 export interface LoaderChoice {
-  loader: 'langchain' | 'node';
+  loader: 'langchain' | 'node' | 'markitdown';
   reason: string;
 }
 
@@ -72,15 +75,20 @@ export interface LoaderChoice {
  * Determina qual loader de PDF usar, de forma testável (RT-05).
  *
  * Lógica de seleção:
- *   - ANKINATOR_PDF_LOADER=langchain → força LangChain; se indisponível lança erro.
- *   - ANKINATOR_PDF_LOADER=node     → força Node; sempre disponível.
- *   - ANKINATOR_PDF_LOADER unset    → auto: usa LangChain se disponível, senão Node.
+ *   - ANKINATOR_PDF_LOADER=langchain   → força LangChain; se indisponível lança erro.
+ *   - ANKINATOR_PDF_LOADER=node        → força Node; sempre disponível.
+ *   - ANKINATOR_PDF_LOADER=markitdown  → força markitdown (opt-in, SEM Java); se indisponível lança erro.
+ *   - ANKINATOR_PDF_LOADER unset       → auto: usa LangChain se disponível, senão Node.
+ *                                        (markitdown NUNCA é auto-selecionado — só sob env explícito — A1)
  *
- * @param langchainAvailable  resultado de `isLangchainAvailable()` (injetado para testabilidade).
+ * @param envValue            valor de ANKINATOR_PDF_LOADER (injetado para testabilidade)
+ * @param langchainAvailable  resultado de `isLangchainAvailable()` (injetado para testabilidade)
+ * @param markitdownAvailable resultado de `isMarkitdownAvailable()` (injetado para testabilidade)
  */
 export function chooseLoader(
   envValue: string | undefined,
-  langchainAvailable: boolean
+  langchainAvailable: boolean,
+  markitdownAvailable = false
 ): LoaderChoice {
   const env = envValue?.trim().toLowerCase();
 
@@ -99,7 +107,21 @@ export function chooseLoader(
     return { loader: 'node', reason: 'ANKINATOR_PDF_LOADER=node (explícito)' };
   }
 
-  // unset / qualquer outro valor → auto
+  // Markitdown é opt-in EXCLUSIVO — só sob env explícito (decisão A1).
+  // NUNCA é auto-selecionado; default INTOCADO.
+  if (env === 'markitdown') {
+    if (markitdownAvailable) {
+      return { loader: 'markitdown', reason: 'ANKINATOR_PDF_LOADER=markitdown (explícito)' };
+    }
+    throw new Error(
+      'ANKINATOR_PDF_LOADER=markitdown definido mas o sidecar Python não está disponível. ' +
+      'Defina ANKINATOR_MARKITDOWN_PYTHON apontando para um interpretador com markitdown[pdf] instalado. ' +
+      'Setup: python3 -m venv ~/.venvs/markitdown && ' +
+      '~/.venvs/markitdown/bin/pip install -r tools/requirements-markitdown.txt'
+    );
+  }
+
+  // unset / qualquer outro valor → auto (markitdown NUNCA selecionado aqui — A1)
   if (langchainAvailable) {
     return { loader: 'langchain', reason: 'auto (ANKINATOR_PDF_LOADER unset, langchain disponível)' };
   }
@@ -131,8 +153,16 @@ export async function loadDocument(pdfPath: string, opts: LoadOptions = {}): Pro
 
   // RT-05: seleção de loader com logging e auto-prefer langchain.
   const langchainAvail = await isLangchainAvailable();
-  const { loader, reason } = chooseLoader(process.env.ANKINATOR_PDF_LOADER, langchainAvail);
-  // chooseLoader lança se =langchain e indisponível (nenhum fallback silencioso neste caso).
+  const markitdownAvail = await isMarkitdownAvailable();
+  const { loader, reason } = chooseLoader(process.env.ANKINATOR_PDF_LOADER, langchainAvail, markitdownAvail);
+  // chooseLoader lança se =langchain/=markitdown e indisponível (nenhum fallback silencioso).
+
+  // Markitdown branch ANTES do langchain (opt-in, sem Java — A1/T-k3b-05).
+  // Markitdown NUNCA é auto-selecionado (só via env explícito).
+  if (loader === 'markitdown') {
+    console.info(`[ankinator] PDF loader: markitdown (${reason})`);
+    return runMarkitdownLoader(pdfPath, opts);
+  }
 
   if (loader === 'langchain') {
     console.info(`[ankinator] PDF loader: langchain (${reason})`);

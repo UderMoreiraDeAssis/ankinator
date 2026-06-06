@@ -23,11 +23,12 @@ type ProviderKind = 'cli' | 'api';
 const providerEnv = (process.env.ANKINATOR_PROVIDER?.trim().toLowerCase() as ProviderKind) || 'cli';
 
 /**
- * Loader de PDF: 'node' (padrão — @opendataloader/pdf via Java) ou 'langchain'
- * (opt-in — sidecar Python via langchain-opendataloader-pdf).
- * ANKINATOR_PDF_LOADER=node|langchain (default: 'node' — D-03, D-15)
+ * Loader de PDF: 'node' (padrão — @opendataloader/pdf via Java), 'langchain'
+ * (opt-in — sidecar Python via langchain-opendataloader-pdf, requer Java 11+), ou
+ * 'markitdown' (opt-in — sidecar Python via markitdown, SEM Java).
+ * ANKINATOR_PDF_LOADER=node|langchain|markitdown (default: 'node' — D-03, D-15)
  */
-type PdfLoaderKind = 'node' | 'langchain';
+type PdfLoaderKind = 'node' | 'langchain' | 'markitdown';
 
 const pdfLoaderEnv = (process.env.ANKINATOR_PDF_LOADER?.trim().toLowerCase() as PdfLoaderKind) || 'node';
 
@@ -119,16 +120,36 @@ export const config = {
    */
   cardBuilderMaxSplit: Math.max(0, Number(process.env.ANKINATOR_CARDBUILDER_MAX_SPLIT) || 0),
   /**
+   * Enriquecimento ORQUESTRADO (Destino #4 / Phase 5): liga o subagent `ankinator-orchestrator`
+   * (roda `claude -p --agent` da RAIZ do repo com a tool Task) como o cérebro que decide por-card
+   * quais estágios rodar e delega aos 4 subagents — em vez do pipeline determinístico `enrichAll`.
+   * Em QUALQUER falha (spawn, JSON, agente ausente, permissão) cai DETERMINISTICAMENTE para
+   * `enrichAll` — nunca derruba o pipeline. Default OFF (byte-equivalente ao atual);
+   * ANKINATOR_ORCHESTRATED=1|true|on liga. Validar AO VIVO (assinatura) antes de adotar.
+   * Knobs do spawn (em orchestrator.ts): ANKINATOR_ORCHESTRATED_BYPASS (permission-mode
+   * bypassPermissions, só se a validação ao vivo mostrar bloqueio), ANKINATOR_PROJECT_ROOT
+   * (raiz com .claude/agents/), ANKINATOR_ORCHESTRATOR_TIMEOUT_MS (default 600000).
+   */
+  orchestrated: ['1', 'true', 'on', 'yes'].includes(
+    (process.env.ANKINATOR_ORCHESTRATED ?? '').trim().toLowerCase(),
+  ),
+  /**
    * Sobreposição entre blocos: nº de caracteres da cauda do bloco anterior anexados
    * como CONTEXTO (não como fonte de questões). ANKINATOR_CHUNK_OVERLAP (default 400; 0 desliga).
    */
   chunkOverlap: Math.max(0, Number(process.env.ANKINATOR_CHUNK_OVERLAP) || 400),
   /**
-   * Loader de PDF selecionado: 'node' (padrão, D-03) ou 'langchain' (opt-in).
-   * Controlado por ANKINATOR_PDF_LOADER=node|langchain.
-   * Default 'node' é CRÍTICO para D-15: env unset → modo Node, sem Python/Java LangChain.
+   * Loader de PDF selecionado: 'node' (padrão, D-03), 'langchain' (opt-in, requer Java 11+)
+   * ou 'markitdown' (opt-in, sem Java).
+   * Controlado por ANKINATOR_PDF_LOADER=node|langchain|markitdown.
+   * Default 'node' é CRÍTICO para D-15: env unset → modo Node, sem Python/Java.
    */
-  pdfLoader: pdfLoaderEnv === 'langchain' ? 'langchain' : ('node' as PdfLoaderKind),
+  pdfLoader:
+    pdfLoaderEnv === 'langchain'
+      ? 'langchain'
+      : pdfLoaderEnv === 'markitdown'
+        ? 'markitdown'
+        : ('node' as PdfLoaderKind),
   /**
    * Interpretador Python para o sidecar LangChain (D-02).
    * ANKINATOR_LANGCHAIN_PYTHON — interpretador do venv langchain dedicado (requer Java 11+ no PATH).
@@ -142,6 +163,19 @@ export const config = {
    *   Requer também Java 11+ no PATH.
    */
   langchainPython: process.env.ANKINATOR_LANGCHAIN_PYTHON?.trim() || process.env.ODL_PYTHON?.trim() || '',
+  /**
+   * Interpretador Python para o sidecar markitdown (ANKINATOR_MARKITDOWN_PYTHON).
+   * Venv DEDICADO — SEM Java, separado do venv langchain/OCR.
+   * Vazio ('') quando não definido — isMarkitdownAvailable() retornará false.
+   *
+   * Setup do sidecar markitdown:
+   *   1. Criar venv: python3 -m venv ~/.venvs/markitdown  (Python >=3.10)
+   *   2. Instalar:   ~/.venvs/markitdown/bin/pip install -r tools/requirements-markitdown.txt
+   *   3. Definir:    ANKINATOR_MARKITDOWN_PYTHON=~/.venvs/markitdown/bin/python3  (no .env)
+   *   4. Ativar:     ANKINATOR_PDF_LOADER=markitdown
+   *   NÃO requer Java. Limitação: 1 blob Markdown por PDF (numPages=1).
+   */
+  markitdownPython: process.env.ANKINATOR_MARKITDOWN_PYTHON?.trim() || '',
   hasApiKey(): boolean {
     return this.anthropicKey.length > 0;
   },
