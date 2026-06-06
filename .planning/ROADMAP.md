@@ -27,12 +27,17 @@ Phases 1–4 entregaram **código que passa em 144 testes determinísticos**, ma
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (4.1): Urgent insertions (marked with INSERTED)
 
+**Notação de status (reconciliação C2):**
+
+- `[x]` = fase formalmente fechada (ciclo de plano completo).
+- `[~]` = **capacidade validada AO VIVO, mas ciclo de plano não formalmente fechado** e/ou decisão pendente (ex.: orquestrado vira default?). Não significa "incompleto", e sim "validado como capacidade, não encerrado como fase". A tabela **Progress** (fim do doc) marca essas fases com ✅ + data pela validação ao vivo — as duas notações são consistentes sob esta leitura.
+
 - [x] **Phase 1: Andaime dos Especialistas** - Estrutura `specialists/` + fonte única `.md` + Skills espelho + interface `ImageProvider` + extensão do tipo `Questao`
-- [x] **Phase 2: Loader PDF LangChain** - Sidecar Python opt-in com `langchain-opendataloader-pdf` (⚠ entregue mas NUNCA ativado por default — corrigido na Phase 4.1)
+- [x] **Phase 2: Loader PDF LangChain** - Sidecar Python com `langchain-opendataloader-pdf`. ✅ **ATIVADO 2026-06-05 (p) — Destino #5 FECHADO:** venv `~/.venvs/odl` + pacote 2.0.0 (Python 3.13 + Java 25), `ANKINATOR_LANGCHAIN_PYTHON` no `.env`; provado E2E (sidecar extrai `curso-8.pdf`, `isLangchainAvailable()=true`, `chooseLoader(unset)→langchain` auto). App auto-prefere LangChain.
 - [x] **Phase 3: Classificador de Deck + Card Educativo** - Especialistas de deck/tags e card atômico (⚠ card-builder só reescreve TEXTO e vem OFF; aparência rica fica na Phase 6)
 - [~] **Phase 4: Mnemônicos + Imagem SVG** - Código entregue + segurança (CR-01/WR-01 corrigidos), mas **UAT runtime FALHOU** (zero mnemônicos/imagens ao vivo) → estabilização na Phase 4.1
 - [~] **Phase 4.1: Estabilização de Runtime (INSERTED)** - Código entregue (RT-01 erro visível + parse tolerante/fallback, RT-02 imagem, RT-05 loader langchain auto). ⏳ Falta validação de runtime humano (rodar PDF real)
-- [~] **Phase 5: Orquestrador Anki por-card** - Agente `ankinator-orchestrator` criado em `.claude/agents/` (regra de mnemônico solta, delega via Task). ⏳ Falta wire-ar o runner orquestrado (rodar `claude` da raiz + Task tool, opt-in com fallback)
+- [~] **Phase 5: Orquestrador Anki por-card** - Agente `ankinator-orchestrator` em `.claude/agents/` + ✅ **runner orquestrado WIRED 2026-06-05 (p):** `core/specialists/orchestrator.ts` (`runEnrich` → `claude -p --agent` da raiz + Task, merge por id, FALLBACK determinístico p/ `enrichAll`; opt-in `ANKINATOR_ORCHESTRATED` default OFF byte-equivalente, guard SPEC-01 intacto). Hardened por revisão adversarial (precondição `workersToolRestricted` + gating por toggle + SVG no boundary). ✅ `tools:[]` aplicado nos 4 workers. ✅ **VALIDADO AO VIVO 2026-06-05 (PASS no mecanismo):** run real (`ANKINATOR_ORCHESTRATED=1`, PDF curso-230990) → orquestrador rodou da raiz, retornou JSON SEM fallback, 36/36 fundidos por id, 36 cards no Anki 0 erros (`claude -p --agent`+Task headless funciona na assinatura). Fixes pós-run: custo do orquestrador agora contabilizado (`usage.ts` estágio 'orquestrador'; job real ≈$2.25) + stats por-campo no log. ✅ **QUALIDADE VALIDADA AO VIVO 2026-06-06 (q-live2, autônomo — eu rodei contra o PDF do usuário):** orquestrador rodou sem fallback (~81s, $0.213), stats `deck:6/tags:6/mnemonico:6/svg:6` de 6 → faz trabalho REAL (não só deck/tags); híbrido sem timeout (imagem via pool determinístico, 1 SVG reprovado→retry→6/6); mnemônicos bons (ACID etc.). Também via AnkiConnect: subdecks aninhados + tags planas (p-fix2). Resta só decidir se o opt-in vira default (custa mais que o `enrichAll` determinístico)
 - [~] **Phase 6: Cards Educativos Ricos (estilo Ankimon)** - ENTREGUE: `card-html.ts` (layout seccionado, escape + SVG inline sanitizado, alternativas como lista ordenada), wired em CSV + AnkiConnect. ✅ Confirmado no Anki real pelo usuário
 - [~] **Phase 7: Qualidade das Questões + Agentes Especialistas** - 5 subagents reais em `.claude/agents/` ✓ + mnemônico liberalizado (gera p/ maioria) ✓ + alternativas sempre capturadas (prompt) ✓ + fidelidade `[CRIADA]` afrouxada (knob `ANKINATOR_CRIADA_FIDELITY=livre`, default OFF byte-idêntico; sessão n) ✓ + **VALIDADA AO VIVO 2026-06-05 (o): PASS** — 47 `[CRIADA]` lidas do Anki, atomicidade forte (discriminação/atomização progressiva, zero enunciado colado) e âncora verificada contra o PDF-fonte (46–47/47 ancorados; único leak *mild* não-perigoso #45 "write-ahead log"). **ADOTADO como DEFAULT ON 2026-06-05 (o)** + reforço anti-leak no prompt (mecanismos/siglas externos proibidos mesmo se corretos), escape estrito `ANKINATOR_CRIADA_FIDELITY=estrita`. ⏳ A/B p/ isolar do cardBuilder (não-bloqueante). ⏳ Falta runner orquestrado
 
@@ -195,10 +200,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Andaime dos Especialistas | 4/4 | Complete | 2026-06-03 |
-| 2. Loader PDF LangChain | 4/4 | Complete (loader inativo) | 2026-06-03 |
+| 2. Loader PDF LangChain | 4/4 | ✅ Complete + ATIVO (Destino #5, auto-prefere langchain) | 2026-06-05 |
 | 3. Classificador de Deck + Card Educativo | 4/4 | Complete (sem aparência rica) | 2026-06-03 |
 | 4. Mnemônicos + Imagem SVG | 4/4 | ✅ Validado AO VIVO (mnem.+SVG no Anki; gate de qualidade ativo) | 2026-06-05 |
 | 4.1 Estabilização de Runtime | — | ✅ Validado AO VIVO (erro visível, parse tolerante) | 2026-06-05 |
-| 5. Orquestrador Anki por-card | — | Agente criado (⏳ wire runner orq. — opcional) | 2026-06-04 |
+| 5. Orquestrador Anki por-card | — | ✅ Runner WIRED + hardened + **VALIDADO AO VIVO mecanismo+QUALIDADE** (q-live2: deck:6/tags:6/mnemonico:6/svg:6 de 6, sem fallback, híbrido sem timeout; resta só decidir default) | 2026-06-06 |
 | 6. Cards Educativos Ricos | — | ✅ Confirmado no Anki | 2026-06-04 |
 | 7. Qualidade das Questões + Agentes | — | Subagents + mnemônico OK + fidelidade `[CRIADA]` **VALIDADA AO VIVO (PASS, 47 criadas) + DEFAULT ON adotado** (⏳ A/B opcional; ⏳ runner orq.) | 2026-06-05 |

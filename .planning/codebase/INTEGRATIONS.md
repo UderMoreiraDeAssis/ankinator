@@ -2,6 +2,8 @@
 
 **Analysis Date:** 2026-06-03
 
+> ⚠️ **Snapshot de 2026-06-03** (mapeamento `gsd-map-codebase`, pré-Phase 3). O estado corrente vive em `.planning/STATE.md` + `.planning/ROADMAP.md`. Afirmações aqui podem estar **vencidas** — ex.: loaders novos (langchain-opendataloader ativo; markitdown opt-in) e o orquestrador `claude -p --agent` foram adicionados depois. Ver `.planning/FRAMING-REVIEW.md` §8 (C6).
+
 ## LLM / AI Generation
 
 **Claude (Anthropic) — dual-provider architecture:**

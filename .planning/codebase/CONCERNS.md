@@ -2,6 +2,8 @@
 
 **Analysis Date:** 2026-06-03
 
+> ⚠️ **Snapshot de 2026-06-03** (mapeamento `gsd-map-codebase`, pré-Phase 3). O estado corrente vive em `.planning/STATE.md` + `.planning/ROADMAP.md`. Afirmações aqui podem estar **vencidas** — ex.: "No Unit Tests in ankinator-app" já não vale (suíte vitest ~250 testes desde a Phase 3); alguns silent-fallbacks foram endereçados (RT-01 erro visível). Ver `.planning/FRAMING-REVIEW.md` §8 (C6).
+
 ---
 
 ## Tech Debt

@@ -2,6 +2,8 @@
 
 **Analysis Date:** 2026-06-03
 
+> ⚠️ **Snapshot de 2026-06-03 — VENCIDO neste tópico.** Este doc foi mapeado ANTES da Phase 3. A afirmação "There is no automated test suite" abaixo **não vale mais**: a suíte **vitest** foi instalada na Phase 3 e cresceu para **~250 testes** (server) + guards (SPEC-01 / enrich / default-loader). O estado corrente vive em `.planning/STATE.md`. Ver `.planning/FRAMING-REVIEW.md` §8 (C6).
+
 ## Summary
 
 **There is no automated test suite in this codebase.** No jest, vitest, mocha, or any test runner is installed in any `package.json`. No `.test.ts`, `.spec.ts`, `.test.tsx`, or `.spec.tsx` files exist anywhere in the repo.

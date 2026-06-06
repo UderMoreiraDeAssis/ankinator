@@ -3,6 +3,8 @@
 
 **Analysis Date:** 2026-06-03
 
+> ⚠️ **Snapshot de 2026-06-03** (mapeamento `gsd-map-codebase`, pré-Phase 3). O estado corrente vive em `.planning/STATE.md` + `.planning/ROADMAP.md`. Afirmações aqui podem estar **vencidas** — ex.: a suíte **vitest (~250 testes)** foi instalada na Phase 3 e `server/src/core/specialists/` já existe; o tipo `Questao` ganhou campos novos (deck/tags/mnemônico/svg). Ver `.planning/FRAMING-REVIEW.md` §8 (C6).
+
 ## System Overview
 
 ```text

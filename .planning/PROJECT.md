@@ -43,7 +43,7 @@ Gerar flashcards que **maximizam a retenção** a partir de um texto qualquer de
 - Geração já é dual-provider: `CliProvider` (default, assinatura via `claude -p`) e `ApiProvider` (opt-in, `ANTHROPIC_API_KEY`). Mapa em `.planning/codebase/`.
 - Já existe padrão de sidecar Python (OCR via `ODL_PYTHON`, `ocr-loader.ts`) — molde para o loader LangChain.
 - Tipo central `Questao` está duplicado (server + web) — risco de divergência a respeitar ao adicionar campos (deck, tags, mnemônico, svg).
-- Sem testes automatizados hoje (ver `.planning/codebase/TESTING.md`).
+- Testes automatizados: a suíte **vitest** foi instalada na Phase 3 e cresceu para **~250 testes** (server) + guards (SPEC-01 / enrich / default-loader), com `tsc --noEmit` e build web verdes. *(O bootstrap dizia "sem testes"; `.planning/codebase/TESTING.md` é snapshot de 2026-06-03 — ver `.planning/FRAMING-REVIEW.md` §8 C6.)*
 
 ## Constraints
 
@@ -66,10 +66,12 @@ Gerar flashcards que **maximizam a retenção** a partir de um texto qualquer de
 | **5 especialistas**: anki-orchestrator, deck-classifier, card-builder, mnemonic, mnemonic-image | Cobre o pedido do usuário com separação de responsabilidades | ✓ Entregue como `.claude/agents/` (wire do orquestrador em runtime = Phase 5, pendente/opcional) |
 | **[DEC-m 2026-06-05] Manter o env knob `ANKINATOR_IMAGE_SKIP_TECNICAS`** (não enxugar) | Consistência com ~10 env-knobs de custo (Karpathy #3 "match existing style" > #2, pois remover criaria assimetria) + reversibilidade assimétrica (manter-e-errar é invisível: env vazio = idêntico; remover-e-errar gera re-trabalho) + o usuário tuna knobs após medir | ✓ Concluída (sessão m; nenhuma mudança de código — a impl. já é a recomendada) |
 | **[DEC-n 2026-06-05] Qualidade `[CRIADA]`: nível Moderado + rollout knob opt-in** | (1) Nível **Moderado** (afrouxa `[CRIADA]` p/ reformular/atomizar/discriminar/aplicar por inferência DIRETA; `[EXTRAÍDA]` estrita; âncora dura p/ ambas: zero conhecimento externo) sobre Conservador — alinhado ao Destino #1. (2) Rollout **knob opt-in `ANKINATOR_CRIADA_FIDELITY` default-OFF** (byte-idêntico, reversível p/ o risco crítico) sobre novo-default-direto. Rejeitada "2 chamadas separadas" (dobraria custo). Desenho exposto antes de codar (lição DEC-m) | ⏳ Entregue em código (sessão n; 220 testes + guards verdes); pendente medir AO VIVO (melhora sem alucinar) antes de virar default |
+| **[DEC-o 2026-06-05] `[CRIADA]` afrouxada → DEFAULT ON** (após medir-c PASS ao vivo) + reforço anti-leak | 47 `[CRIADA]` lidas do Anki: atomicidade forte + âncora 46–47/47, zero alucinação perigosa (único leak *mild* não-perigoso #45 "write-ahead log"). Escape `ANKINATOR_CRIADA_FIDELITY=estrita` → `SYSTEM_FIDELITY` byte-idêntico (guard SPEC-01 intacto) | ✓ Adotado default ON (sessão o); ⏳ A/B `=estrita` opcional p/ isolar do cardBuilder |
+| **[DEC-p 2026-06-05] Orquestrador (#4) wired como caminho OPT-IN safe-by-construction; loader LangChain (#5) ativado** | Wiring SEPARADO (não toca o generation spawn / guard SPEC-01), gated `ANKINATOR_ORCHESTRATED` default-OFF (byte-equivalente), fallback determinístico p/ `enrichAll`; precondição `workersToolRestricted` + `tools:[]` nos 4 workers; flags verificados em `claude --help` | ✓ #5 ativo (auto-prefere langchain); ✓ #4 VALIDADO AO VIVO (q-live2/q-live3, opt-in) — recomendação: manter opt-in |
 
 ## Evolution
 
 **After each phase transition:** atualizar Validated/Active/Out of Scope e a tabela de decisões (✓ Good / ⚠️ Revisit).
 
 ---
-*Last updated: 2026-06-05 (sessão n) — **Key Decisions** formalizadas até DEC-n (esta tabela é o lar canônico das decisões). As seções **Validated/Active/Out of Scope** acima refletem o BOOTSTRAP da milestone (2026-06-03); o status corrente das fases vive em `.planning/ROADMAP.md` + `.planning/STATE.md`, e o diário de bordo por-sessão em `.planning/TAREFAS.md` (topo) + `.planning/STATE.md` (Accumulated Context → Decisions, espelha esta tabela).*
+*Last updated: 2026-06-06 — **Key Decisions** formalizadas até DEC-p (esta tabela é o lar canônico das decisões; DEC-o/DEC-p adicionadas na reconciliação de consistência — ver `.planning/FRAMING-REVIEW.md` §8 C3). As seções **Validated/Active/Out of Scope** acima refletem o BOOTSTRAP da milestone (2026-06-03); o status corrente das fases vive em `.planning/ROADMAP.md` + `.planning/STATE.md`, e o diário de bordo por-sessão em `.planning/TAREFAS.md` (topo) + `.planning/STATE.md` (Accumulated Context → Decisions, espelha esta tabela).*

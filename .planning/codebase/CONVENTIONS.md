@@ -2,6 +2,8 @@
 
 **Analysis Date:** 2026-06-03
 
+> ⚠️ **Snapshot de 2026-06-03** (mapeamento `gsd-map-codebase`, pré-Phase 3). O estado corrente vive em `.planning/STATE.md` + `.planning/ROADMAP.md`. Afirmações aqui podem estar **vencidas** — ex.: convenções de teste (vitest), env-knobs (~20 `ANKINATOR_*`) e o padrão de sidecar Python foram adicionados/expandidos depois. Ver `.planning/FRAMING-REVIEW.md` §8 (C6).
+
 ## Language Notes
 
 All inline comments, JSDoc descriptions, and user-facing strings are written in **Portuguese (Brazilian)**. Interface/API field names use Portuguese nouns (`pergunta`, `resposta`, `questoes`, `banca`, `gabarito`, `tipo`). English is used only in configuration, library-facing identifiers, and some class method names in `ankinator-mcp/`.

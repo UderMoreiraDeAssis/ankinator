@@ -44,9 +44,11 @@ Escopo da milestone upgrade-2026. Cada requisito mapeia para uma fase do roadmap
 
 ### Orquestração & Pipeline
 
-- [ ] **ORCH-01**: O orquestrador Anki decide por-card quais estágios rodar (ex.: mnemônico/imagem só p/ cards de memorização).
-- [ ] **ORCH-02**: Estágios caros são batched/seletivos para poupar quota da assinatura (ex.: classificar o deck inteiro numa chamada).
-- [ ] **ORCH-03**: O orquestrador aplica princípios Anki (atomicidade, evitar redundância) ao agregar o resultado.
+- [x] **ORCH-01**: O orquestrador Anki decide por-card quais estágios rodar (ex.: mnemônico/imagem só p/ cards de memorização).
+- [x] **ORCH-02**: Estágios caros são batched/seletivos para poupar quota da assinatura (ex.: classificar o deck inteiro numa chamada).
+- [x] **ORCH-03**: O orquestrador aplica princípios Anki (atomicidade, evitar redundância) ao agregar o resultado.
+
+> ✅ ORCH-01/02/03 **validados AO VIVO** (q-live2/q-live3, 2026-06-06) como **capacidade opt-in** (`ANKINATOR_ORCHESTRATED=1`, default OFF; recomendação atual: manter opt-in). Ver `.planning/STATE.md` + `.planning/ROADMAP.md` Phase 5. (Reconciliação C0.)
 - [x] **PIPE-01**: Existe a fase `enrichAll()` que roda após `generateAll()`, reusando o job/SSE para progresso.
 - [x] **PIPE-02**: A UI expõe toggles do modo "educativo" (classificar, card educativo, mnemônico, imagem) com defaults inteligentes.
 - [x] **PIPE-03**: O fluxo atual (sem modo educativo, sem Python) continua funcionando sem regressão.
@@ -96,9 +98,9 @@ Reconhecidos, fora do roadmap atual.
 | IMG-01 | Phase 4 | Complete |
 | IMG-02 | Phase 4 | Complete |
 | IMG-03 | Phase 4 | Complete |
-| ORCH-01 | Phase 5 | Pending |
-| ORCH-02 | Phase 5 | Pending |
-| ORCH-03 | Phase 5 | Pending |
+| ORCH-01 | Phase 5 | Complete (validado ao vivo, opt-in) |
+| ORCH-02 | Phase 5 | Complete (validado ao vivo, opt-in) |
+| ORCH-03 | Phase 5 | Complete (validado ao vivo, opt-in) |
 
 **Coverage:**
 - v1 requirements: 23 total
@@ -107,4 +109,6 @@ Reconhecidos, fora do roadmap atual.
 
 ---
 *Requirements defined: 2026-06-03*
-*Last updated: 2026-06-03 after milestone bootstrap*
+*Last updated: 2026-06-06 — status de ORCH-01/02/03 reconciliado (validado ao vivo, opt-in; ver `.planning/FRAMING-REVIEW.md` §8 C0).*
+
+> ⚠️ **Esta lista é o snapshot de requisitos do BOOTSTRAP (2026-06-03).** Os requisitos surgidos após o UAT 2026-06-04 — **ORCH-04** (wire-the-orchestrator), **RT-01/02/05** (estabilização de runtime), **RICH-01/02/03** (cards educativos ricos), **QUAL-01** (questões criadas de qualidade), **AGENT-01** (especialistas como agentes/skills Claude) — vivem no `.planning/ROADMAP.md` (Phase Details), que é o **catálogo de requisitos de facto**. O estado corrente das fases está em `.planning/STATE.md`. (Reconciliação C5.)
