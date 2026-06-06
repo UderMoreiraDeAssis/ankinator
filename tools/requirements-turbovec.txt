@@ -1,0 +1,30 @@
+# ─── Sidecar turbovec — venv DEDICADO (Python >=3.9, wheel binária, sem Rust) ─
+#
+# Scaffold de busca vetorial quantizada para futura integração de dedup semântico.
+# NÃO plugado no pipeline atual. O dedup Jaccard (deck-organizer/existing-deck)
+# permanece INTOCADO até a fase futura de dedup semântico no ROADMAP.
+#
+# Setup (venv dedicado):
+#   python3 -m venv ~/.venvs/turbovec   (Python >=3.9)
+#   ~/.venvs/turbovec/bin/pip install -r tools/requirements-turbovec.txt
+#   # Depois, no .env:
+#   # ANKINATOR_TURBOVEC_PYTHON=~/.venvs/turbovec/bin/python3
+#
+# NOTA: a validação ao vivo (pip install da wheel turbovec + rodar subcomando
+# `smoke` com numpy real) é um PASSO HUMANO PENDENTE — checkpoint T-k3b-SC.
+# O executor automático NÃO instala pacotes Python.
+#
+# Wheel disponível: turbovec-0.7.0-cp39-abi3-manylinux_2_28_x86_64.whl
+# (sem Rust/cargo; abi3 = forward-compatible com Python >=3.9; manylinux_2_28
+#  compatível com glibc >=2.28 — ambiente alvo: x86_64, glibc 2.39).
+#
+# Pin ESTRITO por ser v0.x: 1º release 2026-04-13, 16 releases em ~7 semanas.
+# API pode mudar entre minors; o teste CLI-free (turbovec.test.ts) detecta drift.
+# numpy>=1.20 vem como dependência transitiva — NÃO pinar numpy manualmente.
+#
+# Nota: o sidecar SÓ CONSOME vetores (não gera embeddings). A fonte de embeddings
+# (ex.: sentence-transformers multilíngue para PT-BR via sidecar local) é deferida
+# para a fase futura "dedup semântico por embeddings" no ROADMAP.
+# ─────────────────────────────────────────────────────────────────────────────
+
+turbovec==0.7.0
