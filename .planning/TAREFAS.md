@@ -6,7 +6,115 @@
 
 ---
 
-## ▶ ESTADO ATUAL — RETOMAR AQUI (2026-06-05, fim da sessão o)
+## ▶ ESTADO ATUAL — RETOMAR AQUI (2026-06-06, sessão k3b — markitdown + turbovec + validação ao vivo)
+
+**Quick task `/gsd-quick --discuss --research`; decisão delegada → skill `tomada-de-decisao` (modo Estruturado) + sequential-thinking.** Dois repos adicionados via o **padrão sidecar Python da Phase 2**, **server-only, default loader + dedup Jaccard INTOCADOS**, e **VALIDADOS AO VIVO por mim** (venvs reais — você liberou validação autônoma).
+
+### Decisão tri-eixo (Matriz Ponderada + reversibilidade + pré-mortem/devil's advocate)
+- **markitdown** = loader PDF **opt-in** (`ANKINATOR_PDF_LOADER=markitdown`; sem Java, ao contrário do langchain que exige Java 25). Default INTOCADO; nunca auto-selecionado.
+- **turbovec** = **scaffold provado por smoke** (busca vetorial TurboQuant), **dedup deferido** — turbovec consome embeddings que o projeto ainda NÃO gera. Não plugado no pipeline.
+- **embeddings** = deferir; quando o dedup semântico for construído, fonte = **LOCAL grátis** (sentence-transformers), API paga REJEITADA (R2).
+
+### ✅ Validação AO VIVO (eu rodei; venvs reais)
+- **markitdown[pdf]==0.1.6**: sidecar extrai o PDF real `curso-230990` (166k chars, exit 0); `loadDocument` + `ANKINATOR_PDF_LOADER=markitdown` → log `PDF loader: markitdown` + LoadedDocument **numPages=1**. ⚠️ **Achado honesto:** markitdown gera **blob plano** (PDF sem headings ATX → 1 seção); o chunker ainda fatia por tamanho, mas perde-se a hierarquia que o langchain-opendataloader dá (tradeoff do "sem Java").
+- **turbovec==0.7.0**: `smoke`/`add`/`search` + `runTurbovecSmoke()` E2E OK. ⚠️ **Bug real achado+corrigido AO VIVO (commit `1c1d9ea`):** `search` exige query **2D** (batch) e `dim` **múltiplo de 8** — o teste CLI-free **mockado não pegava** (lição reforçada: mock ≠ ao vivo).
+- Venvs wired no `.env` local (`ANKINATOR_MARKITDOWN_PYTHON`/`ANKINATOR_TURBOVEC_PYTHON`); default loader segue langchain.
+
+### Commits (no `main`)
+`c3526d9` markitdown loader · `f05ec1e` turbovec scaffold · `7469be3` .env.example/requirements · `a8047df` docs(CONTEXT/RESEARCH/PLAN/SUMMARY/STATE) · `1c1d9ea` fix turbovec sidecar (ao vivo). Suíte completa + tsc + guard-default-loader verdes; arquivos protegidos (langchain/odl/deck-organizer/existing-deck) intocados.
+
+### ▶ Pendente (não-bloqueante)
+- Run completo PDF→cards→Anki **com** `ANKINATOR_PDF_LOADER=markitdown` (validei o LOADER; o downstream é o mesmo pipeline já validado). Decidir se markitdown vale como opção dado o blob plano (talvez só p/ formatos que o langchain não cobre — Office/imagem/áudio, follow-up).
+- **Fase futura "dedup semântico"** (turbovec + embeddings local) — registrada em STATE → Deferred Items; **destrutiva no Anki → expor desenho + consentimento** antes.
+- Destino #4: decidir se o orquestrado vira default (recomendação: manter opt-in).
+
+---
+
+## ▶ ESTADO ANTERIOR — sessão q-live2/q-live3 (2026-06-06, VALIDAÇÃO AUTÔNOMA AO VIVO)
+
+**O usuário me desbloqueou para rodar a validação ao vivo eu mesmo** ("vc nao precisa depender de mim... o PDF de testes está em `/home/t316360/plottwist/material`"), deletou o loop de 15min e criou um de 2h. Resultado: **TODA a validação ao vivo pendente do Destino #4 + os 3 fixes de p-fix2 = PASS.**
+
+### 🔬 COMO (reproduzível)
+Driver novo `server/src/scripts/live-validate.ts` (espelha o /generate+/export do `api.ts`; mesmos defaults/knobs via `config`):
+`ANKINATOR_ORCHESTRATED=1 ANKINATOR_PDF_LOADER=node tsx src/scripts/live-validate.ts <pdf> AnkinatorTeste "4,5" 6`
+Seções 4 "Tipos de BD"(5870c) + 5 "ACID"(5078c) → 1 bloco 10950c → 6 cards. `claude` CLI 2.1.162 + AnkiConnect ON. Run total 177,7s.
+
+### ✅ DESTINO #4 — QUALIDADE DO ORQUESTRADO = PASS
+- **Orquestrador rodou SEM fallback:** `[orquestrador] chamada START→END` ($0.213, ~81s), `enriquecimento orquestrado END: 6/6`. `claude -p --agent ankinator-orchestrator` + Task funciona também na minha sessão (nested claude).
+- **Faz TRABALHO REAL (resolve a dúvida do p-live):** stats por-campo `deck:6 tags:6 mnemonico:6 svg:6 de 6` — populou mnemônico p/ TODOS, não só deck/tags. (`svg:0` NO orquestrador é esperado = híbrido; os 6 SVGs vieram do pool.)
+- **Híbrido sem timeout (fix p-fix2 #3):** imagem pelo pool determinístico paralelo → `imagens 6/6, 0 reprovadas` (1 SVG reprovado por 15 rótulos → retry → recuperado). Enrich total ~2,3min (longe dos 10min que estouravam antes).
+- **Qualidade pedagógica boa:** mnemônico ACID = "A Chuva Isola a Duração" + discriminação do intruso ("PRIVACIDADE é da LGPD, não do ACID"); ganchos com discriminação de distrator; deck hierárquico rico (`Banco de Dados::Transações::Propriedades ACID`).
+
+### ✅ p-fix2 #1 + #2 — VALIDADOS via AnkiConnect (notesInfo/deckNames)
+- **Subdecks ANINHADOS (#2):** cards em `AnkinatorTeste::Transações::Propriedades ACID`, `AnkinatorTeste::Modelo Relacional::Características e Diferenças`, `AnkinatorTeste::Conceitos Fundamentais::Autodescrição e Metadados` — `reRootDeck` trocou a Matéria pela raiz do envio. Fim do "deck plano".
+- **Tags PLANAS (#1):** todas as notas com último segmento, sem `::`, dedup — ex. `['2023','ankinator','extraida','fundatec','intermediario','modelo-relacional']`. Zero `::`.
+
+### ⚠️ Artefatos desta sessão
+- **Deck de teste `AnkinatorTeste`** (6 cards) no seu Anki — descartável; apague no Anki (deck → Delete) quando quiser.
+- **Driver `server/src/scripts/live-validate.ts`** (novo, não-commitado) — útil p/ re-rodar; junto dos outros smoke/guard. 249 testes + tsc verdes com ele.
+
+### ✅ RUN #2 (q-live3) — 2º tipo de conteúdo + BUG de tag achado e CORRIGIDO
+Rodei a seção **"LISTA DE QUESTÕES"** (idx 9, 16 cards, deck `AnkinatorTesteCriada`) — confirma o orquestrado num 2º tipo de conteúdo e maior volume: orquestrador SEM fallback (~4min, $0.426), `deck:16 tags:16 resposta:2 mnemonico:16 svg:16 de 16`, híbrido sem timeout; via AnkiConnect, **subdecks ricos** (`::Arquitetura ANSI-SPARC::Independência de Dados`, `::Controle de Concorrência::Bloqueio e Deadlock`, `::Objetos de Banco de Dados::Views`, …) + tags planas. Mnemônicos bons (ANSI/SPARC: *"muda o porão, a sala e o quarto não tremem"*).
+
+**ACHADO+FIX (bug real exposto pela validação):** 4/16 notas saíam com tag de origem **DUPLA e contraditória** (`criada`+`extraida`). Causa: o classificador do orquestrador emite `origem::criada` por conta própria, e o exporter já adiciona `origem::<q.tipo>` → o `Set` juntava as duas. **Origem é fato do PIPELINE (`q.tipo`), não classificação.** Fix cirúrgico no boundary `tagsDaQuestao` (`ankiconnect.ts` + `csv.ts`): descarta tags do classificador que achatam p/ `criada`/`extraida`; só `q.tipo` define origem. +1 teste de regressão. **250 testes (249→+1) + tsc + guards verdes.** (Cards já no deck de teste têm a tag dupla antiga — descartável.)
+
+### ▶ PENDENTE (decisão do usuário)
+- **Orquestrado vira DEFAULT?** Funciona e dá qualidade, MAS custa mais que o `enrichAll` determinístico (orquestrador $0.21 + imagens) e é o caminho `claude -p --agent` (mais pesado). Hoje é opt-in safe (default OFF, fallback). **Recomendo manter opt-in** — Destino #4 já está SATISFEITO como capacidade (agentes Claude de 1ª classe + orquestrador coordenando por-card).
+- Trabalho de p/p-fix/p-fix2 + este driver seguem **não-commitados** (não commito sem você pedir).
+- Frentes não-Destino: (perf+) paralelizar mnemônico/classificar (expor desenho); (a) Fatia 2 reorganizador (destrutiva, expor desenho).
+
+---
+
+## ▶ ESTADO ANTERIOR — sessão p (2026-06-05, fim da sessão p)
+
+**Sessão (p) — rumo ao 🎯 Destino: fechei #5 e construí #4 (autônomo, ultracode).** Das 5 metas do Destino, #1/#2/#3 já estavam fechadas; ataquei as 2 que faltavam.
+
+### 🔬 VALIDAÇÃO AO VIVO (run real do usuário 2026-06-05 21:10–21:27) = **PASS no mecanismo** ✅
+PDF real `curso-230990` (85 pág), `ANKINATOR_ORCHESTRATED=1`, tudo ligado, `criadaFidelidade:livre`.
+- **#5 CONFIRMADO ao vivo:** log `PDF loader: langchain (auto …)` — o loader LangChain foi de fato usado num PDF real.
+- **#4 PASS no mecanismo (a maior incerteza, RESOLVIDA):** `[orquestrador] chamada START {projectRoot:"…/ankinator", bypass:false}` → rodou da raiz, least-privilege (preflight passou); `chamada END {outChars:23800, custo:0.8164}` → **retornou JSON válido, SEM erro, SEM fallback**; `enriquecimento orquestrado END: 36/36 enriquecido(s)` → todos fundidos por id; **36 cards no Anki, 0 erros**. Ou seja, `claude -p --agent`+Task headless **FUNCIONA na assinatura**.
+- ⚠️ **2 achados do run (ambos CORRIGIDOS nesta sessão):**
+  1. **Custo subnotificado:** o resumo dizia `$1.4330 / geração 100%`, mas a chamada do orquestrador custou **$0.8164** e ficava INVISÍVEL (runOrchestratorCli não gravava usage). Custo real do job ≈ **$2.25**. → Fix: novo estágio `orquestrador` em `usage.ts` + `recordUsage` no orquestrador (aparece no resumo agora).
+  2. **Visibilidade do trabalho:** "36/36 enriquecido" = só casou por id, NÃO diz se populou mnemônico/SVG (o $0.82/9min é barato vs. o pipeline determinístico → suspeita de poucos SVGs). → Fix: `mergeOrchestratorResult` agora conta `{deck,tags,resposta,mnemonico,svg,svgDescartado}` e loga no END.
+- ✅ **JULGAMENTO DO USUÁRIO (qualidade):** a maioria dos cards veio SEM imagem, apesar de imagem=ON. **Causa:** o prompt do agente `ankinator-orchestrator` manda usar imagem "com parcimônia" → ele gerava mnemônico mas pulava o SVG (bate com o custo baixo $0.82). **FIX (código, sem gate):** `buildOrchestratorMessage` agora, quando `imagem=ON`, instrui explicitamente "o usuário PEDIU imagens; gere `mnemonicoSvg` p/ a GRANDE MAIORIA dos cards com mnemônico, ignorando 'parcimônia'" (a user-message sobrepõe o default soft do system-prompt do agente). ⏳ Re-rodar p/ confirmar (a nova linha de stats mostrará `svg:N`).
+
+### 🛠️ FOLLOW-UP (feedback do usuário) — 2 fixes
+1. **Imagens no modo orquestrado** (acima): `buildOrchestratorMessage` cobre imagem/mnemônico explicitamente quando ligados.
+2. **UI "Organizar decks" melhorada** (`web/src/components/DeckOrganizer.tsx`): lista de decks longa era sofrível — adicionei **filtro de busca** ("Filtrar decks…"), botões **"Selecionar tudo/filtrados"** + **"Limpar"**, contador "(N de M selecionado)", e aumentei a altura da lista (max-h-44→64). Padrão consistente com o StructurePanel (UI-2).
+
+**245 testes (242→+3) + tsc + guard SPEC-01/enrich/default-loader + web tsc-b/vite build verdes.**
+
+### 🛠️ FOLLOW-UP 2 (run #2 + feedback do usuário) — diagnóstico ao vivo + 3 fixes
+**Run #2 (PDF curso-230990, ANKINATOR_ORCHESTRATED=1):** SVGs apareceram, MAS o **orquestrador ESTOUROU o timeout de 10min** (forçar ~50 imagens num call único) → caiu pro **fallback determinístico** (que gerou as 50/50 imagens, $8.55). Ou seja, as imagens vieram do fallback, não do orquestrador (~10min desperdiçados antes). O usuário também reportou, ao inspecionar o Anki (confirmado via AnkiConnect): (a) cards todos em deck PLANO "Banco de Dados" (sem subníveis), (b) etiquetas duplicadas e com `::` (`fgv`+`banca::fgv`, `2023`+`ano::2023`).
+- **DIAGNÓSTICO (AnkiConnect ao vivo):** os 52 cards estavam em `Banco de Dados` plano; o export CRIA hierarquia (q.deck rooteado na Matéria "Tecnologia da Informação"), mas o **merge do organizador ACHATA** (move cards diretos → 1 deck). Tags: o classificador emite namespaced (`banca::`,`ano::`,`nivel::`,`tema::`,`origem::`) E o exporter adiciona planas de metadata → duplicação.
+- **3 FIXES (escolhas do usuário via AskUserQuestion):**
+  1. **Tags PLANAS** (`tagsDaQuestao` em `ankiconnect.ts`+`csv.ts`): `achatarTag` pega o último segmento (`banca::fgv`→`fgv`) e deduplica → sem `::`, sem duplicar. (+3 testes)
+  2. **Subdecks aninhados sob o deck do envio** (`reRootDeck` + `nestUnderDeck` em `ankiconnect.ts`; wired api.ts `/export/ankiconnect` + web `api.pushToAnki` + checkbox "Aninhar subdecks sob este deck" em `ExportBar.tsx`, **default ON**): re-enraíza q.deck trocando a Matéria pelo deck escolhido → `Banco de Dados::Assunto::Subtópico` (cabeçalho do card + deckName consistentes). Não-destrutivo, dispensa o merge.
+  3. **Híbrido no orquestrado** (`runEnrich` em `orchestrator.ts`): o orquestrador roda deck/tags/cardBuilder/mnemônico (rápido); a **imagem vai pelo estágio determinístico PARALELO** (pool) — elimina o timeout de 10min. (+1 teste)
+- **249 testes (245→+4) + tsc + guard SPEC-01/enrich/default-loader + web tsc-b/vite verdes.** ⏳ Re-rodar p/ confirmar ao vivo: subdecks `Banco de Dados::…`, tags planas, e orquestrado+imagem sem timeout.
+
+### ✅ Destino #5 — Loader LangChain DE FATO usado (FECHADO, verificado por mim, sem run ao vivo)
+- Criei `~/.venvs/odl` + `pip install langchain-opendataloader-pdf==2.0.0` (Python 3.13 + Java 25 ✓), e fiei `ANKINATOR_LANGCHAIN_PYTHON=/home/t316360/.venvs/odl/bin/python3` no `ankinator-app/.env`.
+- **Provado E2E:** o sidecar `tools/odl_langchain_loader.py` extrai Documents normalizados de `curso-8.pdf` (exit 0, `{page_content,metadata}` válidos — valida o wrapper Java também); `isLangchainAvailable()===true`; `chooseLoader(unset) → langchain (auto)`. O app agora **auto-prefere o LangChain**. Suíte verde com o `.env` novo = zero regressão. (Phase 2 deixa de ser "loader inativo".)
+
+### 🔨 Destino #4 — Orquestrador Anki por-card WIRED (construído, opt-in OFF, falta validação AO VIVO)
+- Novo `core/specialists/orchestrator.ts`: dispatcher `runEnrich` que, com `ANKINATOR_ORCHESTRATED=1`, roda `claude -p --agent ankinator-orchestrator` da **raiz do repo** (`--allowedTools Task Read --permission-mode dontAsk`) — o subagent decide por-card e delega via **Task** aos 4 workers; o resultado é fundido **por id**. **Fallback DETERMINÍSTICO p/ `enrichAll`** em qualquer falha (spawn/parse/timeout/agente-ausente/0-id-match/precondição). Default OFF = byte-equivalente (guard SPEC-01 generation spawn INTOCADO; PIPE-03/D-15 verdes).
+- Flags **verificados contra `claude --help`** (não chutei): `--agent`, `--allowedTools <tools...>` variádico, `--permission-mode` (choices incl. `dontAsk`/`bypassPermissions`), `--exclude-dynamic-system-prompt-sections`, `--strict-mcp-config`. Pesquisa de mecânica headless por subagent claude-code-guide.
+- **Revisão adversarial multi-lente (workflow ultracode, 4 lentes + verificação): 3 achados MEDIUM confirmados, todos corrigidos:**
+  1. **(segurança)** os 4 workers não declaravam `tools:` → ao serem delegados via Task herdariam TODO o toolset (Bash/Write/…); `--allowedTools` do pai NÃO restringe o filho. **Mitigado EM CÓDIGO** por uma **precondição de segurança** (`workersToolRestricted`): o modo orquestrado **se recusa a rodar** (cai p/ `enrichAll`) se os workers não estiverem tool-restritos. ✅ **`tools: []` + `disallowedTools` APLICADO nos 4 agentes** (`.claude/agents/ankinator-{deck-classifier,card-builder,mnemonic,image}.md`) — você aprovou (a edição é self-mod, foi gated pelo classificador). `workersToolRestricted()` agora retorna `{ok:true}` → modo orquestrado **destravado E seguro** (workers sem Bash/Write/…).
+  2. **(segurança)** escape `ANKINATOR_ORCHESTRATED_BYPASS` (bypassPermissions) → **aviso ALTO** no log + a precondição acima também o cobre.
+  3. **(correção)** `mergeOrchestratorResult` ignorava os toggles → **gating por estágio** (deck/tags⟸classificar, resposta⟸cardBuilder, mnemônico⟸mnemonico, svg⟸imagem) = paridade com `enrichAll`. SVG do orquestrador passa pelo MESMO boundary `sanitizarSvg`(fail-closed)+`avaliarQualidadeSvg`.
+- **242 testes (220→+22) + tsc --noEmit + guard SPEC-01 + guard-enrich + guard-default-loader verdes.** Arquivos: `core/specialists/orchestrator.ts` (+`orchestrator.test.ts`), `enrich.ts` (EnrichOpts +`orchestrated`), `config.ts` (+knob), `api.ts` (swap `enrichAll`→`runEnrich`), `.env`/`.env.example` (docs). Web INTOCADO.
+
+**▶ PRÓXIMO PASSO (escolha do usuário):**
+1. ✅ **FEITO — `tools: []` aplicado nos 4 workers** (você aprovou); preflight `workersToolRestricted` PASSA; modo orquestrado destravado e seguro. **242 testes + tsc + guard SPEC-01 verdes** após a edição.
+2. **▶ Validar #4 AO VIVO** (assinatura): `ANKINATOR_ORCHESTRATED=1 npm run dev:server` num PDF real → ver no log `orquestrador chamada START`/`END` e se os cards saem enriquecidos; se headless `-p --agent` + Task falhar, o fallback determinístico mantém o pipeline (você vê `falhou — fallback p/ enrichAll`). Knob de debug: `ANKINATOR_ORCHESTRATED_BYPASS=1` (aviso alto no log).
+3. **Validar #5 AO VIVO** (opcional): re-extrair um PDF e ver no log `PDF loader: langchain`.
+4. Demais frentes não-Destino: (medir-b) custo/perf; (a) Fatia 2 reorganizador (destrutiva); (perf+) paralelizar mnemônico/classificar.
+
+---
+
+## ▶ ESTADO ANTERIOR — sessão o (2026-06-05)
 
 ### 🔬 VEREDITO medir-c AO VIVO (run real 2026-06-05) = **PASS** (com 1 flag *mild*) ✅
 
