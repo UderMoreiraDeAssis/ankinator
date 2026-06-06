@@ -28,6 +28,11 @@ Limitações documentadas:
   - Este sidecar SÓ CONSOME vetores (não gera embeddings).
     A fonte de embeddings (ex.: sentence-transformers local para PT-BR) é DEFERIDA
     para a fase futura "dedup semântico" no ROADMAP (Eixo 3 / C2).
+  - turbovec exige `dim` MÚLTIPLO DE 8 (ValueError caso contrário). Embeddings comuns
+    do sentence-transformers (384/768) já satisfazem; o smoke usa dim=64.
+  - turbovec.search recebe um BATCH de queries (2D). add/search aceitam 1 query (1D,
+    reshape interno → (1, dim)) ou um batch (2D); saída plana p/ 1 query, 2D p/ batch.
+    (Validado AO VIVO 2026-06-06 com turbovec==0.7.0 — o teste mockado não pega isso.)
   - Pin estrito turbovec==0.7.0: projeto v0.x (~7 semanas, 16 releases) — API pode
     mudar entre minors. O teste CLI-free (turbovec.test.ts) detecta drift de API.
   - O índice add/search é em memória (sem persistência) — interface futura mínima.
@@ -70,12 +75,15 @@ def cmd_smoke(args: argparse.Namespace) -> int:
 
         idx = TurboQuantIndex(dim=dim, bit_width=bit_width)
         idx.add(vecs)
-        scores, indices = idx.search(vecs[0], k=k)
+        # turbovec.search espera um BATCH de queries (2D: (num_queries, dim)).
+        # Passar 1 query → fatia 2D vecs[0:1]; a saída vem 2D (1, k) → 1ª linha.
+        scores, indices = idx.search(vecs[0:1], k=k)
+        top_indices = np.asarray(indices)[0].tolist()[:k]
 
         result = {
             "ok": True,
             "k": k,
-            "top_indices": indices.tolist()[:k],
+            "top_indices": top_indices,
         }
         print(json.dumps(result))
     except Exception as e:  # noqa: BLE001 — boundary: stderr limpo
@@ -118,14 +126,22 @@ def cmd_search(args: argparse.Namespace) -> int:  # noqa: ARG001
         k = int(payload.get("k", 5))
         _n, dim = vectors.shape
 
+        # turbovec.search exige queries 2D (batch). Aceita 1 query (1D) ou um batch (2D):
+        # reshape 1D→(1, dim); preserva o formato de saída (1 query → arrays planos).
+        was_1d = query.ndim == 1
+        if was_1d:
+            query = query.reshape(1, -1)
+
         idx = TurboQuantIndex(dim=dim, bit_width=4)
         idx.add(vectors)
         scores, indices = idx.search(query, k=k)
+        scores = np.asarray(scores)
+        indices = np.asarray(indices)
 
         print(json.dumps({
             "ok": True,
-            "scores": scores.tolist(),
-            "indices": indices.tolist(),
+            "scores": (scores[0] if was_1d else scores).tolist(),
+            "indices": (indices[0] if was_1d else indices).tolist(),
         }))
     except Exception as e:  # noqa: BLE001 — boundary: stderr limpo
         print(f"turbovec_index search: {type(e).__name__}: {e}", file=sys.stderr)
