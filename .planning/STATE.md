@@ -53,6 +53,16 @@ Progress (capacidades construídas / render — eixo (a) da Definição de Pront
 
 Progress (valor — retenção do DONO estudando, eixo (b) da Definição de Pronto): [░░░░░░░░░░] ~0% — nenhum sinal de retenção medido ainda (again-rate/FSRS ou auto-teste cego D+7/D+30). O ~99% acima é só capacidades/render; este eixo é o gargalo real do Core Value. Ver ROADMAP "Definição de Pronto" + `.planning/FRAMING-REVIEW.md` P0 (DEC-q).
 
+## Sessão autônoma — 2026-06-07 (medir-b + decisões delegadas)
+
+Modo autônomo (usuário delegou as decisões via skill `tomada-de-decisao` + sequential-thinking). Guard-rails mantidos: nada destrutivo no Anki REAL; runs ao vivo limitados.
+
+- **medir-b (custo/perf) VALIDADO AO VIVO** — A/B determinístico (curso-230990, fatia 4,5): baseline **8 cards $1.58 / 143s** vs otimizado **7 cards $1.23 / 111s** (**−22% custo, −23% tempo**). Por estágio (baseline): **imagem $0.70 (44% custo / 57% tempo) = maior alavanca** > cardBuilder $0.46 > geração $0.18 (35s, thinking ON) > classificar $0.15 > mnemônico $0.09. Efeitos isolados: thinking-off **−44% custo/−42% tempo** na geração; imagem-seletiva pula verbais (−26%); split-cap trunca o 1→N. **Decisão DEC-r: manter os 3 knobs OPT-IN** (trocam VALOR — qualidade/atomicidade/cobertura de imagem do Destino #3 — por custo NOCIONAL). Driver instrumentado com resumo custo/perf (`02dcaca`).
+- **Orquestrado vira default? → DEC-s: permanece OPT-IN** (custa mais sem ganho de qualidade medido; Destino #4 satisfeito como capacidade).
+- **perf+ (paralelizar classificar/mnemônico): NÃO FEITO (decisão)** — otimizaria um NÃO-gargalo (gargalo = imagem, já em pool=3); `classificar` é stage 1 PRÉ-split e `mnemônico` é stage 3 PÓS-split → paralelizar exigiria reordenar um pipeline validado e *ordering-sensitive* por ~5s. Risco (modo de falha histórico = bug de pipeline só visto ao vivo) > recompensa. Descartado.
+- **eixo (b) retenção MEDIDO empiricamente** (AnkiConnect, read-only): **0/74 cards do Ankinator estudados** (todos `new`) → retenção indefinida. Baseline da coleção: **0 cards maduros (ivl≥21d)**, **~45% incidência de Again/ano** (86/192). Os decks Ankinator são DE TESTE/descartáveis → o sinal de retenção real virá do **USO REAL** do dono, não destes decks. A barra de valor (eixo b) segue `~0%` por ausência de uso real, não por falha.
+- **Fatia 2 do reorganizador — DESIGN-ONLY (aguarda consentimento; destrutiva → DEC-q):** desenho proposto = (1) **re-hierarquizar in-place**: o classificador existente sugere `Matéria::Assunto::Subtópico` por nota de um deck; PRÉVIA mostra o diff (nota→deck destino) e move via AnkiConnect `changeDeck` só após confirmar; (2) **padronizar tags**: detecta quase-duplicatas (Jaccard, reusa `existing-deck.ts`), propõe canônica, PRÉVIA→`replaceTags`. Segurança = 2 fases prévia→aplicar (igual Fatia 1), nunca apaga sem confirmar vazio, re-deriva alvos no apply. **NÃO construído** até OK explícito.
+
 ## Performance Metrics
 
 > ⚠️ **Telemetria parcial, parada por volta da Phase 04** (a tabela "Detail" abaixo só vai até Phase 04 P04-03). Os números aqui (ex.: "12 planos completos") refletem o que foi cronometrado até então; o total de planos formais está no frontmatter (`completed_plans: 16`). Sessões posteriores (d–q-live3) entregaram muito além disso via sessões/quick-tasks não cronometradas. (Reconciliação C7.)
