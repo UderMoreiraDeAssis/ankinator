@@ -20,6 +20,7 @@ import { runEnrich } from '../core/specialists/orchestrator.js';
 import { createProvider } from '../core/providers/index.js';
 import { pushToAnki } from '../core/exporters/ankiconnect.js';
 import type { GenerateOptions } from '../core/types.js';
+import { snapshotUsage, usageSince, formatCost } from '../core/usage.js';
 
 const pdf = process.argv[2];
 const deck = process.argv[3] || 'AnkinatorTeste';
@@ -62,6 +63,7 @@ const genOptions: GenerateOptions = {
   imagem: true,
 };
 
+const usoAntes = snapshotUsage();
 console.log('[live] === GERAÇÃO ===');
 const result = await generateAll(provider, chunks, genOptions, (p) =>
   console.log(`[gen] bloco ${p.index + 1}/${p.total}: ${p.questoesNoBloco} questões`),
@@ -92,6 +94,17 @@ if (questoes.length && deveRodarEnrich(enrichOpts)) {
   );
 }
 
+const uso = usageSince(usoAntes);
+console.log('\n[live] === CUSTO / PERF POR ESTÁGIO (medir-b) ===');
+for (const e of uso.porEstagio) {
+  console.log(
+    `[custo] ${e.stage.padEnd(12)} calls=${e.calls} out=${e.outputTokens} cacheRead=${e.cacheReadTokens} apiMs=${(e.apiMs / 1000).toFixed(1)}s ${formatCost(e.costUsd)}`,
+  );
+}
+console.log(
+  `[custo] TOTAL calls=${uso.total.calls} ${formatCost(uso.total.costUsd)} apiMs=${(uso.total.apiMs / 1000).toFixed(1)}s | cards=${questoes.length} | custo/card=${formatCost(questoes.length ? uso.total.costUsd / questoes.length : 0)}`,
+);
+
 const comDeck = questoes.filter((q) => q.deck).length;
 const comTags = questoes.filter((q) => q.tags && q.tags.length).length;
 const comMnem = questoes.filter((q) => q.mnemonico).length;
@@ -109,13 +122,17 @@ for (const q of questoes.slice(0, 3)) {
   console.log(`svg : ${q.mnemonicoSvg ? `${q.mnemonicoSvg.length}c` : '(sem)'}`);
 }
 
-console.log('\n[live] === EXPORT AO ANKI (nestUnderDeck) ===');
-const push = await pushToAnki(questoes, {
-  deck,
-  fonte: doc.fileName,
-  nestUnderDeck: true,
-  url: config.ankiconnectUrl,
-});
-console.log(`[live] PUSH: ${JSON.stringify(push)}`);
+if (process.env.ANKINATOR_LIVE_NO_PUSH || deck === '-') {
+  console.log('\n[live] === EXPORT pulado (ANKINATOR_LIVE_NO_PUSH / deck="-") ===');
+} else {
+  console.log('\n[live] === EXPORT AO ANKI (nestUnderDeck) ===');
+  const push = await pushToAnki(questoes, {
+    deck,
+    fonte: doc.fileName,
+    nestUnderDeck: true,
+    url: config.ankiconnectUrl,
+  });
+  console.log(`[live] PUSH: ${JSON.stringify(push)}`);
+}
 
 console.log(`\n[live] FIM · ${((Date.now() - t0) / 1000).toFixed(1)}s`);
