@@ -235,22 +235,34 @@ export function deveRodarEnrich(opts: EnrichOpts): boolean {
 
 // ── Helpers internos de userMessage ──────────────────────────────────────────
 
-/** Monta o payload serializado (D-05/T-03-02) para o classificador. */
-function buildClassificadorMessage(questoes: Questao[]): string {
-  // Serializar via JSON.stringify — nunca interpolar q.resposta/q.pergunta cru (T-03-02)
-  const cards = questoes.map((q) => ({
-    id: q.id,
-    pergunta: q.pergunta,
-    resposta: q.resposta,
-    tipo: q.tipo,
+/**
+ * Monta a mensagem do classificador a partir de cards genéricos {id,pergunta,resposta}.
+ * Exportada p/ reuso na Fatia 2 (re-hierarquização de notas existentes do Anki).
+ */
+export function buildClassifyMessage(
+  cards: { id: string; pergunta: string; resposta: string; tipo?: string }[]
+): string {
+  // Serializar via JSON.stringify — nunca interpolar resposta/pergunta cru (T-03-02)
+  const payload = cards.map((c) => ({
+    id: c.id,
+    pergunta: c.pergunta,
+    resposta: c.resposta,
+    ...(c.tipo ? { tipo: c.tipo } : {}),
   }));
   return [
     'Classifique os cards a seguir. Retorne APENAS JSON no formato:',
     '{"classificacoes":[{"id":"<id>","deck":"<Matéria::Assunto::Subtópico>","tags":["tag1","tag2"]}]}',
     '',
     'Cards:',
-    JSON.stringify(cards, null, 2),
+    JSON.stringify(payload, null, 2),
   ].join('\n');
+}
+
+/** Monta o payload serializado (D-05/T-03-02) para o classificador. */
+function buildClassificadorMessage(questoes: Questao[]): string {
+  return buildClassifyMessage(
+    questoes.map((q) => ({ id: q.id, pergunta: q.pergunta, resposta: q.resposta, tipo: q.tipo }))
+  );
 }
 
 /** Monta o payload por-card para o card-builder (D-12).

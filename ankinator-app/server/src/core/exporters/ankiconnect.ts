@@ -58,6 +58,8 @@ interface NoteInfo {
   noteId: number;
   fields: Record<string, { value: string; order: number }>;
   tags?: string[];
+  /** Ids dos cards da nota (notesInfo retorna; usado p/ re-hierarquização — Fatia 2). */
+  cards?: number[];
 }
 
 /**
@@ -146,6 +148,46 @@ export async function apagarDecks(decks: string[], url = ANKICONNECT_URL, cardsT
 export async function adicionarTags(notes: number[], tags: string[], url = ANKICONNECT_URL): Promise<void> {
   if (!notes.length || !tags.length) return;
   await invoke('addTags', { notes, tags: tags.join(' ') }, url);
+}
+
+// ── Fatia 2: re-hierarquização + padronização de tags ──────────────────────────
+
+/** Nota rica p/ re-hierarquização: id + front + back + cards (p/ mover) + tags. */
+export interface DeckNoteRich {
+  noteId: number;
+  front: string;
+  back: string;
+  cards: number[];
+  tags: string[];
+}
+
+/** Lê notas ricas (front+back+cards+tags) de um deck (inclui subdecks via `deck:"X"`). */
+export async function notesRicasDoDeck(deck: string, url = ANKICONNECT_URL): Promise<DeckNoteRich[]> {
+  const ids = await invoke<number[]>('findNotes', { query: deckQuery(deck) }, url);
+  if (!ids.length) return [];
+  const notas = await invoke<NoteInfo[]>('notesInfo', { notes: ids }, url);
+  return notas.map((n) => {
+    const campos = Object.values(n.fields ?? {}).sort((a, b) => a.order - b.order);
+    return {
+      noteId: n.noteId,
+      front: campos[0]?.value ?? '',
+      back: campos[1]?.value ?? '',
+      cards: Array.isArray(n.cards) ? n.cards : [],
+      tags: n.tags ?? [],
+    };
+  });
+}
+
+/** Mapeia cards → deck atual (AnkiConnect `getDecks`): retorna `{deck: cardIds[]}`. */
+export async function decksDeCards(cards: number[], url = ANKICONNECT_URL): Promise<Record<string, number[]>> {
+  if (!cards.length) return {};
+  return invoke<Record<string, number[]>>('getDecks', { cards }, url);
+}
+
+/** Substitui UM tag por outro num conjunto de notas (replaceTags). No-op se de===para. */
+export async function substituirTag(notes: number[], de: string, para: string, url = ANKICONNECT_URL): Promise<void> {
+  if (!notes.length || !de || !para || de === para) return;
+  await invoke('replaceTags', { notes, tag_to_replace: de, replace_with_tag: para }, url);
 }
 
 export interface PushOptions {

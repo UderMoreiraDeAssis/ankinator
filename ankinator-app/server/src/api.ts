@@ -13,13 +13,15 @@ import { config } from './config.js';
 import { loadDocument } from './core/document-loader.js';
 import { chunkDocument } from './core/chunker.js';
 import { generateAll } from './core/generation.js';
-import { deveRodarEnrich } from './core/specialists/enrich.js';
+import { deveRodarEnrich, buildClassifyMessage, parseClassificacoesJson } from './core/specialists/enrich.js';
+import { runClaudeCli } from './core/specialists/runner.js';
+import { loadPrompt } from './core/specialists/prompt-loader.js';
 import { runEnrich } from './core/specialists/orchestrator.js';
 import { createProvider } from './core/providers/index.js';
 import { toAnkiCsv } from './core/exporters/csv.js';
 import { pushToAnki, ankiConnectStatus, listDecks } from './core/exporters/ankiconnect.js';
 import { resolveExistingDeck, previewExistingDeck, partitionNovas, type DeckSource } from './core/existing-deck.js';
-import { previewOrganize, applyOrganize } from './core/deck-organizer.js';
+import { previewOrganize, applyOrganize, type ClassifyFn } from './core/deck-organizer.js';
 import { documentStore, jobStore, deckFileStore } from './store.js';
 import type { IncrementalInfo } from './store.js';
 import { log, timer } from './logger.js';
@@ -165,18 +167,20 @@ api.post('/deck/preview', async (req: Request, res: Response) => {
  * sem tocar a coleção. Body: { decks: string[], merge?: {target}, dedup?: boolean, dedupThreshold? }.
  */
 api.post('/deck/organize/preview', async (req: Request, res: Response) => {
-  const { decks, merge, dedup, dedupThreshold } = (req.body ?? {}) as {
+  const { decks, merge, dedup, dedupThreshold, rehier, standardizeTags } = (req.body ?? {}) as {
     decks?: unknown;
     merge?: { target?: unknown };
     dedup?: unknown;
     dedupThreshold?: unknown;
+    rehier?: unknown;
+    standardizeTags?: unknown;
   };
   if (!Array.isArray(decks) || decks.length === 0 || !decks.every((d) => typeof d === 'string')) {
     res.status(400).json({ error: 'Informe ao menos um deck (decks: string[]).' });
     return;
   }
-  if (!merge && !dedup) {
-    res.status(400).json({ error: 'Selecione ao menos uma operação (merge e/ou dedup).' });
+  if (!merge && !dedup && !rehier && !standardizeTags) {
+    res.status(400).json({ error: 'Selecione ao menos uma operação (merge, dedup, rehier e/ou standardizeTags).' });
     return;
   }
   if (merge && (typeof merge.target !== 'string' || !merge.target.trim())) {
@@ -187,6 +191,24 @@ api.post('/deck/organize/preview', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'dedupThreshold deve ser um número em (0, 1].' });
     return;
   }
+  // Re-hierarquização usa o classificador (LLM): mesma chamada do estágio "classificar" do enrich.
+  const classify: ClassifyFn = async (notes) => {
+    const text = await runClaudeCli({
+      systemPrompt: loadPrompt('deck-classifier'),
+      userMessage: buildClassifyMessage(notes),
+      disableThinking: true,
+      stage: 'classificar',
+    });
+    return parseClassificacoesJson(text);
+  };
+  const rehierOpt = rehier
+    ? {
+        base:
+          typeof rehier === 'object' && rehier !== null && typeof (rehier as { base?: unknown }).base === 'string'
+            ? ((rehier as { base?: string }).base as string).trim()
+            : undefined,
+      }
+    : undefined;
   try {
     const plan = await previewOrganize(
       {
@@ -194,8 +216,11 @@ api.post('/deck/organize/preview', async (req: Request, res: Response) => {
         merge: merge ? { target: (merge.target as string).trim() } : undefined,
         dedup: !!dedup,
         dedupThreshold: typeof dedupThreshold === 'number' ? dedupThreshold : undefined,
+        rehier: rehierOpt,
+        standardizeTags: !!standardizeTags,
       },
-      config.ankiconnectUrl
+      config.ankiconnectUrl,
+      classify
     );
     res.json(plan);
   } catch (err) {
@@ -210,17 +235,19 @@ api.post('/deck/organize/preview', async (req: Request, res: Response) => {
  * cards e apaga decks vazios); dedup é não-destrutivo (marca tag). Body: { plan, applyMerge?, applyDedup? }.
  */
 api.post('/deck/organize/apply', async (req: Request, res: Response) => {
-  const { plan, applyMerge, applyDedup } = (req.body ?? {}) as {
+  const { plan, applyMerge, applyDedup, applyRehier, applyTagStd } = (req.body ?? {}) as {
     plan?: unknown;
     applyMerge?: unknown;
     applyDedup?: unknown;
+    applyRehier?: unknown;
+    applyTagStd?: unknown;
   };
   if (!plan || typeof plan !== 'object') {
     res.status(400).json({ error: 'plan (objeto vindo da prévia) é obrigatório.' });
     return;
   }
-  if (!applyMerge && !applyDedup) {
-    res.status(400).json({ error: 'Nada a aplicar (applyMerge e applyDedup ambos falsos).' });
+  if (!applyMerge && !applyDedup && !applyRehier && !applyTagStd) {
+    res.status(400).json({ error: 'Nada a aplicar (applyMerge/applyDedup/applyRehier/applyTagStd todos falsos).' });
     return;
   }
   // Valida o shape do plan por flag → 400 (erro do cliente) em vez de deixar um for-of
@@ -240,10 +267,24 @@ api.post('/deck/organize/apply', async (req: Request, res: Response) => {
       return;
     }
   }
+  if (applyRehier) {
+    const r = p.rehier;
+    if (!r || typeof r !== 'object' || !Array.isArray(r.moves)) {
+      res.status(400).json({ error: 'applyRehier pedido, mas plan.rehier é inválido (exige moves array). Rode a prévia novamente.' });
+      return;
+    }
+  }
+  if (applyTagStd) {
+    const t = p.tagStd;
+    if (!t || typeof t !== 'object' || !Array.isArray(t.groups)) {
+      res.status(400).json({ error: 'applyTagStd pedido, mas plan.tagStd é inválido (exige groups array). Rode a prévia novamente.' });
+      return;
+    }
+  }
   try {
     const result = await applyOrganize(
       plan as import('./core/deck-organizer.js').OrganizePlan,
-      { applyMerge: !!applyMerge, applyDedup: !!applyDedup },
+      { applyMerge: !!applyMerge, applyDedup: !!applyDedup, applyRehier: !!applyRehier, applyTagStd: !!applyTagStd },
       config.ankiconnectUrl
     );
     res.json(result);
