@@ -20,6 +20,25 @@ A milestone upgrade-2026 eleva a qualidade pedagógica dos flashcards e melhora 
 
 Phases 1–4 entregaram **código que passa em 144 testes determinísticos**, mas o **UAT de runtime FALHOU**: zero mnemônicos, zero imagens, questões "inúteis" (coladas cruas), cards sem HTML/CSS rico. Os testes mockam o runner do Claude, então o caminho real do CLI nunca foi exercitado. As Phases 4.1–7 abaixo corrigem a rota até o Destino.
 
+### ✅ Definição de Pronto (DoD) — validação ao vivo é GATE (não nota lateral)
+
+> Origem: `.planning/FRAMING-REVIEW.md` §10 P0/P1 (DEC-q). Institucionaliza "mockado não prova pronto" como invariante de processo (Senge: parar de tratar só o sintoma).
+
+Uma fase só vira **Complete**/✅ quando AMBOS os eixos passam:
+
+- **(a) pronto-de-render** — o artefato correto aparece no Anki, verificável pelo agente (`live-validate.ts` + AnkiConnect, cruzando fatos com o PDF-fonte). Runner mockado **não conta**.
+- **(b) pronto-de-valor** — há um **sinal de retenção do DONO estudando** (*again-rate*/FSRS no Anki após N revisões, ou auto-teste cego em D+7/D+30). A leitura dos cards pelo agente cobre só (a).
+
+**Regras:**
+- Nenhuma fase fica *Complete*/✅ enquanto houver "⏳ falta ao vivo".
+- Trabalho **destrutivo** (Fatia 2, replace-tags) ou **decisão** (orquestrado vira default?): escrever o critério **PASS/FAIL antes** de codar/rodar (Karpathy #4); ops destrutivas no Anki exigem desenho exposto + consentimento (PROJECT.md → Constraints).
+- As fases já marcadas ✅ acima satisfazem o eixo **(a)** (render); o eixo **(b)** ainda está aberto e é rastreado pela barra de valor abaixo (não re-abrimos as fases — o gate vale daqui pra frente).
+
+**Duas barras de progresso (honestas):**
+
+- **Capacidades construídas (render):** `[█████████▍] ~99%` — pipeline + orquestrador + loader validados ao vivo.
+- **Evidência de valor (retenção do dono):** `[░░░░░░░░░░] ~0%` — nenhum sinal de retenção medido ainda. **Este é o gargalo real do Core Value, não mais engenharia.**
+
 ## Phases
 
 **Phase Numbering:**
