@@ -22,6 +22,7 @@ export function DeckOrganizer({ onClose }: Props) {
   const [doDedup, setDoDedup] = useState(true);
   const [doMerge, setDoMerge] = useState(false);
   const [mergeTarget, setMergeTarget] = useState('');
+  const [filter, setFilter] = useState('');
 
   const [phase, setPhase] = useState<Phase>('config');
   const [plan, setPlan] = useState<OrganizePlan | null>(null);
@@ -49,6 +50,12 @@ export function DeckOrganizer({ onClose }: Props) {
       n.has(d) ? n.delete(d) : n.add(d);
       return n;
     });
+
+  const filteredDecks = filter.trim()
+    ? decks.filter((d) => d.toLowerCase().includes(filter.trim().toLowerCase()))
+    : decks;
+  const selecionarFiltrados = () => setSelected((prev) => new Set([...prev, ...filteredDecks]));
+  const limparSelecao = () => setSelected(new Set());
 
   const podeGerar = selected.size > 0 && (doDedup || (doMerge && mergeTarget.trim().length > 0));
 
@@ -125,23 +132,64 @@ export function DeckOrganizer({ onClose }: Props) {
           {phase === 'config' && (
             <div className="space-y-4">
               <div>
-                <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Decks ({selected.size} selecionado{selected.size === 1 ? '' : 's'})
-                </h3>
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Decks ({selected.size} de {decks.length} selecionado{selected.size === 1 ? '' : 's'})
+                  </h3>
+                  {decks.length > 0 && (
+                    <div className="flex shrink-0 gap-3">
+                      <button
+                        type="button"
+                        onClick={selecionarFiltrados}
+                        disabled={filteredDecks.length === 0 || filteredDecks.every((d) => selected.has(d))}
+                        className="text-xs font-medium text-brand-600 transition hover:underline disabled:opacity-40 disabled:no-underline dark:text-brand-400"
+                      >
+                        Selecionar {filter.trim() ? 'filtrados' : 'tudo'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={limparSelecao}
+                        disabled={selected.size === 0}
+                        className="text-xs font-medium text-slate-500 transition hover:underline disabled:opacity-40 disabled:no-underline dark:text-slate-400"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {decks.length === 0 ? (
                   <p className="text-sm text-slate-400">Nenhum deck encontrado.</p>
                 ) : (
-                  <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                    {decks.map((d) => (
-                      <label
-                        key={d}
-                        className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60"
-                      >
-                        <input type="checkbox" checked={selected.has(d)} onChange={() => toggleDeck(d)} className="accent-brand-600" />
-                        <span className="min-w-0 break-words">{d}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <>
+                    <input
+                      type="text"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                      placeholder="Filtrar decks…"
+                      aria-label="Filtrar decks"
+                      className="mb-2 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                    />
+                    <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                      {filteredDecks.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-slate-400">Nenhum deck corresponde a “{filter.trim()}”.</p>
+                      ) : (
+                        filteredDecks.map((d) => (
+                          <label
+                            key={d}
+                            className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected.has(d)}
+                              onChange={() => toggleDeck(d)}
+                              className="shrink-0 accent-brand-600"
+                            />
+                            <span className="min-w-0 break-words">{d}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
 

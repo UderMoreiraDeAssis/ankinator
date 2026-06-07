@@ -137,13 +137,14 @@ export const api = {
     deck: string,
     fonte: string,
     tags: string[],
-    allowDuplicate: boolean
+    allowDuplicate: boolean,
+    nestUnderDeck = false
   ): Promise<PushResult> {
     return jsonOrThrow(
       await fetch('/api/export/ankiconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questoes, deck, fonte, tags, allowDuplicate }),
+        body: JSON.stringify({ questoes, deck, fonte, tags, allowDuplicate, nestUnderDeck }),
       })
     );
   },

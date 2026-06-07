@@ -14,6 +14,7 @@ export function ExportBar({ cards, fonte, tags }: Props) {
   const [deck, setDeck] = useState('Ankinator');
   const [decks, setDecks] = useState<string[]>([]);
   const [allowDup, setAllowDup] = useState(false);
+  const [nestUnder, setNestUnder] = useState(true);
   const [pushing, setPushing] = useState(false);
   const [result, setResult] = useState<PushResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export function ExportBar({ cards, fonte, tags }: Props) {
     setError(null);
     setResult(null);
     try {
-      const r = await api.pushToAnki(cards, deck, fonte, tags, allowDup);
+      const r = await api.pushToAnki(cards, deck, fonte, tags, allowDup, nestUnder);
       setResult(r);
       await refreshAnki();
     } catch (e) {
@@ -200,6 +201,10 @@ export function ExportBar({ cards, fonte, tags }: Props) {
               {pushing ? 'Enviando…' : 'Enviar'}
             </button>
           </div>
+          <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <input type="checkbox" checked={nestUnder} onChange={(e) => setNestUnder(e.target.checked)} className="rounded border-slate-300 dark:border-slate-600 text-brand-600" />
+            Aninhar subdecks sob este deck <span className="text-slate-400 dark:text-slate-500">(Deck::Assunto::Subtópico)</span>
+          </label>
           <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <input type="checkbox" checked={allowDup} onChange={(e) => setAllowDup(e.target.checked)} className="rounded border-slate-300 dark:border-slate-600 text-brand-600" />
             Permitir duplicatas
