@@ -18,7 +18,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { toAnkiCsv } from './csv.js';
-import { versoHtml } from './ankiconnect.js';
+import { versoHtml, tagsDaQuestao, reRootDeck } from './ankiconnect.js';
 import { buildFrontHtml, buildBackHtml, splitOpcoes, renderOpcoesList } from './card-html.js';
 import type { Questao } from '../types.js';
 
@@ -37,6 +37,50 @@ const cardComMnemonico: Questao = {
   ...cardBase,
   mnemonico: 'Mnemônico de exemplo',
 };
+
+describe('reRootDeck + tagsDaQuestao (subdecks aninhados + tags planas)', () => {
+  it('reRootDeck troca a Matéria pelo deck-base, preservando os subníveis', () => {
+    expect(reRootDeck('Tecnologia da Informação::Infraestrutura::Balanceamento', 'Banco de Dados')).toBe(
+      'Banco de Dados::Infraestrutura::Balanceamento',
+    );
+  });
+
+  it('reRootDeck com deck de 1 nível → só o base', () => {
+    expect(reRootDeck('Tecnologia da Informação', 'Banco de Dados')).toBe('Banco de Dados');
+  });
+
+  it('tagsDaQuestao achata namespaces e deduplica (sem `::`, sem duplicar)', () => {
+    const q: Questao = {
+      ...cardBase,
+      tipo: 'extraida',
+      tags: ['ano::2023', 'banca::fgv', 'nivel::intermediario', 'tema::dados-abertos', 'origem::extraida'],
+      metadata: { banca: 'FGV', ano: 2023 },
+    };
+    const tags = tagsDaQuestao(q, ['concurso']);
+    expect(tags.some((t) => t.includes('::'))).toBe(false); // nenhuma etiqueta com ::
+    expect(tags).toEqual(
+      expect.arrayContaining(['2023', 'fgv', 'intermediario', 'dados-abertos', 'extraida', 'concurso', 'ankinator']),
+    );
+    // dedup: 'fgv'/'2023'/'extraida' aparecem UMA vez (não plano + namespaced)
+    expect(tags.filter((t) => t === 'fgv')).toHaveLength(1);
+    expect(tags.filter((t) => t === '2023')).toHaveLength(1);
+    expect(tags.filter((t) => t === 'extraida')).toHaveLength(1);
+  });
+
+  it('tagsDaQuestao: origem vem SÓ de q.tipo, não do classificador (sem tag dupla criada+extraida)', () => {
+    // O orquestrado às vezes emite `origem::criada` num card cuja geração marcou `extraida` (validação
+    // ao vivo q-live2) → a origem NÃO pode duplicar/contradizer. q.tipo é a fonte única.
+    const q: Questao = { ...cardBase, tipo: 'extraida', tags: ['tema::acid', 'origem::criada'] };
+    const tags = tagsDaQuestao(q, []);
+    expect(tags).toContain('extraida');
+    expect(tags).not.toContain('criada');
+    expect(tags.filter((t) => t === 'criada' || t === 'extraida')).toEqual(['extraida']);
+    // caminho inverso: card 'criada' com `origem::extraida` espúria → só 'criada'
+    const q2: Questao = { ...cardBase, tipo: 'criada', tags: ['origem::extraida'] };
+    const tags2 = tagsDaQuestao(q2, []);
+    expect(tags2.filter((t) => t === 'criada' || t === 'extraida')).toEqual(['criada']);
+  });
+});
 
 const cardComSvg: Questao = {
   ...cardBase,

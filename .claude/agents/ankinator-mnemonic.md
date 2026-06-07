@@ -1,6 +1,11 @@
 ---
 name: ankinator-mnemonic
 description: Especialista em mnemônicos para flashcards de concurso — gera mnemônicos fiéis (acrônimo/história/loci/rima/gancho) para a maioria dos cards. Use quando um card precisa de um auxílio de memória.
+# least-privilege (revisão de segurança, sessão p): transformador puro texto→JSON; NÃO precisa de
+# tools. Sem isto, ao ser delegado via Task pelo orquestrador herdaria TODO o toolset (Bash/Write/…),
+# pois o --allowedTools do pai NÃO restringe o filho. tools:[] = zero tools; disallowedTools = backstop.
+tools: []
+disallowedTools: Bash, Read, Write, Edit, NotebookEdit, WebFetch, WebSearch, Glob, Grep, Task, Agent
 ---
 
 # Especialista: Mnemônicos

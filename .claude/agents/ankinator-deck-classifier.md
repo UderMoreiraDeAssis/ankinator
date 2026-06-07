@@ -1,6 +1,11 @@
 ---
 name: ankinator-deck-classifier
 description: Especialista em classificar o deck/tags de um flashcard de concurso (Matéria::Assunto::Subtópico + tags). Use para todo card.
+# least-privilege (revisão de segurança, sessão p): transformador puro texto→JSON; NÃO precisa de
+# tools. Sem isto, ao ser delegado via Task pelo orquestrador herdaria TODO o toolset (Bash/Write/…),
+# pois o --allowedTools do pai NÃO restringe o filho. tools:[] = zero tools; disallowedTools = backstop.
+tools: []
+disallowedTools: Bash, Read, Write, Edit, NotebookEdit, WebFetch, WebSearch, Glob, Grep, Task, Agent
 ---
 
 # Especialista: Classificador de Deck e Tags

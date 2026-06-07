@@ -13,7 +13,8 @@ import { config } from './config.js';
 import { loadDocument } from './core/document-loader.js';
 import { chunkDocument } from './core/chunker.js';
 import { generateAll } from './core/generation.js';
-import { enrichAll, deveRodarEnrich } from './core/specialists/enrich.js';
+import { deveRodarEnrich } from './core/specialists/enrich.js';
+import { runEnrich } from './core/specialists/orchestrator.js';
 import { createProvider } from './core/providers/index.js';
 import { toAnkiCsv } from './core/exporters/csv.js';
 import { pushToAnki, ankiConnectStatus, listDecks } from './core/exporters/ankiconnect.js';
@@ -458,10 +459,12 @@ api.post('/generate', async (req: Request, res: Response) => {
         // env vazia → undefined p/ o enrich usar o default (história,rima); senão a lista da env
         imageSkipTecnicas: config.imageSkipTecnicas.length ? config.imageSkipTecnicas : undefined,
         cardBuilderMaxSplit: config.cardBuilderMaxSplit, // teto do split do card-builder (ANKINATOR_CARDBUILDER_MAX_SPLIT)
+        orchestrated: config.orchestrated,            // Destino #4: enriquecimento orquestrado opt-in (ANKINATOR_ORCHESTRATED)
       };
       // Só enriquece se há questões (incremental pode zerar → "deck completo", pula o enrich caro).
+      // runEnrich = dispatcher: orquestrado (se ligado, com fallback determinístico) ou enrichAll.
       if (questoes.length && deveRodarEnrich(enrichOpts)) {
-        questoes = await enrichAll(questoes, enrichOpts, (e) => {
+        questoes = await runEnrich(questoes, enrichOpts, (e) => {
           jobStore.emit(job, { type: 'enrich-progress', data: e });
         });
       }
@@ -583,7 +586,7 @@ api.post('/export/csv', (req: Request, res: Response) => {
 
 /** Envia questões para o Anki via AnkiConnect. */
 api.post('/export/ankiconnect', async (req: Request, res: Response) => {
-  const { questoes, deck, fonte, tags, allowDuplicate } = req.body ?? {};
+  const { questoes, deck, fonte, tags, allowDuplicate, nestUnderDeck } = req.body ?? {};
   if (!Array.isArray(questoes) || !questoes.length) {
     res.status(400).json({ error: 'Forneça as questões a enviar.' });
     return;
@@ -603,6 +606,7 @@ api.post('/export/ankiconnect', async (req: Request, res: Response) => {
       fonte,
       tagsPadrao: tags,
       allowDuplicate: !!allowDuplicate,
+      nestUnderDeck: !!nestUnderDeck, // aninhar subdecks sob o deck escolhido (deck::Assunto::Subtópico)
       url: config.ankiconnectUrl,
     });
     fimPush({ enviadas: (questoes as Questao[]).length });

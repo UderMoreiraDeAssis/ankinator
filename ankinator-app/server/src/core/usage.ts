@@ -18,10 +18,10 @@
  */
 
 /** Estágio do pipeline que originou a chamada ao CLI (para atribuição de custo). */
-export type Stage = 'geracao' | 'classificar' | 'cardBuilder' | 'mnemonico' | 'imagem' | 'outro';
+export type Stage = 'geracao' | 'classificar' | 'cardBuilder' | 'mnemonico' | 'imagem' | 'orquestrador' | 'outro';
 
 /** Ordem canônica de exibição dos estágios no resumo. */
-export const STAGE_ORDER: Stage[] = ['geracao', 'classificar', 'cardBuilder', 'mnemonico', 'imagem', 'outro'];
+export const STAGE_ORDER: Stage[] = ['geracao', 'classificar', 'cardBuilder', 'mnemonico', 'imagem', 'orquestrador', 'outro'];
 
 /** Tokens + custo acumulados (de uma chamada, um estágio, ou o total). */
 export interface TokenUsage {

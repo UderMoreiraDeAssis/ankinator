@@ -1,6 +1,11 @@
 ---
 name: ankinator-image
 description: Especialista em imagens SVG de mnemônico — gera um SVG geométrico autocontido e seguro (sem script/URLs externas) que reforça visualmente um mnemônico. Use quando um mnemônico se beneficia de ilustração.
+# least-privilege (revisão de segurança, sessão p): transformador puro texto→SVG; NÃO precisa de
+# tools. Sem isto, ao ser delegado via Task pelo orquestrador herdaria TODO o toolset (Bash/Write/…),
+# pois o --allowedTools do pai NÃO restringe o filho. tools:[] = zero tools; disallowedTools = backstop.
+tools: []
+disallowedTools: Bash, Read, Write, Edit, NotebookEdit, WebFetch, WebSearch, Glob, Grep, Task, Agent
 ---
 
 # Especialista: Imagem de Mnemônico (SVG)

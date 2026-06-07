@@ -80,6 +80,14 @@ export interface EnrichOpts {
    * (run ao vivo: 41→58 cards) cascateia custo nos estágios seguintes (mnemônico/imagem).
    */
   cardBuilderMaxSplit?: number;
+  /**
+   * Enriquecimento ORQUESTRADO (Destino #4 / Phase 5): quando true, o dispatcher `runEnrich`
+   * (core/specialists/orchestrator.ts) roda o subagent `ankinator-orchestrator` (decide por-card
+   * + delega via Task) em vez do pipeline determinístico — com FALLBACK para este `enrichAll` em
+   * qualquer falha. `enrichAll` IGNORA este campo (é decidido só no dispatcher). Default OFF
+   * (via ANKINATOR_ORCHESTRATED) = pipeline atual byte-equivalente.
+   */
+  orchestrated?: boolean;
 }
 
 /**

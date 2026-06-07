@@ -31,7 +31,13 @@ function fonteDaQuestao(q: Questao, baseFonte: string): string {
 }
 
 export function tagsDaQuestao(q: Questao, padrao: string[]): string {
-  const tags = new Set<string>([q.tipo, ...padrao, ...(q.tags ?? [])]);
+  // Tags PLANAS (escolha do usuário): achata namespaces (`banca::fgv`→`fgv`) e deduplica — espelha ankiconnect.
+  const achatar = (t: string): string =>
+    (t.includes('::') ? t.slice(t.lastIndexOf('::') + 2) : t).trim().toLowerCase().replace(/\s+/g, '-');
+  // origem = fato do pipeline (q.tipo); descarta origem vinda do classificador (espelha ankiconnect — q-live2).
+  const ORIGEM = new Set(['criada', 'extraida']);
+  const doClassificador = (q.tags ?? []).map(achatar).filter((t) => !ORIGEM.has(t));
+  const tags = new Set<string>([q.tipo, ...padrao.map(achatar), ...doClassificador]);
   if (q.metadata?.banca) {
     tags.add(q.metadata.banca.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
   }

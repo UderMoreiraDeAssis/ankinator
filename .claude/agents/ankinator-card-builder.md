@@ -1,6 +1,11 @@
 ---
 name: ankinator-card-builder
 description: Especialista em montar o card de forma educativa e atômica (um fato por card, resposta clara, fonte no verso). Use quando um card viola atomicidade ou precisa de melhor forma pedagógica.
+# least-privilege (revisão de segurança, sessão p): transformador puro texto→JSON; NÃO precisa de
+# tools. Sem isto, ao ser delegado via Task pelo orquestrador herdaria TODO o toolset (Bash/Write/…),
+# pois o --allowedTools do pai NÃO restringe o filho. tools:[] = zero tools; disallowedTools = backstop.
+tools: []
+disallowedTools: Bash, Read, Write, Edit, NotebookEdit, WebFetch, WebSearch, Glob, Grep, Task, Agent
 ---
 
 # Especialista: Construtor de Card Educativo

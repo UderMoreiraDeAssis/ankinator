@@ -154,7 +154,25 @@ export interface PushOptions {
   tagsPadrao?: string[];
   /** Evita duplicatas (AnkiConnect ignora notas duplicadas na mesma deck). */
   allowDuplicate?: boolean;
+  /**
+   * Aninhar os subdecks sob o deck escolhido: o 1º nível (Matéria) de `q.deck` é trocado
+   * pelo `deck` do envio → `Banco de Dados::Assunto::Subtópico`. Integra os cards novos sob
+   * o seu deck de assunto PRESERVANDO os subníveis (escolha do usuário). Sem isso, usa `q.deck`
+   * como está (raiz = Matéria do classificador).
+   */
+  nestUnderDeck?: boolean;
   url?: string;
+}
+
+/**
+ * Re-enraíza um deck hierárquico sob `base`, trocando o 1º nível (Matéria) pelo base:
+ * `Tecnologia da Informação::Infraestrutura::Balanceamento` + base `Banco de Dados`
+ * → `Banco de Dados::Infraestrutura::Balanceamento`. Deck de 1 nível (só Matéria) → `base`. Puro.
+ */
+export function reRootDeck(deck: string, base: string): string {
+  const partes = deck.split('::').map((s) => s.trim()).filter(Boolean);
+  const semMateria = partes.slice(1);
+  return semMateria.length ? `${base}::${semMateria.join('::')}` : base;
 }
 
 export interface PushResult {
@@ -165,8 +183,25 @@ export interface PushResult {
   ids: (number | null)[];
 }
 
+/**
+ * Achata um rótulo de tag namespaceada para o último segmento (escolha do usuário: tags PLANAS,
+ * sem `::`). `banca::fgv`→`fgv`, `ano::2023`→`2023`, `tema::dados-abertos`→`dados-abertos`,
+ * `origem::criada`→`criada`. Lowercase + sem espaços para dedup robusto no Set.
+ */
+function achatarTag(t: string): string {
+  const ultimo = t.includes('::') ? t.slice(t.lastIndexOf('::') + 2) : t;
+  return ultimo.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
 export function tagsDaQuestao(q: Questao, padrao: string[]): string[] {
-  const tags = new Set<string>([`ankinator`, q.tipo, ...padrao, ...(q.tags ?? [])]);
+  // Tags PLANAS: achata os namespaces do classificador e deduplica com as planas derivadas de
+  // metadata — elimina o lixo `fgv`+`banca::fgv` / `2023`+`ano::2023` / `extraida`+`origem::extraida`.
+  // `origem` é um fato do PIPELINE (q.tipo), não classificação: descarta `origem::*` (achatado a
+  // `criada`/`extraida`) vindo do classificador — o orquestrado às vezes emite `origem::criada` num card
+  // `extraida`, gerando tag de origem DUPLA e contraditória (validação ao vivo q-live2). Só q.tipo manda.
+  const ORIGEM = new Set(['criada', 'extraida']);
+  const doClassificador = (q.tags ?? []).map(achatarTag).filter((t) => !ORIGEM.has(t));
+  const tags = new Set<string>([`ankinator`, q.tipo, ...padrao.map(achatarTag), ...doClassificador]);
   if (q.metadata?.banca) tags.add(q.metadata.banca.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
   if (q.metadata?.ano) tags.add(String(q.metadata.ano));
   return [...tags].filter(Boolean);
@@ -186,9 +221,16 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
   const padrao = opts.tagsPadrao ?? [];
   const fonteBase = opts.fonte ? opts.fonte.replace(/\.[^./]+$/, '') : undefined;
 
+  // Aninhar sob o deck do envio (escolha do usuário): re-enraíza q.deck → deck::Assunto::Subtópico
+  // ANTES de montar as notas, p/ que o cabeçalho do card (card-html usa q.deck) e o deckName do Anki
+  // fiquem CONSISTENTES. Sem nestUnderDeck, usa q.deck como está (raiz = Matéria do classificador).
+  const qs = opts.nestUnderDeck
+    ? questoes.map((q) => (q.deck ? { ...q, deck: reRootDeck(q.deck, opts.deck) } : q))
+    : questoes;
+
   // criar um deck para cada q.deck distinto (fallback a opts.deck) — Assumption A1
   // WR-03: per-deck error isolation — one bad name must not abort the whole push.
-  const subDecks = new Set(questoes.map((q) => q.deck ?? opts.deck));
+  const subDecks = new Set(qs.map((q) => q.deck ?? opts.deck));
   const failedDecks = new Set<string>();
   for (const d of subDecks) {
     try {
@@ -199,7 +241,7 @@ export async function pushToAnki(questoes: Questao[], opts: PushOptions): Promis
     }
   }
 
-  const notes = questoes.map((q) => ({
+  const notes = qs.map((q) => ({
     deckName: (!failedDecks.has(q.deck ?? '') ? q.deck : undefined) ?? opts.deck,
     modelName: 'Basic',
     fields: {
